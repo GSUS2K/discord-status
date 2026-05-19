@@ -67,6 +67,13 @@ chrome.storage.local.get([
 
 // Listen for messages from popup and content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'clearLogs') {
+    chrome.storage.local.set({ activityLogs: [] }, () => {
+      sendResponse({ ok: true });
+    });
+    return true;
+  }
+
   log('debug', 'Message received', { action: request.action, from: sender.url || sender.tab?.url || 'extension' });
   
   if (request.action === 'toggleStatus') {
@@ -173,8 +180,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     applyBestActivity();
   } else if (request.action === 'refreshBackendHealth') {
     refreshBackendHealth();
-  } else if (request.action === 'clearLogs') {
-    chrome.storage.local.set({ activityLogs: [] });
   }
 
   sendResponse({ ok: true });
@@ -532,14 +537,19 @@ async function refreshBackendHealth() {
 function log(level, message, details = {}) {
   const normalizedLevel = LOG_LEVELS[level] ? level : 'info';
   const currentLevel = settings?.logLevel || 'info';
+  const shouldStore = LOG_LEVELS[normalizedLevel] >= LOG_LEVELS[currentLevel];
 
-  if (LOG_LEVELS[normalizedLevel] >= LOG_LEVELS[currentLevel]) {
+  if (shouldStore) {
     const consoleMethod = normalizedLevel === 'error'
       ? 'error'
       : normalizedLevel === 'warn'
         ? 'warn'
         : 'log';
     console[consoleMethod](`[Background] ${message}`, details);
+  }
+
+  if (!shouldStore) {
+    return;
   }
 
   const entry = {

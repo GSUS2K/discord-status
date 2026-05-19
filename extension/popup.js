@@ -272,7 +272,10 @@ clearSelectionBtn.addEventListener('click', () => {
 });
 
 clearLogsBtn.addEventListener('click', () => {
-  sendRuntimeMessage({ action: 'clearLogs' });
+  chrome.storage.local.set({ activityLogs: [] }, () => {
+    renderLogs();
+    sendRuntimeMessage({ action: 'clearLogs' });
+  });
 });
 
 function normalizeTabId(value) {
