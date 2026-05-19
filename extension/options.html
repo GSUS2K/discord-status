@@ -108,6 +108,35 @@
       resize: vertical;
     }
 
+    .site-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .site-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #0f1014;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      min-height: 40px;
+      padding: 9px 10px;
+      user-select: none;
+    }
+
+    .site-option input {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      accent-color: var(--accent);
+    }
+
     input:focus,
     select:focus,
     textarea:focus {
@@ -221,6 +250,10 @@
         grid-template-columns: 1fr;
       }
 
+      .site-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
       .actions {
         flex-direction: column;
       }
@@ -261,9 +294,9 @@
         </div>
       </div>
       <div class="setting-group">
-        <label for="enabledSites">Enabled Sites</label>
-        <textarea id="enabledSites" placeholder="youtube, netflix, spotify, twitch"></textarea>
-        <div class="hint">Comma-separated keywords for already-supported detectors. This filters monitoring; it does not add new site support by itself.</div>
+        <label>Enabled Sites</label>
+        <div id="enabledSitesList" class="site-grid"></div>
+        <div class="hint">Choose which built-in detectors can run. New sites require code support, not just a setting.</div>
       </div>
     </section>
 

@@ -203,7 +203,7 @@ Discord can take a few minutes to refresh newly uploaded assets. If an image key
 | Backend Server URL | Yes | Keep it as `http://localhost:3000` unless you run the local backend somewhere else on the same machine |
 | Update Interval | Yes | Controls how often supported tabs are asked to refresh activity |
 | Forget Inactive Tabs After | Yes | Removes stale tab activity from the popup and auto picker |
-| Enabled Sites | Filter only | It enables/disables already-supported detectors; it does not add a new detector by typing a new site name |
+| Enabled Sites | Filter only | The checklist enables/disables already-supported detectors; new sites require code support |
 | Log Level | Yes | Controls extension-side diagnostic logging |
 | Discord Application ID | Backend only | Change `DISCORD_CLIENT_ID` in `backend/.env`, then restart the backend |
 

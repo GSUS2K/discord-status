@@ -8,10 +8,25 @@ const DEFAULTS = {
   logLevel: 'info'
 };
 
+const SUPPORTED_SITES = [
+  ['youtube', 'YouTube'],
+  ['netflix', 'Netflix'],
+  ['spotify', 'Spotify'],
+  ['twitch', 'Twitch'],
+  ['discord', 'Discord'],
+  ['meet', 'Google Meet'],
+  ['github', 'GitHub'],
+  ['chatgpt', 'ChatGPT'],
+  ['hotstar', 'Hotstar'],
+  ['crunchyroll', 'Crunchyroll'],
+  ['google', 'Google'],
+  ['wikipedia', 'Wikipedia']
+];
+
 const serverUrlInput = document.getElementById('serverUrl');
 const updateIntervalInput = document.getElementById('updateInterval');
 const staleThresholdMsInput = document.getElementById('staleThresholdMs');
-const enabledSitesInput = document.getElementById('enabledSites');
+const enabledSitesList = document.getElementById('enabledSitesList');
 const logLevelInput = document.getElementById('logLevel');
 const backendStatusValue = document.getElementById('backendStatusValue');
 const rpcStatusValue = document.getElementById('rpcStatusValue');
@@ -22,6 +37,7 @@ const resetBtn = document.getElementById('resetBtn');
 const statusMessage = document.getElementById('statusMessage');
 
 chrome.storage.local.get(Object.keys(DEFAULTS), (result) => {
+  renderSupportedSiteOptions();
   setFormValues({ ...DEFAULTS, ...result });
   refreshStatusCards();
 });
@@ -80,9 +96,9 @@ function setFormValues(values) {
   serverUrlInput.value = values.serverUrl || DEFAULTS.serverUrl;
   updateIntervalInput.value = values.updateInterval || DEFAULTS.updateInterval;
   staleThresholdMsInput.value = Math.round((values.staleThresholdMs || DEFAULTS.staleThresholdMs) / 1000);
-  enabledSitesInput.value = Array.isArray(values.enabledSites)
-    ? values.enabledSites.join(',')
-    : values.enabledSites || DEFAULTS.enabledSites;
+  setEnabledSiteValues(Array.isArray(values.enabledSites)
+    ? values.enabledSites
+    : String(values.enabledSites || DEFAULTS.enabledSites).split(','));
   logLevelInput.value = values.logLevel || DEFAULTS.logLevel;
 }
 
@@ -91,10 +107,7 @@ function readSettingsFromForm() {
     serverUrl: normalizeServerUrl(serverUrlInput.value),
     updateInterval: clampNumber(updateIntervalInput.value, 2, 60, DEFAULTS.updateInterval),
     staleThresholdMs: clampNumber(staleThresholdMsInput.value, 10, 300, 30) * 1000,
-    enabledSites: enabledSitesInput.value
-      .split(',')
-      .map(site => site.trim().toLowerCase())
-      .filter(Boolean),
+    enabledSites: getEnabledSiteValues(),
     logLevel: ['debug', 'info', 'warn', 'error'].includes(logLevelInput.value) ? logLevelInput.value : DEFAULTS.logLevel
   };
 }
@@ -130,6 +143,37 @@ function clampNumber(value, min, max, fallback) {
   const number = Number.parseInt(value, 10);
   if (!Number.isFinite(number)) return fallback;
   return Math.min(max, Math.max(min, number));
+}
+
+function renderSupportedSiteOptions() {
+  enabledSitesList.textContent = '';
+
+  for (const [value, label] of SUPPORTED_SITES) {
+    const option = document.createElement('label');
+    option.className = 'site-option';
+
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = value;
+
+    const text = document.createElement('span');
+    text.textContent = label;
+
+    option.append(input, text);
+    enabledSitesList.appendChild(option);
+  }
+}
+
+function getEnabledSiteValues() {
+  return Array.from(enabledSitesList.querySelectorAll('input[type="checkbox"]:checked'))
+    .map(input => input.value);
+}
+
+function setEnabledSiteValues(values) {
+  const enabled = new Set(values.map(value => String(value).trim().toLowerCase()).filter(Boolean));
+  for (const input of enabledSitesList.querySelectorAll('input[type="checkbox"]')) {
+    input.checked = enabled.has(input.value);
+  }
 }
 
 function showMessage(message, type) {
