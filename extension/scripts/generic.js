@@ -4,164 +4,122 @@ const PLATFORMS = {
   'twitch.tv': {
     name: 'Twitch',
     detect: () => {
-      const titleElement = document.querySelector('[data-test-selector="stream-title"]');
-      const channelElement = document.querySelector('[data-test-selector="channel-header-desktop"] a');
-      const video = document.querySelector('video');
-      
-      if (!titleElement) return null;
-      
-      const title = titleElement.textContent.trim();
-      const channel = channelElement ? channelElement.textContent.trim() : 'Twitch';
-      const isPlaying = video ? !video.paused : true;
-      const currentTime = video && Number.isFinite(video.currentTime) ? Math.max(0, video.currentTime) : 0;
-      const duration = video && Number.isFinite(video.duration) ? Math.max(0, video.duration) : 0;
-      const currentMinutes = Math.floor(currentTime / 60);
-      const currentSeconds = Math.floor(currentTime % 60);
-      const durationMinutes = Math.floor(duration / 60);
-      const durationSeconds = Math.floor(duration % 60);
-      const timeLabel = duration > 0
-        ? ` • ${String(currentMinutes).padStart(2, '0')}:${String(currentSeconds).padStart(2, '0')} / ${String(durationMinutes).padStart(2, '0')}:${String(durationSeconds).padStart(2, '0')}`
-        : '';
-      
+      const title = getText('[data-test-selector="stream-title"], h2[data-a-target="stream-title"]')
+        || cleanTitle(document.title, ['Twitch']);
+      const channel = getText('[data-test-selector="channel-header-desktop"] a, a[data-a-target="stream-game-link"], h1 a')
+        || getPathParts()[0]
+        || 'Twitch';
+      const media = getMediaInfo('video');
+
+      if (!title || /^twitch$/i.test(title)) return null;
+
       return {
         platform: 'Twitch',
-        details: title.substring(0, 128),
-        state: `${isPlaying ? 'Playing' : 'Paused'}${timeLabel} • ${channel}`.substring(0, 128),
+        details: truncate(title),
+        state: truncate(`${media.label} • ${channel}`),
         largeImageKey: 'twitch',
         largeImageText: 'Watching on Twitch',
-        isPlaying,
-        mediaCurrentTime: currentTime,
-        mediaDuration: duration
+        url: window.location.href,
+        isPlaying: media.isPlaying,
+        mediaCurrentTime: media.currentTime,
+        mediaDuration: media.duration
       };
     }
   },
   'discord.com': {
     name: 'Discord',
     detect: () => {
-      const voiceChannel = document.querySelector('[class*="container-3baos1"]');
-      if (!voiceChannel) return null;
-      
-      const channelName = document.querySelector('[class*="h5-18_1nd"]');
-      const userName = document.querySelector('[class*="title-3sZWYQ"]');
-      
-      if (!channelName) return null;
-      
+      const title = cleanTitle(document.title, ['Discord']) || 'Discord';
+      const channel = getText('[aria-label*="Channel header"] h1, [data-list-item-id*="channels"] [class*="name"], h1');
+
       return {
         platform: 'Discord',
-        details: `In ${channelName.textContent.trim()}`.substring(0, 128),
-        state: 'Voice Call'.substring(0, 128),
+        details: truncate(channel ? `In ${channel}` : title),
+        state: channel ? 'Browsing Discord' : 'Using Discord',
         largeImageKey: 'discord',
-        largeImageText: 'In a Discord Voice Call'
+        largeImageText: 'Using Discord',
+        url: window.location.href
       };
     }
   },
   'github.com': {
     name: 'GitHub',
     detect: () => {
-      const repoName = document.querySelector('[itemprop="name"] a');
-      if (!repoName) return null;
-      
+      const [owner, repo] = getPathParts();
+      const repoLabel = owner && repo ? `${owner}/${repo}` : '';
+      const pageTitle = cleanTitle(document.title, ['GitHub']);
+      const details = repoLabel || pageTitle;
+
+      if (!details) return null;
+
       return {
         platform: 'GitHub',
-        details: repoName.textContent.trim().substring(0, 128),
-        state: 'Browsing Code',
+        details: truncate(details),
+        state: repoLabel ? 'Browsing repository' : 'Browsing GitHub',
         largeImageKey: 'github',
-        largeImageText: 'Browsing on GitHub'
+        largeImageText: 'Browsing on GitHub',
+        url: window.location.href
       };
     }
   },
   'chatgpt.com': {
     name: 'ChatGPT',
     detect: () => {
-      const convTitle = document.querySelector('[class*="text-2xl"]');
-      
+      const title = cleanTitle(document.title, ['ChatGPT', 'OpenAI'])
+        || getText('main h1, [data-testid*="conversation"] h1')
+        || 'Using ChatGPT';
+
       return {
         platform: 'ChatGPT',
-        details: convTitle ? convTitle.textContent.trim().substring(0, 128) : 'Using ChatGPT',
+        details: truncate(title),
         state: 'Chatting',
         largeImageKey: 'chatgpt',
-        largeImageText: 'Chatting with ChatGPT'
+        largeImageText: 'Chatting with ChatGPT',
+        url: window.location.href
       };
     }
   },
   'hotstar.com': {
     name: 'Hotstar',
-    detect: () => {
-      const titleElement = document.querySelector('[class*="title"]');
-      if (!titleElement) return null;
-      
-      const title = titleElement.textContent.trim();
-      const video = document.querySelector('video');
-      const isPlaying = video && !video.paused;
-      const currentTime = video && Number.isFinite(video.currentTime) ? Math.max(0, video.currentTime) : 0;
-      const duration = video && Number.isFinite(video.duration) ? Math.max(0, video.duration) : 0;
-      const currentMinutes = Math.floor(currentTime / 60);
-      const currentSeconds = Math.floor(currentTime % 60);
-      const durationMinutes = Math.floor(duration / 60);
-      const durationSeconds = Math.floor(duration % 60);
-      const timeLabel = duration > 0
-        ? ` • ${String(currentMinutes).padStart(2, '0')}:${String(currentSeconds).padStart(2, '0')} / ${String(durationMinutes).padStart(2, '0')}:${String(durationSeconds).padStart(2, '0')}`
-        : '';
-      
-      let state = `${isPlaying ? 'Playing' : 'Paused'}${timeLabel}`;
-      
-      return {
-        platform: 'Hotstar',
-        details: title.substring(0, 128),
-        state: state,
-        largeImageKey: 'hotstar',
-        largeImageText: 'Watching on Hotstar',
-        isPlaying,
-        mediaCurrentTime: currentTime,
-        mediaDuration: duration
-      };
-    }
+    detect: () => createVideoActivity({
+      platform: 'Hotstar',
+      titleSelectors: [
+        '[data-testid*="title"]',
+        '[class*="title"]',
+        'h1'
+      ],
+      titleFallbacks: ['Disney+ Hotstar', 'Hotstar'],
+      largeImageKey: 'hotstar',
+      largeImageText: 'Watching on Hotstar'
+    })
   },
   'crunchyroll.com': {
     name: 'Crunchyroll',
-    detect: () => {
-      const titleElement = document.querySelector('[class*="erc-player-header-title"]');
-      if (!titleElement) return null;
-      
-      const title = titleElement.textContent.trim();
-      const video = document.querySelector('video');
-      const isPlaying = video && !video.paused;
-      const currentTime = video && Number.isFinite(video.currentTime) ? Math.max(0, video.currentTime) : 0;
-      const duration = video && Number.isFinite(video.duration) ? Math.max(0, video.duration) : 0;
-      const currentMinutes = Math.floor(currentTime / 60);
-      const currentSeconds = Math.floor(currentTime % 60);
-      const durationMinutes = Math.floor(duration / 60);
-      const durationSeconds = Math.floor(duration % 60);
-      const timeLabel = duration > 0
-        ? ` • ${String(currentMinutes).padStart(2, '0')}:${String(currentSeconds).padStart(2, '0')} / ${String(durationMinutes).padStart(2, '0')}:${String(durationSeconds).padStart(2, '0')}`
-        : '';
-      
-      let state = `${isPlaying ? 'Playing' : 'Paused'}${timeLabel}`;
-      
-      return {
-        platform: 'Crunchyroll',
-        details: title.substring(0, 128),
-        state: state,
-        largeImageKey: 'crunchyroll',
-        largeImageText: 'Watching on Crunchyroll',
-        isPlaying,
-        mediaCurrentTime: currentTime,
-        mediaDuration: duration
-      };
-    }
+    detect: () => createVideoActivity({
+      platform: 'Crunchyroll',
+      titleSelectors: [
+        '[class*="erc-player-header-title"]',
+        '[data-t*="title"]',
+        'h1'
+      ],
+      titleFallbacks: ['Crunchyroll'],
+      largeImageKey: 'crunchyroll',
+      largeImageText: 'Watching on Crunchyroll'
+    })
   },
   'wikipedia.org': {
     name: 'Wikipedia',
     detect: () => {
-      const titleElement = document.querySelector('h1');
-      if (!titleElement) return null;
-      
+      const title = getText('h1') || cleanTitle(document.title, ['Wikipedia']);
+      if (!title) return null;
+
       return {
         platform: 'Wikipedia',
-        details: titleElement.textContent.trim().substring(0, 128),
-        state: 'Reading Wikipedia',
+        details: truncate(title),
+        state: 'Reading article',
         largeImageKey: 'wikipedia',
-        largeImageText: 'Reading on Wikipedia'
+        largeImageText: 'Reading on Wikipedia',
+        url: window.location.href
       };
     }
   },
@@ -169,18 +127,106 @@ const PLATFORMS = {
     name: 'Google',
     detect: () => {
       const searchInput = document.querySelector('input[name="q"]');
-      const searchQuery = searchInput ? searchInput.value : '';
-      
+      const searchQuery = searchInput?.value?.trim() || new URLSearchParams(window.location.search).get('q') || '';
+      const isSearch = Boolean(searchQuery);
+
       return {
         platform: 'Google',
-        details: searchQuery ? `Searching: ${searchQuery}`.substring(0, 128) : 'Browsing Google',
-        state: 'Searching',
+        details: truncate(isSearch ? searchQuery : 'Google'),
+        state: isSearch ? 'Searching Google' : 'Browsing Google',
         largeImageKey: 'google',
-        largeImageText: 'Searching on Google'
+        largeImageText: 'Searching on Google',
+        url: window.location.href
       };
     }
   }
 };
+
+function createVideoActivity({ platform, titleSelectors, titleFallbacks, largeImageKey, largeImageText }) {
+  const title = getFirstText(titleSelectors)
+    || getMetaTitle()
+    || cleanTitle(document.title, titleFallbacks);
+  const media = getMediaInfo('video');
+
+  if (!title || !document.querySelector('video')) {
+    return null;
+  }
+
+  return {
+    platform,
+    details: truncate(title),
+    state: truncate(media.label),
+    largeImageKey,
+    largeImageText,
+    url: window.location.href,
+    isPlaying: media.isPlaying,
+    mediaCurrentTime: media.currentTime,
+    mediaDuration: media.duration
+  };
+}
+
+function getMediaInfo(selector) {
+  const media = document.querySelector(selector);
+  const isPlaying = media ? !media.paused : true;
+  const currentTime = media && Number.isFinite(media.currentTime) ? Math.max(0, media.currentTime) : 0;
+  const duration = media && Number.isFinite(media.duration) ? Math.max(0, media.duration) : 0;
+  const timeLabel = duration > 0 ? ` • ${formatDuration(currentTime)} / ${formatDuration(duration)}` : '';
+
+  return {
+    isPlaying,
+    currentTime,
+    duration,
+    label: `${isPlaying ? 'Playing' : 'Paused'}${timeLabel}`
+  };
+}
+
+function formatDuration(seconds) {
+  const safeSeconds = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(safeSeconds / 60);
+  const rest = Math.floor(safeSeconds % 60);
+  return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
+}
+
+function getFirstText(selectors) {
+  for (const selector of selectors) {
+    const text = getText(selector);
+    if (text) return text;
+  }
+  return '';
+}
+
+function getText(selector) {
+  const text = document.querySelector(selector)?.textContent?.trim();
+  return text && text.length > 1 ? text.replace(/\s+/g, ' ') : '';
+}
+
+function getMetaTitle() {
+  return document.querySelector('meta[property="og:title"]')?.content?.trim()
+    || document.querySelector('meta[name="twitter:title"]')?.content?.trim()
+    || document.querySelector('meta[name="title"]')?.content?.trim()
+    || '';
+}
+
+function cleanTitle(title, suffixes = []) {
+  let cleaned = String(title || '').trim();
+  for (const suffix of suffixes) {
+    cleaned = cleaned.replace(new RegExp(`\\s*[-|•]\\s*${escapeRegExp(suffix)}\\s*$`, 'i'), '');
+  }
+  return cleaned.replace(/\s+/g, ' ').trim();
+}
+
+function getPathParts() {
+  return window.location.pathname.split('/').filter(Boolean).map(decodeURIComponent);
+}
+
+function truncate(value, maxLength = 128) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1).trim()}…` : text;
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 function detectActivity() {
   const hostname = window.location.hostname;
