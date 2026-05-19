@@ -201,6 +201,7 @@ function detectNetflixActivity() {
 function cleanNetflixTitle(title) {
   return title
     .replace(/\s*[-|]\s*Netflix.*$/i, '')
+    .replace(/\b([A-Za-z][A-Za-z0-9'’:-]*?)E(\d+)\s*Episode\s*\d+\b/i, '$1 Episode $2')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
     .replace(/\bE(\d+)\s*Episode\b/ig, 'Episode $1')
     .replace(/\bS(\d+)\s*E(\d+)\b/ig, 'S$1 E$2')
