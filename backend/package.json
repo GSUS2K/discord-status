@@ -1,0 +1,20 @@
+{
+  "name": "discord-activity-backend",
+  "version": "1.0.0",
+  "description": "Backend server for Discord browser activity status",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "discord-rpc": "^4.0.1",
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

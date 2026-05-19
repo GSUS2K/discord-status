@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Discord Activity Status</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      color-scheme: dark;
+      --bg: #101114;
+      --panel: #181a20;
+      --panel-soft: #20232b;
+      --line: #30343f;
+      --text: #f4f5f7;
+      --muted: #a6adbb;
+      --accent: #5865f2;
+      --accent-strong: #6d79ff;
+      --success: #2ecc71;
+      --warning: #f1c40f;
+      --danger: #ff6b6b;
+    }
+
+    body {
+      width: 390px;
+      max-height: 600px;
+      min-height: 520px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-y: auto;
+    }
+
+    .shell {
+      padding: 14px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--accent);
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      font-size: 15px;
+      line-height: 1.15;
+    }
+
+    .subtitle {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .icon-btn,
+    .action-btn,
+    .mode-btn,
+    .tab-select {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel-soft);
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    }
+
+    .icon-btn {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      flex: 0 0 auto;
+      font-size: 16px;
+    }
+
+    button:hover {
+      border-color: #555b6c;
+      background: #252934;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .top-row,
+    .section-head,
+    .health-row,
+    .manual-row,
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .top-row,
+    .section-head,
+    .health-row {
+      justify-content: space-between;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: var(--muted);
+      letter-spacing: 0;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 48px;
+      height: 26px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #2a2d35;
+    }
+
+    .toggle-switch::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: #fff;
+      transition: left 0.18s ease;
+    }
+
+    .toggle-switch.active {
+      border-color: rgba(46, 204, 113, 0.75);
+      background: rgba(46, 204, 113, 0.35);
+    }
+
+    .toggle-switch.active::after {
+      left: 25px;
+    }
+
+    .status-display {
+      margin-top: 10px;
+      border-radius: 7px;
+      background: var(--panel-soft);
+      padding: 10px;
+      min-height: 74px;
+      border: 1px solid #2b2f39;
+    }
+
+    .activity-platform {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .activity-details {
+      font-size: 13px;
+      font-weight: 750;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .activity-state {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      margin-top: 4px;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .health-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 8px;
+    }
+
+    .health-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--warning);
+    }
+
+    .health-badge.connected .health-dot {
+      background: var(--success);
+    }
+
+    .health-badge.disconnected .health-dot {
+      background: var(--danger);
+    }
+
+    .selected-tab-label {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mode-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .mode-btn {
+      height: 34px;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .mode-btn.active {
+      border-color: rgba(88, 101, 242, 0.9);
+      background: rgba(88, 101, 242, 0.35);
+    }
+
+    .manual-row {
+      margin-top: 10px;
+    }
+
+    input {
+      min-width: 0;
+      flex: 1;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #0f1014;
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      padding: 0 10px;
+    }
+
+    input:focus {
+      border-color: var(--accent-strong);
+      outline: none;
+    }
+
+    .action-btn,
+    .tab-select {
+      height: 34px;
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .primary {
+      border-color: rgba(46, 204, 113, 0.75);
+      background: rgba(46, 204, 113, 0.25);
+    }
+
+    .danger {
+      border-color: rgba(255, 107, 107, 0.55);
+      color: #ffd3d3;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      margin-top: 10px;
+    }
+
+    .tab-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      max-height: 156px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .tab-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      padding: 9px;
+    }
+
+    .tab-card.active {
+      border-color: rgba(46, 204, 113, 0.75);
+      background: rgba(46, 204, 113, 0.12);
+    }
+
+    .tab-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .tab-title,
+    .tab-subtitle,
+    .log-line {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tab-title {
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .tab-subtitle {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .tab-select.active {
+      border-color: rgba(46, 204, 113, 0.75);
+      background: rgba(46, 204, 113, 0.2);
+    }
+
+    .logs {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 96px;
+      overflow: auto;
+      margin-top: 10px;
+    }
+
+    .log-line {
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 10px;
+      line-height: 1.45;
+      min-height: 15px;
+    }
+
+    .log-line.warn {
+      color: #f7dc8a;
+    }
+
+    .log-line.error {
+      color: #ffb7b7;
+    }
+
+    .mini-btn {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 2px 0;
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="brand">
+        <div class="mark">D</div>
+        <div>
+          <h1>Discord Activity</h1>
+          <div class="subtitle">Browser Rich Presence</div>
+        </div>
+      </div>
+      <button id="settingsBtn" class="icon-btn" title="Open settings" aria-label="Open settings">⚙</button>
+    </header>
+
+    <section class="section">
+      <div class="top-row">
+        <div>
+          <div class="section-title">Status</div>
+          <div id="rpcHealthBadge" class="health-badge">
+            <span class="health-dot"></span>
+            <span id="rpcHealthText">Checking backend</span>
+          </div>
+        </div>
+        <button id="toggleBtn" class="toggle-switch" title="Enable or disable Discord status" aria-label="Enable status"></button>
+      </div>
+      <div id="status" class="status-display empty">No activity detected yet.</div>
+      <div id="selectedTabLabel" class="selected-tab-label">Selected tab: Auto</div>
+      <div class="actions">
+        <button class="action-btn" id="refreshBtn">Refresh</button>
+        <button class="action-btn" id="reconnectBtn">Reconnect</button>
+        <button class="action-btn danger" id="clearBtn">Clear</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">Mode</div>
+      <div class="mode-selector">
+        <button class="mode-btn active" data-mode="auto">Auto Detect</button>
+        <button class="mode-btn" data-mode="manual">Manual</button>
+      </div>
+      <div id="manualSection" class="manual-row" style="display: none;">
+        <input type="text" id="activityInput" maxlength="120" placeholder="Set a custom activity">
+        <button id="setActivityBtn" class="action-btn primary">Set</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div class="section-title">Detected Tabs</div>
+        <button id="clearSelectionBtn" class="mini-btn">Auto pick</button>
+      </div>
+      <div id="tabList" class="tab-list">
+        <div class="empty">No tabs detected yet.</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div class="section-title">Recent Logs</div>
+        <button id="clearLogsBtn" class="mini-btn">Clear logs</button>
+      </div>
+      <div id="logList" class="logs">
+        <div class="empty">No logs yet.</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

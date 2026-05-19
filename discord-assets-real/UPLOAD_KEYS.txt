@@ -1,0 +1,14 @@
+Upload these PNGs to Discord Developer Portal > Rich Presence > Art Assets with these exact keys:
+
+youtube.png -> youtube
+netflix.png -> netflix
+spotify.png -> spotify
+twitch.png -> twitch
+discord.png -> discord
+meet.png -> meet
+github.png -> github
+chatgpt.png -> chatgpt
+hotstar.png -> hotstar
+crunchyroll.png -> crunchyroll
+wikipedia.png -> wikipedia
+google.png -> google

@@ -1,0 +1,37 @@
+# macOS / editor noise
+.DS_Store
+*/.DS_Store
+.vscode/
+
+# Dependencies / local runtimes
+node_modules/
+backend/node_modules/
+.venv/
+
+# Secrets and local config
+.env
+backend/.env
+*.local
+
+# Logs and generated artifacts
+*.log
+dist/
+*.zip
+discord-assets/*.zip
+discord-assets-real/*.zip
+discord-assets-real/svg-sources/
+discord-assets/
+
+# Package manager noise
+.npm/
+.pnpm-store/
+
+# Old remote-deploy experiments; Discord RPC must run locally.
+backend/Dockerfile
+backend/Procfile
+backend/docker-compose.yml
+backend/fly.toml
+backend/runtime.txt
+backend/generate_icons.py
+backend/.dockerignore
+backend/.gitignore

@@ -1,0 +1,80 @@
+{
+  "manifest_version": 3,
+  "name": "Discord Activity Status",
+  "version": "1.0",
+  "description": "Show your browser activity in Discord status - YouTube, Netflix, Hotstar, Spotify, etc.",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://youtube.com/*",
+    "https://www.youtube.com/*",
+    "https://netflix.com/*",
+    "https://www.netflix.com/*",
+    "https://hotstar.com/*",
+    "https://www.hotstar.com/*",
+    "https://crunchyroll.com/*",
+    "https://www.crunchyroll.com/*",
+    "https://spotify.com/*",
+    "https://www.spotify.com/*",
+    "https://open.spotify.com/*",
+    "https://twitch.tv/*",
+    "https://www.twitch.tv/*",
+    "https://meet.google.com/*",
+    "https://discord.com/*",
+    "https://github.com/*",
+    "https://chatgpt.com/*",
+    "https://www.google.com/*",
+    "https://en.wikipedia.org/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": {
+    "service_worker": "scripts/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://netflix.com/*", "https://www.netflix.com/*"],
+      "js": ["scripts/netflix.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://youtube.com/*", "https://www.youtube.com/*"],
+      "js": ["scripts/youtube.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://spotify.com/*", "https://www.spotify.com/*", "https://open.spotify.com/*"],
+      "js": ["scripts/spotify.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://meet.google.com/*"],
+      "js": ["scripts/googlemeet.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://twitch.tv/*", "https://www.twitch.tv/*", "https://discord.com/*", "https://github.com/*", "https://chatgpt.com/*", "https://hotstar.com/*", "https://www.hotstar.com/*", "https://crunchyroll.com/*", "https://www.crunchyroll.com/*", "https://en.wikipedia.org/*", "https://google.com/*", "https://www.google.com/*"],
+      "js": ["scripts/generic.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Discord Activity Status",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "options_page": "options.html"
+}
