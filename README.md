@@ -130,6 +130,8 @@ Then:
 
 Chrome Web Store publishing is the cleanest long-term extension install path. Until then, users can load the extension manually from the release zip and uploading the extension folder in chrome://extensions/ by pressing load unpacked button.
 
+macOS note: current companion builds are unsigned. If macOS says the app is damaged, see [docs/MAC_INSTALL.md](docs/MAC_INSTALL.md).
+
 ## Build Releases
 
 Install dependencies:
@@ -281,6 +283,7 @@ scripts/               Release/package helpers
 | Problem | Try this |
 | --- | --- |
 | Discord says disconnected | Make sure Discord desktop is open, then restart the companion app |
+| macOS says the companion app is damaged | The app is unsigned and quarantined; see [docs/MAC_INSTALL.md](docs/MAC_INSTALL.md) |
 | Extension says backend offline | Confirm Activity Status Companion is running and settings use `http://localhost:3000` |
 | Auto mode swaps tabs | Reload the extension; auto mode should prioritize the active Chrome tab |
 | Netflix title is wrong | Reload the Netflix tab and click Refresh in the popup |

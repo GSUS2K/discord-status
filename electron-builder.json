@@ -19,6 +19,7 @@
   "extraMetadata": {
     "main": "companion/main.cjs"
   },
+  "afterPack": "scripts/ad-hoc-sign-mac.cjs",
   "mac": {
     "target": ["dmg", "zip"],
     "category": "public.app-category.utilities",
