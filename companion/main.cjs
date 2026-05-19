@@ -9,7 +9,7 @@ let lastBackendLine = 'Starting...';
 
 const isPackaged = app.isPackaged;
 const bundledAppRoot = isPackaged ? path.join(process.resourcesPath, 'app.asar') : path.resolve(__dirname, '..');
-const backendRoot = isPackaged ? path.join(process.resourcesPath, 'app.asar.unpacked') : path.resolve(__dirname, '..');
+const backendRoot = isPackaged ? process.resourcesPath : path.resolve(__dirname, '..');
 const backendScript = path.join(backendRoot, 'backend', 'server.js');
 const backendUrl = `http://localhost:${config.port || 3000}`;
 
@@ -66,8 +66,9 @@ function startBackend() {
   });
 
   backendProcess.on('exit', code => {
+    const previousLine = lastBackendLine;
     backendProcess = null;
-    lastBackendLine = `Backend stopped${Number.isFinite(code) ? ` with code ${code}` : ''}.`;
+    lastBackendLine = `Backend stopped${Number.isFinite(code) ? ` with code ${code}` : ''}. Last message: ${previousLine}`;
     mainWindow?.webContents.send('backend-log', lastBackendLine);
   });
 }

@@ -9,12 +9,26 @@
   },
   "files": [
     "companion/**/*",
-    "backend/**/*",
     "extension/icons/**/*",
     "build/icon.png",
-    "package.json",
-    "!backend/.env",
-    "!backend/node_modules/.cache/**/*"
+    "package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "backend",
+      "to": "backend",
+      "filter": [
+        "**/*",
+        "!node_modules/.cache/**/*",
+        "!.env",
+        "!Dockerfile",
+        "!Procfile",
+        "!docker-compose.yml",
+        "!fly.toml",
+        "!runtime.txt",
+        "!generate_icons.py"
+      ]
+    }
   ],
   "extraMetadata": {
     "main": "companion/main.cjs"
