@@ -40,16 +40,32 @@ It can detect media and page activity from sites like YouTube, Netflix, Spotify,
 
 This project is built for people who want a richer Discord status without manually changing it every time they switch tabs.
 
-## Why There Is A Backend
+## Install Model
+
+Activity Status is meant to be used with **your official Discord application** and **your official extension**.
+
+Normal users should not create a Discord application, upload logo assets, or edit a client ID. That setup is only for maintainers and forks.
+
+For users, the intended release flow is:
+
+1. Install the Activity Status browser extension.
+2. Install the Activity Status Companion desktop app.
+3. Open Discord desktop.
+4. Browse normally.
+
+The companion app runs the local Discord RPC bridge in the background.
+
+## Why There Is A Companion App
 
 Discord Rich Presence is local. A Chrome extension cannot directly access Discord's local RPC socket, so Activity Status is split into two parts:
 
 | Part | What it does |
 | --- | --- |
 | `extension/` | Detects browser activity, lets you choose auto or manual mode, and sends updates to the backend |
-| `backend/` | Runs locally and updates Discord Rich Presence through the Discord desktop app |
+| `companion/` | Desktop app that starts and supervises the local backend |
+| `backend/` | Local Discord RPC bridge used by the companion app |
 
-Because of that, GitHub-only zero setup is not realistically possible yet. Users still need the local backend running on the same computer as Discord.
+Because of that, the best user experience is not “extension only.” The best experience is **Chrome extension + native companion app**.
 
 ## Development Status
 
@@ -57,7 +73,7 @@ Activity Status is usable, but still early.
 
 YouTube, Netflix, Spotify, GitHub, ChatGPT, Google Meet, Twitch, and a few other sites are supported, but some websites change their page structure often. Detection can occasionally need updates when a site changes its DOM.
 
-The current goal is to make setup easier, keep detection stable, and eventually ship a small desktop companion app so normal users do not need to run terminal commands.
+The current goal is to make setup easier, keep detection stable, and ship signed companion builds for macOS, Windows, and Linux so normal users do not need terminal commands.
 
 ## Features
 
@@ -70,7 +86,8 @@ The current goal is to make setup easier, keep detection stable, and eventually 
 | Discord assets | Includes 512x512 logo assets ready for Discord Developer Portal upload |
 | Status controls | Enable, clear, refresh, reconnect, and select a specific tab from the popup |
 | Diagnostics | Backend health, Discord RPC health, and recent extension logs |
-| Release packaging | Builds a clean downloadable zip for GitHub Releases |
+| Companion app | Packages the local backend into a desktop app for one-click startup |
+| Release packaging | Builds extension and companion artifacts for GitHub Releases |
 
 ## Supported Sites
 
@@ -91,8 +108,6 @@ The current goal is to make setup easier, keep detection stable, and eventually 
 
 ## Screenshots
 
-Add your screenshots here before publishing the repo.
-
 <p align="center">
   <img src="docs/assets/popup.png" alt="Extension popup" width="49%">
   <img src="docs/assets/discord-status.png" alt="Discord status preview" width="49%">
@@ -105,62 +120,72 @@ Add your screenshots here before publishing the repo.
 
 ## Install
 
-### 1. Download
+### For Users
 
-Get the latest package from the [GitHub Releases page](https://github.com/GSUS2K/activity-status/releases/latest).
+Get the latest release from the [GitHub Releases page](https://github.com/GSUS2K/activity-status/releases/latest).
 
-If you are building locally:
+Download:
+
+- the browser extension zip
+- the Activity Status Companion app for your platform
+
+Then:
+
+1. Install/open **Activity Status Companion**.
+2. Make sure Discord desktop is open.
+3. Install the extension.
+4. Keep the companion app running while using Discord status.
+
+Chrome Web Store publishing is the cleanest long-term extension install path. Until then, users can load the extension manually from the release zip.
+
+### For Maintainers
+
+Before publishing your own official releases:
+
+1. Open the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Create or open your `Activity Status` application.
+3. Upload the Rich Presence assets listed in [Discord Assets](#discord-assets).
+4. Copy your application/client ID.
+5. Put it in `companion/activity-status.config.cjs`.
+6. Build companion releases.
+
+The Discord application/client ID is public. It is safe to ship inside the companion app. Do not ship bot tokens or secrets.
+
+See [docs/PUBLISHING.md](docs/PUBLISHING.md) for the full release checklist.
+
+## Build Releases
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Package the extension:
 
 ```bash
 npm run package
 ```
 
-The release zip is generated at:
-
-```text
-dist/activity-status-extension.zip
-```
-
-### 2. Create A Discord Application
-
-1. Open the [Discord Developer Portal](https://discord.com/developers/applications).
-2. Create a new application.
-3. Name it `Activity Status`.
-4. Copy the application/client ID.
-5. Upload the Rich Presence assets listed in [Discord Assets](#discord-assets).
-
-### 3. Install The Backend
+Build the companion app for your current platform:
 
 ```bash
-./install.sh
+npm run dist:companion
 ```
 
-Then edit `backend/.env`:
-
-```env
-DISCORD_CLIENT_ID=your_discord_application_client_id
-PORT=3000
-LOG_LEVEL=info
-ENABLE_PRESENCE_BUTTONS=true
-```
-
-Start the local backend:
+Platform-specific builds:
 
 ```bash
-npm start
+npm run dist:companion:mac
+npm run dist:companion:win
+npm run dist:companion:linux
 ```
 
-### 4. Load The Chrome Extension
-
-1. Open `chrome://extensions`.
-2. Turn on **Developer mode**.
-3. Click **Load unpacked**.
-4. Select the `extension/` folder.
-5. Open a supported website and check the Activity Status popup.
+Build output goes to `companion-dist/`.
 
 ## Discord Assets
 
-Upload every PNG in `discord-assets-real/` to your Discord application under:
+Maintainers upload every PNG in `discord-assets-real/` to the official Activity Status Discord application under:
 
 ```text
 Rich Presence -> Art Assets
@@ -189,7 +214,7 @@ Discord can take a few minutes to refresh newly uploaded assets. If an image key
 ## How To Use
 
 1. Start Discord desktop.
-2. Start the backend with `npm start`.
+2. Start Activity Status Companion.
 3. Open Chrome and visit a supported site.
 4. Open the extension popup.
 5. Use **Auto Detect** to follow the current tab, or choose a specific detected tab.
@@ -205,7 +230,7 @@ Discord can take a few minutes to refresh newly uploaded assets. If an image key
 | Forget Inactive Tabs After | Yes | Removes stale tab activity from the popup and auto picker |
 | Enabled Sites | Filter only | The checklist enables/disables already-supported detectors; new sites require code support |
 | Log Level | Yes | Controls extension-side diagnostic logging |
-| Discord Application ID | Backend only | Change `DISCORD_CLIENT_ID` in `backend/.env`, then restart the backend |
+| Discord Application ID | Companion build only | Maintainers set this in `companion/activity-status.config.cjs` before building public releases |
 
 ## Run From Source
 
@@ -225,6 +250,12 @@ Start the backend:
 
 ```bash
 npm start
+```
+
+Run the companion app in development:
+
+```bash
+npm run companion:dev
 ```
 
 Run backend in watch mode:
@@ -252,7 +283,8 @@ flowchart LR
   Browser["Chrome tabs"] --> Content["Content scripts"]
   Content --> Background["Extension background worker"]
   Popup["Extension popup"] --> Background
-  Background --> API["Local Express backend"]
+  Background --> Companion["Activity Status Companion"]
+  Companion --> API["Local Express backend"]
   API --> RPC["Discord RPC IPC"]
   RPC --> Discord["Discord desktop app"]
   Assets["Discord Rich Presence assets"] --> Discord
@@ -263,6 +295,7 @@ flowchart LR
 ```text
 extension/             Chrome extension files
 extension/scripts/     Site detectors and background worker
+companion/             Desktop companion app shell
 backend/               Local Discord RPC bridge
 discord-assets-real/   Rich Presence logo assets
 scripts/               Release/package helpers
@@ -273,9 +306,9 @@ scripts/               Release/package helpers
 
 | Problem | Try this |
 | --- | --- |
-| Discord says disconnected | Make sure Discord desktop is open, then restart the backend |
+| Discord says disconnected | Make sure Discord desktop is open, then restart the companion app |
 | Image shows as `?` | Check the asset key, restart Discord, and wait for Discord asset caching |
-| Extension says backend offline | Confirm `npm start` is running and settings use `http://localhost:3000` |
+| Extension says backend offline | Confirm Activity Status Companion is running and settings use `http://localhost:3000` |
 | Auto mode swaps tabs | Reload the extension; auto mode should prioritize the active Chrome tab |
 | Netflix title is wrong | Reload the Netflix tab and click Refresh in the popup |
 | Manual image missing | Upload `manual.png` with asset key `manual` |

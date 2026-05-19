@@ -1,0 +1,40 @@
+{
+  "appId": "com.gsus.activitystatus",
+  "productName": "Activity Status Companion",
+  "asarUnpack": [
+    "backend/**/*"
+  ],
+  "directories": {
+    "output": "companion-dist"
+  },
+  "files": [
+    "companion/**/*",
+    "backend/**/*",
+    "extension/icons/**/*",
+    "build/icon.png",
+    "package.json",
+    "!backend/.env",
+    "!backend/node_modules/.cache/**/*"
+  ],
+  "extraMetadata": {
+    "main": "companion/main.cjs"
+  },
+  "mac": {
+    "target": ["dmg", "zip"],
+    "category": "public.app-category.utilities",
+    "icon": "build/icon.png"
+  },
+  "win": {
+    "target": ["nsis", "zip"],
+    "icon": "build/icon.png"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "category": "Utility",
+    "icon": "build/icon.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
+  }
+}

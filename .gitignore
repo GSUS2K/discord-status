@@ -16,6 +16,8 @@ backend/.env
 # Logs and generated artifacts
 *.log
 dist/
+release/
+companion-dist/
 *.zip
 discord-assets/*.zip
 discord-assets-real/*.zip

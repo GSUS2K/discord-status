@@ -3,12 +3,22 @@
   "version": "1.0.0",
   "private": true,
   "description": "Chrome extension plus local Discord RPC backend for browser activity status.",
+  "author": "GSUS2K",
   "type": "module",
   "scripts": {
-    "check": "node --check backend/server.js && node --check extension/popup.js && node --check extension/options.js && node --check extension/scripts/background.js && node --check extension/scripts/youtube.js && node --check extension/scripts/netflix.js && node --check extension/scripts/spotify.js && node --check extension/scripts/googlemeet.js && node --check extension/scripts/generic.js && node -e \"JSON.parse(require('fs').readFileSync('extension/manifest.json','utf8')); console.log('checks ok')\"",
+    "check": "node --check backend/server.js && node --check companion/main.cjs && node --check companion/preload.cjs && node --check extension/popup.js && node --check extension/options.js && node --check extension/scripts/background.js && node --check extension/scripts/youtube.js && node --check extension/scripts/netflix.js && node --check extension/scripts/spotify.js && node --check extension/scripts/googlemeet.js && node --check extension/scripts/generic.js && node -e \"JSON.parse(require('fs').readFileSync('extension/manifest.json','utf8')); console.log('checks ok')\"",
     "install:backend": "npm --prefix backend install",
     "start": "npm --prefix backend start",
     "dev": "npm --prefix backend run dev",
+    "companion:dev": "electron companion/main.cjs",
+    "dist:companion": "electron-builder --config electron-builder.json",
+    "dist:companion:mac": "electron-builder --mac --config electron-builder.json",
+    "dist:companion:win": "electron-builder --win --config electron-builder.json",
+    "dist:companion:linux": "electron-builder --linux --config electron-builder.json",
     "package": "node scripts/package-extension.mjs"
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
   }
 }
