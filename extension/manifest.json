@@ -1,12 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Activity Status",
-  "version": "1.0",
-  "description": "Show your browser activity in Discord status - YouTube, Netflix, Hotstar, Spotify, etc.",
+  "name": "Discord Status",
+  "short_name": "Discord Status",
+  "version": "1.0.0",
+  "description": "Show supported browser activity as Discord Rich Presence using the Activity Status Companion app.",
   "permissions": [
-    "activeTab",
     "tabs",
-    "scripting",
     "storage"
   ],
   "host_permissions": [
@@ -27,6 +26,7 @@
     "https://discord.com/*",
     "https://github.com/*",
     "https://chatgpt.com/*",
+    "https://google.com/*",
     "https://www.google.com/*",
     "https://en.wikipedia.org/*",
     "http://localhost/*",
@@ -64,7 +64,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Activity Status",
+    "default_title": "Discord Status",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

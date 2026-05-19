@@ -1,4 +1,4 @@
-# Activity Status
+# Discord Status
 
 <p align="center">
   <strong>Show what you are watching, listening to, reading, or working on as a Discord activity status from your browser.</strong>
@@ -34,21 +34,21 @@
 
 ## Overview
 
-Activity Status is a Chrome extension with a small local backend that turns supported browser activity into Discord Rich Presence.
+Discord Status is a Chrome extension with a small local companion app that turns supported browser activity into Discord Rich Presence.
 
 It can detect media and page activity from sites like YouTube, Netflix, Spotify, Twitch, GitHub, ChatGPT, Google Meet, Crunchyroll, Hotstar, Google, and Wikipedia. The extension handles detection inside the browser, while the backend talks to the Discord desktop app through Discord RPC.
 
-This project is built for people who want a richer Discord status without manually changing it every time they switch tabs.
+The Chrome extension is named **Discord Status** so it is easy to find in Chrome. The Discord Rich Presence application can still be named **Activity Status**, which is what appears inside the Discord activity card.
 
 ## Install Model
 
-Activity Status is meant to be used with **your official Discord application** and **your official extension**.
+Discord Status is meant to be used with **your official Chrome Web Store listing** and **your official Discord application**.
 
 Normal users should not create a Discord application, upload logo assets, or edit a client ID. That setup is only for maintainers and forks.
 
 For users, the intended release flow is:
 
-1. Install the Activity Status browser extension.
+1. Install the Discord Status browser extension.
 2. Install the Activity Status Companion desktop app.
 3. Open Discord desktop.
 4. Browse normally.
@@ -69,7 +69,7 @@ Because of that, the best user experience is not “extension only.” The best 
 
 ## Development Status
 
-Activity Status is usable, but still early.
+Discord Status is usable, but still early.
 
 YouTube, Netflix, Spotify, GitHub, ChatGPT, Google Meet, Twitch, and a few other sites are supported, but some websites change their page structure often. Detection can occasionally need updates when a site changes its DOM.
 
@@ -126,14 +126,14 @@ Get the latest release from the [GitHub Releases page](https://github.com/GSUS2K
 
 Download:
 
-- the browser extension zip
+- the Discord Status browser extension, preferably from the Chrome Web Store
 - the Activity Status Companion app for your platform
 
 Then:
 
 1. Install/open **Activity Status Companion**.
 2. Make sure Discord desktop is open.
-3. Install the extension.
+3. Install **Discord Status** from the Chrome Web Store, or load the unpacked extension while testing.
 4. Keep the companion app running while using Discord status.
 
 Chrome Web Store publishing is the cleanest long-term extension install path. Until then, users can load the extension manually from the release zip.
@@ -151,7 +151,7 @@ Before publishing your own official releases:
 
 The Discord application/client ID is public. It is safe to ship inside the companion app. Do not ship bot tokens or secrets.
 
-See [docs/PUBLISHING.md](docs/PUBLISHING.md) for the full release checklist.
+See [docs/PUBLISHING.md](docs/PUBLISHING.md) for the full release checklist and [docs/CHROME_WEB_STORE.md](docs/CHROME_WEB_STORE.md) for the store listing copy.
 
 ## Build Releases
 
@@ -165,6 +165,12 @@ Package the extension:
 
 ```bash
 npm run package
+```
+
+Package the Chrome Web Store upload zip:
+
+```bash
+npm run package:webstore
 ```
 
 Build the companion app for your current platform:
@@ -270,6 +276,12 @@ Package the extension and backend:
 npm run package
 ```
 
+Package only the Chrome Web Store upload:
+
+```bash
+npm run package:webstore
+```
+
 Check backend status:
 
 ```bash
@@ -317,13 +329,21 @@ scripts/               Release/package helpers
 
 GitHub Actions builds a release artifact on pushes, pull requests, manual runs, and created releases.
 
-The generated artifact contains:
+The generated release bundle contains:
 
 - Chrome extension
 - Local backend
 - Discord asset PNGs
 - Installer script
 - README
+
+The Chrome Web Store upload is generated separately at:
+
+```text
+dist/discord-status-webstore.zip
+```
+
+That zip has `manifest.json` at the root, which is the format the Chrome Web Store expects.
 
 ## Roadmap
 
@@ -333,7 +353,7 @@ The generated artifact contains:
 | Better installer | One-click setup for backend dependencies and auto-start |
 | More platforms | Add detectors for more streaming, reading, coding, and productivity sites |
 | Better media data | Improve title, episode, channel, artist, and timestamp extraction |
-| Chrome Web Store | Publish the extension once the local companion flow is cleaner |
+| Chrome Web Store | Publish the Discord Status extension and link it from the README |
 | UI polish | Add screenshots, onboarding, import/export settings, and better diagnostics |
 
 ## Star History

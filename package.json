@@ -15,7 +15,8 @@
     "dist:companion:mac": "electron-builder --mac --config electron-builder.json",
     "dist:companion:win": "electron-builder --win --config electron-builder.json",
     "dist:companion:linux": "electron-builder --linux --config electron-builder.json",
-    "package": "node scripts/package-extension.mjs"
+    "package": "node scripts/package-extension.mjs",
+    "package:webstore": "node scripts/package-webstore.mjs"
   },
   "devDependencies": {
     "electron": "^33.4.11",

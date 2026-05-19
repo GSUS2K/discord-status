@@ -1,6 +1,6 @@
-# Publishing Activity Status
+# Publishing Discord Status
 
-This is the maintainer checklist for shipping Activity Status so users run your extension and your Discord Rich Presence application.
+This is the maintainer checklist for shipping the **Discord Status** Chrome extension and the **Activity Status** Discord Rich Presence application.
 
 ## 1. Discord Developer Portal
 
@@ -28,19 +28,23 @@ discordClientId: 'REPLACE_WITH_YOUR_ACTIVITY_STATUS_CLIENT_ID'
 
 with your real Discord application/client ID.
 
-## 3. Build The Extension
+## 3. Build The Extension Packages
 
 ```bash
 npm install
 npm --prefix backend install
 npm run package
+npm run package:webstore
 ```
 
-Output:
+Outputs:
 
 ```text
-dist/activity-status-extension.zip
+dist/activity-status-extension.zip      # GitHub/manual install bundle
+dist/discord-status-webstore.zip        # Chrome Web Store upload
 ```
+
+Use `dist/discord-status-webstore.zip` for the Chrome Web Store. It contains `manifest.json` at the zip root.
 
 ## 4. Build Companion Apps
 
@@ -70,13 +74,15 @@ For public distribution, signed/notarized builds are strongly recommended:
 - Windows: code-signing certificate
 - Linux: AppImage/deb artifacts are usually fine unsigned, depending on target audience
 
-## 5. Extension Distribution
+## 5. Chrome Web Store Distribution
 
 Best user experience:
 
-1. Publish the extension to the Chrome Web Store.
+1. Publish `dist/discord-status-webstore.zip` to the Chrome Web Store as **Discord Status**.
 2. Link users to the Web Store listing.
 3. Publish companion app installers through GitHub Releases.
+
+When you change extension code after publishing, update `extension/manifest.json` to a higher version, rebuild `dist/discord-status-webstore.zip`, upload the new package, and submit it for review. Once approved, Chrome auto-updates installed users.
 
 GitHub-only flow:
 
@@ -92,7 +98,7 @@ Each GitHub release should include:
 - Activity Status Companion for macOS
 - Activity Status Companion for Windows
 - Activity Status Companion for Linux
-- Activity Status extension zip, unless the Chrome Web Store listing is live
+- Discord Status extension zip, unless the Chrome Web Store listing is live
 - Short install notes
 - Known site detector limitations
 

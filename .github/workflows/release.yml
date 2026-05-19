@@ -35,11 +35,20 @@ jobs:
       - name: Package extension
         run: npm run package
 
+      - name: Package Chrome Web Store upload
+        run: npm run package:webstore
+
       - name: Upload extension package
         uses: actions/upload-artifact@v4
         with:
           name: activity-status-extension
           path: dist/activity-status-extension.zip
+
+      - name: Upload Chrome Web Store package
+        uses: actions/upload-artifact@v4
+        with:
+          name: discord-status-webstore
+          path: dist/discord-status-webstore.zip
 
   companion:
     strategy:
