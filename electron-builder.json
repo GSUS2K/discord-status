@@ -22,15 +22,18 @@
   "mac": {
     "target": ["dmg", "zip"],
     "category": "public.app-category.utilities",
+    "artifactName": "${productName}-${arch}.${ext}",
     "icon": "build/icon.png"
   },
   "win": {
     "target": ["nsis", "zip"],
+    "artifactName": "${productName}-Setup-${arch}.${ext}",
     "icon": "build/icon.png"
   },
   "linux": {
-    "target": ["AppImage", "deb"],
+    "target": "AppImage",
     "category": "Utility",
+    "artifactName": "${productName}-${arch}.${ext}",
     "maintainer": "GSUS2K <ganesh21112000@gmail.com>",
     "icon": "build/icon.png"
   },

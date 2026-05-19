@@ -3,10 +3,13 @@ name: Build Release
 on:
   push:
     branches: [main]
+    tags:
+      - 'v*'
   pull_request:
   workflow_dispatch:
-  release:
-    types: [created]
+
+permissions:
+  contents: write
 
 jobs:
   extension:
@@ -43,12 +46,14 @@ jobs:
         with:
           name: activity-status-extension
           path: dist/activity-status-extension.zip
+          if-no-files-found: error
 
       - name: Upload Chrome Web Store package
         uses: actions/upload-artifact@v4
         with:
           name: discord-status-webstore
           path: dist/discord-status-webstore.zip
+          if-no-files-found: error
 
   companion:
     strategy:
@@ -58,12 +63,28 @@ jobs:
           - os: macos-latest
             command: npm run dist:companion:mac
             artifact: activity-status-companion-macos
+            artifact_glob: |
+              companion-dist/*.dmg
+              companion-dist/*.dmg.blockmap
+              companion-dist/*.zip
+              companion-dist/*.zip.blockmap
+              companion-dist/latest-mac.yml
           - os: windows-latest
             command: npm run dist:companion:win
             artifact: activity-status-companion-windows
+            artifact_glob: |
+              companion-dist/*.exe
+              companion-dist/*.exe.blockmap
+              companion-dist/*.zip
+              companion-dist/*.zip.blockmap
+              companion-dist/latest.yml
           - os: ubuntu-latest
             command: npm run dist:companion:linux
             artifact: activity-status-companion-linux
+            artifact_glob: |
+              companion-dist/*.AppImage
+              companion-dist/*.AppImage.zsync
+              companion-dist/latest-linux.yml
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -91,4 +112,62 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: companion-dist/**
+          path: ${{ matrix.artifact_glob }}
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [extension, companion]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download extension package
+        uses: actions/download-artifact@v4
+        with:
+          name: activity-status-extension
+          path: release-assets/extension
+
+      - name: Download Chrome Web Store package
+        uses: actions/download-artifact@v4
+        with:
+          name: discord-status-webstore
+          path: release-assets/webstore
+
+      - name: Download macOS companion
+        uses: actions/download-artifact@v4
+        with:
+          name: activity-status-companion-macos
+          path: release-assets/macos
+
+      - name: Download Windows companion
+        uses: actions/download-artifact@v4
+        with:
+          name: activity-status-companion-windows
+          path: release-assets/windows
+
+      - name: Download Linux companion
+        uses: actions/download-artifact@v4
+        with:
+          name: activity-status-companion-linux
+          path: release-assets/linux
+
+      - name: Generate checksums
+        run: |
+          find release-assets -type f \
+            ! -name '*.blockmap' \
+            -print0 | sort -z | xargs -0 shasum -a 256 > release-assets/SHA256SUMS.txt
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/extension/*
+            release-assets/webstore/*
+            release-assets/macos/*
+            release-assets/windows/*
+            release-assets/linux/*
+            release-assets/SHA256SUMS.txt
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

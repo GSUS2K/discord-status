@@ -166,6 +166,19 @@ npm run dist:companion:linux
 
 Build output goes to `companion-dist/`.
 
+## Publishing A GitHub Release
+
+Pushes to `main` and pull requests build temporary GitHub Actions artifacts. They do not create a public Release page.
+
+To publish a real GitHub Release with the `.dmg`, `.exe`, `.AppImage`, extension zips, and `SHA256SUMS.txt`, create and push a version tag:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The release workflow uses GitHub's built-in `GITHUB_TOKEN`, so no personal access token is needed.
+
 ## How To Use
 
 1. Start Discord desktop.
@@ -274,15 +287,16 @@ scripts/               Release/package helpers
 
 ## Release Notes
 
-GitHub Actions builds a release artifact on pushes, pull requests, manual runs, and created releases.
+GitHub Actions builds temporary artifacts on pushes, pull requests, and manual runs. It publishes a GitHub Release only when a `v*` tag is pushed.
 
-The generated release bundle contains:
+The GitHub release assets include:
 
-- Chrome extension
-- Local backend
-- Discord asset PNGs
-- Installer script
-- README
+- Activity Status Companion for macOS (`.dmg` and `.zip`)
+- Activity Status Companion for Windows (`.exe` and `.zip`)
+- Activity Status Companion for Linux (`.AppImage`)
+- Discord Status extension/manual install bundle
+- Chrome Web Store upload zip
+- SHA-256 checksums
 
 The Chrome Web Store upload is generated separately at:
 
