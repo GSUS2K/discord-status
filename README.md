@@ -5,9 +5,9 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/GSUS2K/activity-status/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/GSUS2K/activity-status?style=for-the-badge&label=release"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/GSUS2K/activity-status?style=for-the-badge"></a>
-  <a href="https://github.com/GSUS2K/activity-status/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/GSUS2K/activity-status?style=for-the-badge"></a>
+  <a href="https://github.com/GSUS2K/discord-status/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/GSUS2K/discord-status?style=for-the-badge&label=release"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/GSUS2K/discord-status?style=for-the-badge"></a>
+  <a href="https://github.com/GSUS2K/discord-status/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/GSUS2K/discord-status?style=for-the-badge"></a>
   <img alt="Chrome" src="https://img.shields.io/badge/chrome-extension-5865F2?style=for-the-badge&labelColor=1b1f23">
   <img alt="Discord RPC" src="https://img.shields.io/badge/discord-rich%20presence-22C55E?style=for-the-badge&labelColor=1b1f23">
 </p>
@@ -34,19 +34,13 @@
 
 ## Overview
 
-Discord Status is a Chrome extension with a small local companion app that turns supported browser activity into Discord Rich Presence.
+Discord Status is a Chrome extension with a local companion app that turns supported browser activity into Discord Rich Presence.
 
 It can detect media and page activity from sites like YouTube, Netflix, Spotify, Twitch, GitHub, ChatGPT, Google Meet, Crunchyroll, Hotstar, Google, and Wikipedia. The extension handles detection inside the browser, while the backend talks to the Discord desktop app through Discord RPC.
 
-The Chrome extension is named **Discord Status** so it is easy to find in Chrome. The Discord Rich Presence application can still be named **Activity Status**, which is what appears inside the Discord activity card.
-
 ## Install Model
 
-Discord Status is meant to be used with **your official Chrome Web Store listing** and **your official Discord application**.
-
-Normal users should not create a Discord application, upload logo assets, or edit a client ID. That setup is only for maintainers and forks.
-
-For users, the intended release flow is:
+The release flow is:
 
 1. Install the Discord Status browser extension.
 2. Install the Activity Status Companion desktop app.
@@ -69,11 +63,9 @@ Because of that, the best user experience is not “extension only.” The best 
 
 ## Development Status
 
-Discord Status is usable, but still early.
+Discord Status is still in early development phase.
 
 YouTube, Netflix, Spotify, GitHub, ChatGPT, Google Meet, Twitch, and a few other sites are supported, but some websites change their page structure often. Detection can occasionally need updates when a site changes its DOM.
-
-The current goal is to make setup easier, keep detection stable, and ship signed companion builds for macOS, Windows, and Linux so normal users do not need terminal commands.
 
 ## Features
 
@@ -122,36 +114,21 @@ The current goal is to make setup easier, keep detection stable, and ship signed
 
 ### For Users
 
-Get the latest release from the [GitHub Releases page](https://github.com/GSUS2K/activity-status/releases/latest).
+Get the latest release from the [GitHub Releases page](https://github.com/GSUS2K/discord-status/releases/latest).
 
 Download:
 
-- the Discord Status browser extension, preferably from the Chrome Web Store
+- the Discord Status browser extension from the Chrome Web Store (link will be updated soon)
 - the Activity Status Companion app for your platform
 
 Then:
 
 1. Install/open **Activity Status Companion**.
 2. Make sure Discord desktop is open.
-3. Install **Discord Status** from the Chrome Web Store, or load the unpacked extension while testing.
+3. Install **Discord Status** from the Chrome Web Store.
 4. Keep the companion app running while using Discord status.
 
-Chrome Web Store publishing is the cleanest long-term extension install path. Until then, users can load the extension manually from the release zip.
-
-### For Maintainers
-
-Before publishing your own official releases:
-
-1. Open the [Discord Developer Portal](https://discord.com/developers/applications).
-2. Create or open your `Activity Status` application.
-3. Upload the Rich Presence assets listed in [Discord Assets](#discord-assets).
-4. Copy your application/client ID.
-5. Put it in `companion/activity-status.config.cjs`.
-6. Build companion releases.
-
-The Discord application/client ID is public. It is safe to ship inside the companion app. Do not ship bot tokens or secrets.
-
-See [docs/PUBLISHING.md](docs/PUBLISHING.md) for the full release checklist and [docs/CHROME_WEB_STORE.md](docs/CHROME_WEB_STORE.md) for the store listing copy.
+Chrome Web Store publishing is the cleanest long-term extension install path. Until then, users can load the extension manually from the release zip and uploading the extension folder in chrome://extensions/ by pressing load unpacked button.
 
 ## Build Releases
 
@@ -188,34 +165,6 @@ npm run dist:companion:linux
 ```
 
 Build output goes to `companion-dist/`.
-
-## Discord Assets
-
-Maintainers upload every PNG in `discord-assets-real/` to the official Activity Status Discord application under:
-
-```text
-Rich Presence -> Art Assets
-```
-
-Use these exact asset keys:
-
-```text
-youtube      -> youtube.png
-netflix      -> netflix.png
-spotify      -> spotify.png
-twitch       -> twitch.png
-discord      -> discord.png
-meet         -> meet.png
-github       -> github.png
-chatgpt      -> chatgpt.png
-hotstar      -> hotstar.png
-crunchyroll  -> crunchyroll.png
-wikipedia    -> wikipedia.png
-google       -> google.png
-manual       -> manual.png
-```
-
-Discord can take a few minutes to refresh newly uploaded assets. If an image key is correct but Discord shows a question mark, restart Discord and wait a bit.
 
 ## How To Use
 
@@ -319,11 +268,9 @@ scripts/               Release/package helpers
 | Problem | Try this |
 | --- | --- |
 | Discord says disconnected | Make sure Discord desktop is open, then restart the companion app |
-| Image shows as `?` | Check the asset key, restart Discord, and wait for Discord asset caching |
 | Extension says backend offline | Confirm Activity Status Companion is running and settings use `http://localhost:3000` |
 | Auto mode swaps tabs | Reload the extension; auto mode should prioritize the active Chrome tab |
 | Netflix title is wrong | Reload the Netflix tab and click Refresh in the popup |
-| Manual image missing | Upload `manual.png` with asset key `manual` |
 
 ## Release Notes
 
@@ -345,21 +292,10 @@ dist/discord-status-webstore.zip
 
 That zip has `manifest.json` at the root, which is the format the Chrome Web Store expects.
 
-## Roadmap
-
-| Area | Direction |
-| --- | --- |
-| Desktop companion | Package the backend into a small native app so users do not need terminal setup |
-| Better installer | One-click setup for backend dependencies and auto-start |
-| More platforms | Add detectors for more streaming, reading, coding, and productivity sites |
-| Better media data | Improve title, episode, channel, artist, and timestamp extraction |
-| Chrome Web Store | Publish the Discord Status extension and link it from the README |
-| UI polish | Add screenshots, onboarding, import/export settings, and better diagnostics |
-
 ## Star History
 
-<a href="https://www.star-history.com/#GSUS2K/activity-status&Date">
-  <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=GSUS2K/activity-status&type=Date">
+<a href="https://www.star-history.com/#GSUS2K/discord-status&Date">
+  <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=GSUS2K/discord-status&type=Date">
 </a>
 
 ## Contributing
@@ -369,7 +305,7 @@ Bug reports, site detector fixes, UI improvements, and setup simplifications are
 When adding a new site detector, include:
 
 - The content script or generic detector logic
-- A matching Discord asset key
+- A matching Discord asset key (in case you are creating own discord application in developer portal - update the client ID in the code)
 - A short note in the supported-sites table
 - A test run with `npm run check`
 

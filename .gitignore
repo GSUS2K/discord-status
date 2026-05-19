@@ -23,6 +23,7 @@ discord-assets/*.zip
 discord-assets-real/*.zip
 discord-assets-real/svg-sources/
 discord-assets/
+discord-assets-real/*.txt
 
 # Package manager noise
 .npm/
