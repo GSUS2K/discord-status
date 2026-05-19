@@ -31,6 +31,7 @@
   "linux": {
     "target": ["AppImage", "deb"],
     "category": "Utility",
+    "maintainer": "GSUS2K <ganesh21112000@gmail.com>",
     "icon": "build/icon.png"
   },
   "nsis": {
