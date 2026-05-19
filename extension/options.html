@@ -122,6 +122,48 @@
       margin-top: 6px;
     }
 
+    .note {
+      border: 1px solid rgba(88, 101, 242, 0.35);
+      border-radius: 6px;
+      background: rgba(88, 101, 242, 0.1);
+      color: #d8dcff;
+      font-size: 12px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+      padding: 10px;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .status-card {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #0f1014;
+      padding: 10px;
+    }
+
+    .status-label {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 750;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+
+    .status-value {
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 750;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .actions {
       display: flex;
       gap: 10px;
@@ -199,10 +241,8 @@
         <input type="text" id="serverUrl" placeholder="http://localhost:3000">
         <div class="hint">Discord Rich Presence must run on the same computer as the Discord desktop app. For most setups, keep this as http://localhost:3000.</div>
       </div>
-      <div class="setting-group">
-        <label for="discordUserId">Discord User ID (optional)</label>
-        <input type="text" id="discordUserId" placeholder="Optional note for your setup">
-        <div class="hint">Stored locally only. The backend uses your Discord application client ID from its .env file.</div>
+      <div class="note">
+        Discord application/client ID is configured in <strong>backend/.env</strong>, not here. If you change DISCORD_CLIENT_ID, restart the backend.
       </div>
     </section>
 
@@ -223,12 +263,26 @@
       <div class="setting-group">
         <label for="enabledSites">Enabled Sites</label>
         <textarea id="enabledSites" placeholder="youtube, netflix, spotify, twitch"></textarea>
-        <div class="hint">Comma-separated keywords. Leave the default list to monitor all supported platforms.</div>
+        <div class="hint">Comma-separated keywords for already-supported detectors. This filters monitoring; it does not add new site support by itself.</div>
       </div>
     </section>
 
     <section class="panel">
       <div class="section-title">Diagnostics</div>
+      <div class="status-grid">
+        <div class="status-card">
+          <div class="status-label">Backend</div>
+          <div id="backendStatusValue" class="status-value">Not tested</div>
+        </div>
+        <div class="status-card">
+          <div class="status-label">Discord RPC</div>
+          <div id="rpcStatusValue" class="status-value">Not tested</div>
+        </div>
+        <div class="status-card">
+          <div class="status-label">Last Activity</div>
+          <div id="lastActivityValue" class="status-value">None</div>
+        </div>
+      </div>
       <div class="grid">
         <div class="setting-group">
           <label for="logLevel">Log Level</label>

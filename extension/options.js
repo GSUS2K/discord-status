@@ -2,7 +2,6 @@
 
 const DEFAULTS = {
   serverUrl: 'http://localhost:3000',
-  discordUserId: '',
   updateInterval: 5,
   staleThresholdMs: 30000,
   enabledSites: 'youtube,netflix,hotstar,crunchyroll,spotify,twitch,discord,meet,github,chatgpt,google,wikipedia',
@@ -10,11 +9,13 @@ const DEFAULTS = {
 };
 
 const serverUrlInput = document.getElementById('serverUrl');
-const discordUserIdInput = document.getElementById('discordUserId');
 const updateIntervalInput = document.getElementById('updateInterval');
 const staleThresholdMsInput = document.getElementById('staleThresholdMs');
 const enabledSitesInput = document.getElementById('enabledSites');
 const logLevelInput = document.getElementById('logLevel');
+const backendStatusValue = document.getElementById('backendStatusValue');
+const rpcStatusValue = document.getElementById('rpcStatusValue');
+const lastActivityValue = document.getElementById('lastActivityValue');
 const saveBtn = document.getElementById('saveBtn');
 const testBtn = document.getElementById('testBtn');
 const resetBtn = document.getElementById('resetBtn');
@@ -22,6 +23,7 @@ const statusMessage = document.getElementById('statusMessage');
 
 chrome.storage.local.get(Object.keys(DEFAULTS), (result) => {
   setFormValues({ ...DEFAULTS, ...result });
+  refreshStatusCards();
 });
 
 saveBtn.addEventListener('click', () => {
@@ -50,7 +52,7 @@ testBtn.addEventListener('click', async () => {
   try {
     testBtn.disabled = true;
     testBtn.textContent = 'Testing...';
-    const response = await fetch(`${settings.serverUrl}/health`, { cache: 'no-store' });
+    const response = await fetch(`${settings.serverUrl}/api/status`, { cache: 'no-store' });
     const payload = await response.json().catch(() => ({}));
 
     if (!response.ok) {
@@ -59,6 +61,7 @@ testBtn.addEventListener('click', async () => {
     }
 
     const rpcStatus = payload.discord_rpc || 'unknown';
+    updateStatusCards(payload);
     showMessage(`Backend is online. Discord RPC is ${rpcStatus}.`, rpcStatus === 'connected' ? 'success' : 'error');
   } catch (error) {
     showMessage(`Could not reach server: ${error.message}`, 'error');
@@ -75,7 +78,6 @@ resetBtn.addEventListener('click', () => {
 
 function setFormValues(values) {
   serverUrlInput.value = values.serverUrl || DEFAULTS.serverUrl;
-  discordUserIdInput.value = values.discordUserId || '';
   updateIntervalInput.value = values.updateInterval || DEFAULTS.updateInterval;
   staleThresholdMsInput.value = Math.round((values.staleThresholdMs || DEFAULTS.staleThresholdMs) / 1000);
   enabledSitesInput.value = Array.isArray(values.enabledSites)
@@ -87,7 +89,6 @@ function setFormValues(values) {
 function readSettingsFromForm() {
   return {
     serverUrl: normalizeServerUrl(serverUrlInput.value),
-    discordUserId: discordUserIdInput.value.trim(),
     updateInterval: clampNumber(updateIntervalInput.value, 2, 60, DEFAULTS.updateInterval),
     staleThresholdMs: clampNumber(staleThresholdMsInput.value, 10, 300, 30) * 1000,
     enabledSites: enabledSitesInput.value
@@ -141,4 +142,32 @@ function showMessage(message, type) {
       statusMessage.style.display = 'none';
     }, 3500);
   }
+}
+
+async function refreshStatusCards() {
+  const serverUrl = normalizeServerUrl(serverUrlInput.value || DEFAULTS.serverUrl);
+  try {
+    const response = await fetch(`${serverUrl}/api/status`, { cache: 'no-store' });
+    if (!response.ok) {
+      updateStatusCards(null, `HTTP ${response.status}`);
+      return;
+    }
+
+    updateStatusCards(await response.json());
+  } catch (error) {
+    updateStatusCards(null, 'Offline');
+  }
+}
+
+function updateStatusCards(payload, backendLabel = 'Online') {
+  if (!payload) {
+    backendStatusValue.textContent = backendLabel;
+    rpcStatusValue.textContent = 'Unknown';
+    lastActivityValue.textContent = 'None';
+    return;
+  }
+
+  backendStatusValue.textContent = backendLabel;
+  rpcStatusValue.textContent = payload.discord_rpc || 'unknown';
+  lastActivityValue.textContent = payload.last_activity?.details || 'None';
 }

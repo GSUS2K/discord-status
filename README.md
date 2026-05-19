@@ -196,6 +196,17 @@ Discord can take a few minutes to refresh newly uploaded assets. If an image key
 6. Use **Manual** if you want to set your own title and message.
 7. Use **Clear** when you want to remove the activity.
 
+## Settings Behavior
+
+| Setting | Works? | Notes |
+| --- | --- | --- |
+| Backend Server URL | Yes | Keep it as `http://localhost:3000` unless you run the local backend somewhere else on the same machine |
+| Update Interval | Yes | Controls how often supported tabs are asked to refresh activity |
+| Forget Inactive Tabs After | Yes | Removes stale tab activity from the popup and auto picker |
+| Enabled Sites | Filter only | It enables/disables already-supported detectors; it does not add a new detector by typing a new site name |
+| Log Level | Yes | Controls extension-side diagnostic logging |
+| Discord Application ID | Backend only | Change `DISCORD_CLIENT_ID` in `backend/.env`, then restart the backend |
+
 ## Run From Source
 
 Install backend dependencies:
