@@ -1,31 +1,141 @@
-# Browser Presence
+# Activity Status
 
-Show supported browser activity in Discord Rich Presence from a Chrome extension.
+<p align="center">
+  <strong>Show what you are watching, listening to, reading, or working on as a Discord activity status from your browser.</strong>
+</p>
 
-Browser Presence detects activity on sites like YouTube, Netflix, Spotify, Twitch, GitHub, ChatGPT, Google Meet, Crunchyroll, Hotstar, Google, and Wikipedia, then sends that activity to a small local backend that talks to the Discord desktop app.
+<p align="center">
+  <a href="https://github.com/GSUS2K/activity-status/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/GSUS2K/activity-status?style=for-the-badge&label=release"></a>
+  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/GSUS2K/activity-status?style=for-the-badge"></a>
+  <a href="https://github.com/GSUS2K/activity-status/stargazers"><img alt="Stars" src="https://img.shields.io/github/stars/GSUS2K/activity-status?style=for-the-badge"></a>
+  <img alt="Chrome" src="https://img.shields.io/badge/chrome-extension-5865F2?style=for-the-badge&labelColor=1b1f23">
+  <img alt="Discord RPC" src="https://img.shields.io/badge/discord-rich%20presence-22C55E?style=for-the-badge&labelColor=1b1f23">
+</p>
 
-## Why A Backend Is Required
+<p align="center">
+  <img src="docs/assets/hero.png" alt="Activity Status preview">
+</p>
 
-Chrome extensions cannot talk directly to Discord's local IPC/RPC socket. Discord Rich Presence needs a local process running on the same computer as the Discord desktop app, so this project has two pieces:
+<p align="center">
+  <a href="#overview">Overview</a>
+  |
+  <a href="#features">Features</a>
+  |
+  <a href="#screenshots">Screenshots</a>
+  |
+  <a href="#install">Install</a>
+  |
+  <a href="#discord-assets">Discord Assets</a>
+  |
+  <a href="#run-from-source">Run From Source</a>
+  |
+  <a href="#roadmap">Roadmap</a>
+</p>
 
-- `extension/`: the Chrome extension that detects browser activity.
-- `backend/`: the local Node.js Discord RPC bridge.
+## Overview
 
-That means a totally zero-setup GitHub download is not realistic for normal users. The closest safe flow is: download, run the installer, add a Discord app client ID, start the backend, then load the extension.
+Activity Status is a Chrome extension with a small local backend that turns supported browser activity into Discord Rich Presence.
 
-## Quick Start
+It can detect media and page activity from sites like YouTube, Netflix, Spotify, Twitch, GitHub, ChatGPT, Google Meet, Crunchyroll, Hotstar, Google, and Wikipedia. The extension handles detection inside the browser, while the backend talks to the Discord desktop app through Discord RPC.
 
-1. Install Node.js 18 or newer.
-2. Create a Discord app at [Discord Developer Portal](https://discord.com/developers/applications).
-3. Rename the app to something like `Browser Presence`.
-4. Upload the PNGs in `discord-assets-real/` under **Rich Presence > Art Assets** using the exact keys in `discord-assets-real/UPLOAD_KEYS.txt`.
-5. Run the installer:
+This project is built for people who want a richer Discord status without manually changing it every time they switch tabs.
+
+## Why There Is A Backend
+
+Discord Rich Presence is local. A Chrome extension cannot directly access Discord's local RPC socket, so Activity Status is split into two parts:
+
+| Part | What it does |
+| --- | --- |
+| `extension/` | Detects browser activity, lets you choose auto or manual mode, and sends updates to the backend |
+| `backend/` | Runs locally and updates Discord Rich Presence through the Discord desktop app |
+
+Because of that, GitHub-only zero setup is not realistically possible yet. Users still need the local backend running on the same computer as Discord.
+
+## Development Status
+
+Activity Status is usable, but still early.
+
+YouTube, Netflix, Spotify, GitHub, ChatGPT, Google Meet, Twitch, and a few other sites are supported, but some websites change their page structure often. Detection can occasionally need updates when a site changes its DOM.
+
+The current goal is to make setup easier, keep detection stable, and eventually ship a small desktop companion app so normal users do not need to run terminal commands.
+
+## Features
+
+| Area | What it does |
+| --- | --- |
+| Auto detect | Picks up activity from supported browser tabs |
+| Current-tab priority | Auto mode prefers the tab you are actually viewing instead of randomly swapping between background tabs |
+| Manual mode | Lets you set a custom title and message for Discord |
+| Media timestamps | Shows play progress for supported video/audio pages |
+| Discord assets | Includes 512x512 logo assets ready for Discord Developer Portal upload |
+| Status controls | Enable, clear, refresh, reconnect, and select a specific tab from the popup |
+| Diagnostics | Backend health, Discord RPC health, and recent extension logs |
+| Release packaging | Builds a clean downloadable zip for GitHub Releases |
+
+## Supported Sites
+
+| Site | Status |
+| --- | --- |
+| YouTube | Supported |
+| Netflix | Supported, title detection may vary by region/player UI |
+| Spotify | Supported |
+| Twitch | Supported |
+| GitHub | Supported |
+| ChatGPT | Supported |
+| Google Meet | Supported |
+| Crunchyroll | Supported |
+| Hotstar | Supported |
+| Wikipedia | Supported |
+| Google Search | Supported |
+| Manual custom status | Supported |
+
+## Screenshots
+
+Add your screenshots here before publishing the repo.
+
+<p align="center">
+  <img src="docs/assets/popup.png" alt="Extension popup" width="49%">
+  <img src="docs/assets/discord-status.png" alt="Discord status preview" width="49%">
+</p>
+
+<p align="center">
+  <img src="docs/assets/settings.png" alt="Settings page" width="49%">
+  <img src="docs/assets/manual-mode.png" alt="Manual mode" width="49%">
+</p>
+
+## Install
+
+### 1. Download
+
+Get the latest package from the [GitHub Releases page](https://github.com/GSUS2K/activity-status/releases/latest).
+
+If you are building locally:
+
+```bash
+npm run package
+```
+
+The release zip is generated at:
+
+```text
+dist/activity-status-extension.zip
+```
+
+### 2. Create A Discord Application
+
+1. Open the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Create a new application.
+3. Name it `Activity Status`.
+4. Copy the application/client ID.
+5. Upload the Rich Presence assets listed in [Discord Assets](#discord-assets).
+
+### 3. Install The Backend
 
 ```bash
 ./install.sh
 ```
 
-6. Edit `backend/.env`:
+Then edit `backend/.env`:
 
 ```env
 DISCORD_CLIENT_ID=your_discord_application_client_id
@@ -34,33 +144,29 @@ LOG_LEVEL=info
 ENABLE_PRESENCE_BUTTONS=true
 ```
 
-7. Start the backend:
+Start the local backend:
 
 ```bash
 npm start
 ```
 
-8. Open Chrome at `chrome://extensions`, enable Developer Mode, click **Load unpacked**, and select the `extension/` folder.
+### 4. Load The Chrome Extension
 
-## Packaging For GitHub Releases
+1. Open `chrome://extensions`.
+2. Turn on **Developer mode**.
+3. Click **Load unpacked**.
+4. Select the `extension/` folder.
+5. Open a supported website and check the Activity Status popup.
 
-Build a downloadable zip:
+## Discord Assets
 
-```bash
-npm run package
-```
-
-The zip is written to:
+Upload every PNG in `discord-assets-real/` to your Discord application under:
 
 ```text
-dist/browser-presence-extension.zip
+Rich Presence -> Art Assets
 ```
 
-GitHub Actions also builds this zip as an artifact on pushes and pull requests.
-
-## Asset Keys
-
-Upload these files from `discord-assets-real/` to your Discord app with these exact keys:
+Use these exact asset keys:
 
 ```text
 youtube      -> youtube.png
@@ -75,11 +181,28 @@ hotstar      -> hotstar.png
 crunchyroll  -> crunchyroll.png
 wikipedia    -> wikipedia.png
 google       -> google.png
+manual       -> manual.png
 ```
 
-Discord can take a few minutes to refresh newly uploaded Rich Presence assets.
+Discord can take a few minutes to refresh newly uploaded assets. If an image key is correct but Discord shows a question mark, restart Discord and wait a bit.
 
-## Development
+## How To Use
+
+1. Start Discord desktop.
+2. Start the backend with `npm start`.
+3. Open Chrome and visit a supported site.
+4. Open the extension popup.
+5. Use **Auto Detect** to follow the current tab, or choose a specific detected tab.
+6. Use **Manual** if you want to set your own title and message.
+7. Use **Clear** when you want to remove the activity.
+
+## Run From Source
+
+Install backend dependencies:
+
+```bash
+npm run install:backend
+```
 
 Run checks:
 
@@ -87,21 +210,105 @@ Run checks:
 npm run check
 ```
 
-Start backend:
+Start the backend:
 
 ```bash
 npm start
 ```
 
-Backend status:
+Run backend in watch mode:
+
+```bash
+npm run dev
+```
+
+Package the extension and backend:
+
+```bash
+npm run package
+```
+
+Check backend status:
 
 ```bash
 curl http://localhost:3000/api/status
 ```
 
-## Notes For Users
+## Architecture
 
-- The Discord desktop app must be running.
-- The backend must run locally; deploying it to Railway/Fly/Render will not control your local Discord status.
-- Chrome Web Store distribution would make extension installation easier, but users still need the local backend.
-- A future native desktop helper could make this closer to one-click installation.
+```mermaid
+flowchart LR
+  Browser["Chrome tabs"] --> Content["Content scripts"]
+  Content --> Background["Extension background worker"]
+  Popup["Extension popup"] --> Background
+  Background --> API["Local Express backend"]
+  API --> RPC["Discord RPC IPC"]
+  RPC --> Discord["Discord desktop app"]
+  Assets["Discord Rich Presence assets"] --> Discord
+```
+
+## Project Structure
+
+```text
+extension/             Chrome extension files
+extension/scripts/     Site detectors and background worker
+backend/               Local Discord RPC bridge
+discord-assets-real/   Rich Presence logo assets
+scripts/               Release/package helpers
+.github/workflows/     GitHub Actions release packaging
+```
+
+## Troubleshooting
+
+| Problem | Try this |
+| --- | --- |
+| Discord says disconnected | Make sure Discord desktop is open, then restart the backend |
+| Image shows as `?` | Check the asset key, restart Discord, and wait for Discord asset caching |
+| Extension says backend offline | Confirm `npm start` is running and settings use `http://localhost:3000` |
+| Auto mode swaps tabs | Reload the extension; auto mode should prioritize the active Chrome tab |
+| Netflix title is wrong | Reload the Netflix tab and click Refresh in the popup |
+| Manual image missing | Upload `manual.png` with asset key `manual` |
+
+## Release Notes
+
+GitHub Actions builds a release artifact on pushes, pull requests, manual runs, and created releases.
+
+The generated artifact contains:
+
+- Chrome extension
+- Local backend
+- Discord asset PNGs
+- Installer script
+- README
+
+## Roadmap
+
+| Area | Direction |
+| --- | --- |
+| Desktop companion | Package the backend into a small native app so users do not need terminal setup |
+| Better installer | One-click setup for backend dependencies and auto-start |
+| More platforms | Add detectors for more streaming, reading, coding, and productivity sites |
+| Better media data | Improve title, episode, channel, artist, and timestamp extraction |
+| Chrome Web Store | Publish the extension once the local companion flow is cleaner |
+| UI polish | Add screenshots, onboarding, import/export settings, and better diagnostics |
+
+## Star History
+
+<a href="https://www.star-history.com/#GSUS2K/activity-status&Date">
+  <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=GSUS2K/activity-status&type=Date">
+</a>
+
+## Contributing
+
+Bug reports, site detector fixes, UI improvements, and setup simplifications are welcome.
+
+When adding a new site detector, include:
+
+- The content script or generic detector logic
+- A matching Discord asset key
+- A short note in the supported-sites table
+- A test run with `npm run check`
+
+## License
+
+Add a license before publishing if you want others to use or contribute to this project clearly.

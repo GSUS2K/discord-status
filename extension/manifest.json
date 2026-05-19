@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Discord Activity Status",
+  "name": "Activity Status",
   "version": "1.0",
   "description": "Show your browser activity in Discord status - YouTube, Netflix, Hotstar, Spotify, etc.",
   "permissions": [
@@ -64,7 +64,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Discord Activity Status",
+    "default_title": "Activity Status",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

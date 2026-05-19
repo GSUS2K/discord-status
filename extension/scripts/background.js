@@ -95,11 +95,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return;
     }
 
+    const details = String(request.title || request.activity || 'Custom Status').trim();
+    const state = String(request.message || 'Manual Activity').trim();
+
     currentActivity = {
-      details: request.activity,
-      state: 'Manual Activity',
+      details,
+      state,
       largeImageKey: 'manual',
-      largeImageText: 'Custom Activity',
+      largeImageText: 'Custom Browser Presence',
       platform: 'Manual',
       lastSeen: Date.now()
     };

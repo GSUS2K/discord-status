@@ -12,3 +12,4 @@ hotstar.png -> hotstar
 crunchyroll.png -> crunchyroll
 wikipedia.png -> wikipedia
 google.png -> google
+manual.png -> manual

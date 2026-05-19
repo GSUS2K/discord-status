@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 
 const root = resolve(new URL('..', import.meta.url).pathname);
 const distDir = resolve(root, 'dist');
-const outFile = resolve(distDir, 'browser-presence-extension.zip');
+const outFile = resolve(distDir, 'activity-status-extension.zip');
 
 await mkdir(distDir, { recursive: true });
 await rm(outFile, { force: true });

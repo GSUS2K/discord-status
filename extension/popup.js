@@ -4,7 +4,8 @@ const toggleBtn = document.getElementById('toggleBtn');
 const statusDiv = document.getElementById('status');
 const modeBtns = document.querySelectorAll('.mode-btn');
 const manualSection = document.getElementById('manualSection');
-const activityInput = document.getElementById('activityInput');
+const manualTitleInput = document.getElementById('manualTitleInput');
+const manualMessageInput = document.getElementById('manualMessageInput');
 const setActivityBtn = document.getElementById('setActivityBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const reconnectBtn = document.getElementById('reconnectBtn');
@@ -216,25 +217,30 @@ function updateMode(mode) {
   modeBtns.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
-  manualSection.style.display = mode === 'manual' ? 'flex' : 'none';
+  manualSection.style.display = mode === 'manual' ? 'grid' : 'none';
 }
 
 setActivityBtn.addEventListener('click', () => {
-  const activity = activityInput.value.trim();
-  if (!activity) return;
+  const title = manualTitleInput.value.trim();
+  const message = manualMessageInput.value.trim();
+  if (!title && !message) return;
 
   sendRuntimeMessage({
     action: 'setManualActivity',
-    activity
+    title,
+    message
   });
-  activityInput.value = '';
+  manualTitleInput.value = '';
+  manualMessageInput.value = '';
 });
 
-activityInput.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter') {
-    setActivityBtn.click();
-  }
-});
+for (const input of [manualTitleInput, manualMessageInput]) {
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      setActivityBtn.click();
+    }
+  });
+}
 
 settingsBtn.addEventListener('click', async () => {
   try {

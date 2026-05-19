@@ -33,5 +33,5 @@ jobs:
       - name: Upload packaged extension
         uses: actions/upload-artifact@v4
         with:
-          name: browser-presence-extension
-          path: dist/browser-presence-extension.zip
+          name: activity-status-extension
+          path: dist/activity-status-extension.zip

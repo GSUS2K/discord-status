@@ -260,13 +260,20 @@
       background: rgba(88, 101, 242, 0.35);
     }
 
-    .manual-row {
+    .manual-fields {
+      display: grid;
+      gap: 8px;
       margin-top: 10px;
+    }
+
+    .manual-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
 
     input {
       min-width: 0;
-      flex: 1;
       height: 34px;
       border: 1px solid var(--line);
       border-radius: 6px;
@@ -401,9 +408,9 @@
   <main class="shell">
     <header>
       <div class="brand">
-        <div class="mark">D</div>
+        <div class="mark">A</div>
         <div>
-          <h1>Discord Activity</h1>
+          <h1>Activity Status</h1>
           <div class="subtitle">Browser Rich Presence</div>
         </div>
       </div>
@@ -436,8 +443,11 @@
         <button class="mode-btn active" data-mode="auto">Auto Detect</button>
         <button class="mode-btn" data-mode="manual">Manual</button>
       </div>
-      <div id="manualSection" class="manual-row" style="display: none;">
-        <input type="text" id="activityInput" maxlength="120" placeholder="Set a custom activity">
+      <div id="manualSection" class="manual-fields" style="display: none;">
+        <div class="manual-row">
+          <input type="text" id="manualTitleInput" maxlength="128" placeholder="Title">
+          <input type="text" id="manualMessageInput" maxlength="128" placeholder="Message">
+        </div>
         <button id="setActivityBtn" class="action-btn primary">Set</button>
       </div>
     </section>
