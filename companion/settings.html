@@ -1,0 +1,331 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Activity Status Companion Settings</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101114;
+      --panel: #181a20;
+      --line: #30343f;
+      --text: #f4f5f7;
+      --muted: #a6adbb;
+      --accent: #5865f2;
+      --success: #2ecc71;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: 100vh;
+    }
+
+    aside {
+      border-right: 1px solid var(--line);
+      background: #15171d;
+      padding: 20px 14px;
+    }
+
+    .brand {
+      align-items: center;
+      display: flex;
+      gap: 10px;
+      margin-bottom: 22px;
+      padding: 0 6px;
+    }
+
+    .brand img {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+    }
+
+    .brand-title {
+      font-size: 14px;
+      font-weight: 850;
+      line-height: 1.15;
+    }
+
+    nav button {
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      display: block;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 750;
+      margin-bottom: 6px;
+      padding: 11px 12px;
+      text-align: left;
+      width: 100%;
+    }
+
+    nav button.active,
+    nav button:hover {
+      background: rgba(88, 101, 242, 0.24);
+    }
+
+    main {
+      padding: 26px 32px;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin: 0 0 6px;
+    }
+
+    .lede {
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel);
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+
+    .row {
+      align-items: center;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px;
+    }
+
+    .row + .row {
+      border-top: 1px solid var(--line);
+    }
+
+    .title {
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .desc {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 56px;
+      height: 32px;
+      flex: 0 0 auto;
+    }
+
+    .toggle input {
+      display: none;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: #343842;
+      cursor: pointer;
+      transition: background 0.16s ease;
+    }
+
+    .slider::after {
+      content: "";
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      left: 4px;
+      top: 4px;
+      border-radius: 50%;
+      background: #f2f4f8;
+      transition: transform 0.16s ease;
+    }
+
+    .toggle input:checked + .slider {
+      background: var(--success);
+    }
+
+    .toggle input:checked + .slider::after {
+      transform: translateX(24px);
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0f1014;
+      padding: 14px;
+    }
+
+    .card .value {
+      font-size: 16px;
+      font-weight: 850;
+      margin-top: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button.command {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #20232b;
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      padding: 11px 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="brand">
+        <img src="../extension/icons/icon128.png" alt="">
+        <div class="brand-title">Activity Status<br>Companion</div>
+      </div>
+      <nav>
+        <button class="active">General</button>
+        <button>Backend</button>
+        <button>Diagnostics</button>
+      </nav>
+    </aside>
+
+    <main>
+      <h1>General</h1>
+      <div class="lede">Control how the companion runs in the background.</div>
+
+      <section class="panel">
+        <div class="row">
+          <div>
+            <div class="title">Launch at login</div>
+            <div class="desc">Start the companion when you sign in to this computer.</div>
+          </div>
+          <label class="toggle">
+            <input id="launchAtLogin" type="checkbox">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="row">
+          <div>
+            <div class="title">Auto-start backend</div>
+            <div class="desc">Start the local Discord RPC bridge as soon as the companion opens.</div>
+          </div>
+          <label class="toggle">
+            <input id="autoStartBackend" type="checkbox">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="row">
+          <div>
+            <div class="title">Hide menu after losing focus</div>
+            <div class="desc">Keep the tray popover behaving like a native menu.</div>
+          </div>
+          <label class="toggle">
+            <input id="hidePopoverOnBlur" type="checkbox">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </section>
+
+      <h1>Backend</h1>
+      <div class="lede">Current local bridge health.</div>
+
+      <section class="status-grid">
+        <div class="card">
+          <div class="desc">Backend</div>
+          <div id="backend" class="value">Checking</div>
+        </div>
+        <div class="card">
+          <div class="desc">Discord RPC</div>
+          <div id="discord" class="value">Checking</div>
+        </div>
+        <div class="card">
+          <div class="desc">Last Activity</div>
+          <div id="activity" class="value">None</div>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button id="start" class="command">Start Backend</button>
+        <button id="stop" class="command">Stop Backend</button>
+        <button id="restart" class="command">Restart Backend</button>
+        <button id="extensions" class="command">Open Chrome Extensions</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const settingInputs = ['launchAtLogin', 'autoStartBackend', 'hidePopoverOnBlur']
+      .map(id => document.getElementById(id));
+
+    async function loadSettings() {
+      const settings = await window.activityStatus.getSettings();
+      for (const input of settingInputs) {
+        input.checked = Boolean(settings[input.id]);
+      }
+    }
+
+    async function saveSettings() {
+      await window.activityStatus.setSettings(Object.fromEntries(
+        settingInputs.map(input => [input.id, input.checked])
+      ));
+      await loadSettings();
+    }
+
+    function setStatus(status) {
+      document.getElementById('backend').textContent = status.backend;
+      document.getElementById('discord').textContent = status.discord;
+      document.getElementById('activity').textContent = status.lastActivity || 'None';
+    }
+
+    async function refresh() {
+      setStatus(await window.activityStatus.getStatus());
+    }
+
+    for (const input of settingInputs) {
+      input.addEventListener('change', saveSettings);
+    }
+
+    document.getElementById('start').addEventListener('click', async () => setStatus(await window.activityStatus.startBackend()));
+    document.getElementById('stop').addEventListener('click', async () => setStatus(await window.activityStatus.stopBackend()));
+    document.getElementById('restart').addEventListener('click', async () => setStatus(await window.activityStatus.restartBackend()));
+    document.getElementById('extensions').addEventListener('click', () => window.activityStatus.openExtensions());
+
+    window.activityStatus.onStatusUpdate(setStatus);
+    loadSettings();
+    refresh();
+    setInterval(refresh, 2500);
+  </script>
+</body>
+</html>

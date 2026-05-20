@@ -144,7 +144,7 @@ npm install
 ```
 
 
-Companion note: the companion runs as a background tray/menu-bar app. Use the tray icon to open the status window, start/stop the backend, toggle launch at login, or quit fully.
+Companion note: the companion runs as a background tray/menu-bar app. Click the tray icon to open the compact control popover. Use **Settings** from that popover for launch-at-login, backend startup, and diagnostics.
 
 ## Build Releases
 
@@ -198,7 +198,7 @@ The release workflow uses GitHub's built-in `GITHUB_TOKEN`, so no personal acces
 ## How To Use
 
 1. Start Discord desktop.
-2. Start Activity Status Companion.
+2. Start Activity Status Companion; it will live in the menu bar/system tray.
 3. Open Chrome and visit a supported site.
 4. Open the extension popup.
 5. Use **Auto Detect** to follow the current tab, or choose a specific detected tab.
@@ -297,7 +297,7 @@ scripts/               Release/package helpers
 | Problem | Try this |
 | --- | --- |
 | Discord says disconnected | Make sure Discord desktop is open, then restart the companion app |
-| Companion disappeared after closing the window | It is still running in the menu bar/system tray; use the tray icon to reopen or quit |
+| Companion has no Dock/window presence | This is intentional; click the menu bar/system tray icon for controls and Settings |
 | Extension says backend offline | Confirm Activity Status Companion is running and settings use `http://localhost:3000` |
 | Auto mode swaps tabs | Reload the extension; auto mode should prioritize the active Chrome tab |
 | Netflix title is wrong | Reload the Netflix tab and click Refresh in the popup |
