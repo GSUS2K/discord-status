@@ -1,0 +1,603 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Activity Status Companion Settings</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0d12;
+      --glass: rgba(18, 20, 28, 0.72);
+      --panel: rgba(255, 255, 255, 0.06);
+      --panel-strong: rgba(255, 255, 255, 0.1);
+      --line: rgba(255, 255, 255, 0.13);
+      --text: #f5f7fb;
+      --muted: #aeb6c7;
+      --blue: #7b8cff;
+      --green: #32d477;
+      --red: #ff6573;
+      --amber: #ffd166;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 18% 8%, rgba(88, 101, 242, 0.28), transparent 34%),
+        radial-gradient(circle at 88% 16%, rgba(50, 212, 119, 0.12), transparent 30%),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      min-height: 100vh;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(8, 9, 13, 0.28);
+      backdrop-filter: blur(24px) saturate(1.25);
+    }
+
+    aside {
+      border-right: 1px solid var(--line);
+      background: rgba(14, 16, 23, 0.64);
+      padding: 26px 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 28px;
+      padding: 0 8px;
+    }
+
+    .brand img {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.28);
+    }
+
+    .brand-title {
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav-button {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid transparent;
+      border-radius: 13px;
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 850;
+      padding: 12px 13px;
+      text-align: left;
+    }
+
+    .nav-button:hover {
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .nav-button.active {
+      background: rgba(123, 140, 255, 0.22);
+      border-color: rgba(123, 140, 255, 0.32);
+    }
+
+    main {
+      height: 100vh;
+      overflow-y: auto;
+      padding: 34px 36px 44px;
+      scrollbar-width: thin;
+    }
+
+    main::-webkit-scrollbar {
+      width: 9px;
+    }
+
+    main::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+    }
+
+    .view {
+      display: none;
+      max-width: 780px;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .lede {
+      color: var(--muted);
+      font-size: 16px;
+      margin: 8px 0 28px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--glass);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+      overflow: hidden;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 18px 20px;
+    }
+
+    .row + .row {
+      border-top: 1px solid var(--line);
+    }
+
+    .title {
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .desc {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+      margin-top: 4px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 58px;
+      height: 34px;
+      flex: 0 0 auto;
+    }
+
+    .toggle input {
+      display: none;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+      cursor: pointer;
+      transition: background 0.16s ease;
+    }
+
+    .slider::after {
+      content: "";
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      left: 4px;
+      top: 4px;
+      border-radius: 50%;
+      background: #eef2f8;
+      transition: transform 0.16s ease;
+      box-shadow: 0 5px 14px rgba(0, 0, 0, 0.28);
+    }
+
+    .toggle input:checked + .slider {
+      background: var(--green);
+    }
+
+    .toggle input:checked + .slider::after {
+      transform: translateX(24px);
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.22);
+      padding: 15px;
+      min-width: 0;
+    }
+
+    .metric .value {
+      margin-top: 8px;
+      font-size: 18px;
+      font-weight: 900;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 7px;
+      background: var(--muted);
+    }
+
+    .dot.ok {
+      background: var(--green);
+    }
+
+    .dot.warn {
+      background: var(--amber);
+    }
+
+    .dot.bad {
+      background: var(--red);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .command {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 850;
+      padding: 10px 14px;
+    }
+
+    .command:hover {
+      background: var(--panel-strong);
+      border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    .command:disabled {
+      cursor: default;
+      opacity: 0.5;
+    }
+
+    .primary {
+      background: rgba(50, 212, 119, 0.18);
+      border-color: rgba(50, 212, 119, 0.55);
+    }
+
+    .danger {
+      background: rgba(255, 101, 115, 0.13);
+      border-color: rgba(255, 101, 115, 0.5);
+      color: #ffd9dd;
+    }
+
+    .field {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.24);
+      color: var(--text);
+      margin-top: 8px;
+      padding: 12px 13px;
+    }
+
+    .log {
+      min-height: 160px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="brand">
+        <img src="icon128.png" alt="">
+        <div class="brand-title">Activity Status<br>Companion</div>
+      </div>
+      <nav>
+        <button class="nav-button active" data-view="general">General</button>
+        <button class="nav-button" data-view="backend">Backend</button>
+        <button class="nav-button" data-view="updates">Updates</button>
+        <button class="nav-button" data-view="diagnostics">Diagnostics</button>
+      </nav>
+    </aside>
+
+    <main>
+      <section id="general" class="view active">
+        <h1>General</h1>
+        <div class="lede">Control how the companion behaves in the background.</div>
+
+        <section class="panel">
+          <div class="row">
+            <div>
+              <div class="title">Launch at login</div>
+              <div class="desc">Start the tray companion when you sign in to this computer.</div>
+            </div>
+            <label class="toggle">
+              <input id="launchAtLogin" type="checkbox">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="row">
+            <div>
+              <div class="title">Auto-start backend</div>
+              <div class="desc">Start the local Discord RPC bridge as soon as the companion opens.</div>
+            </div>
+            <label class="toggle">
+              <input id="autoStartBackend" type="checkbox">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="row">
+            <div>
+              <div class="title">Hide tray menu after losing focus</div>
+              <div class="desc">Makes the popover behave like a native menu bar dropdown.</div>
+            </div>
+            <label class="toggle">
+              <input id="hidePopoverOnBlur" type="checkbox">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="row">
+            <div style="width: 100%;">
+              <div class="title">Backend port</div>
+              <div class="desc">Use this when another app already owns port 3000. Restart the backend after changing it, then set the extension Backend Server URL to the same port.</div>
+              <input id="port" class="field" type="number" min="1024" max="65535" step="1" value="3000">
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section id="backend-view" class="view">
+        <h1>Backend</h1>
+        <div class="lede">Manage the local bridge that talks to Discord desktop.</div>
+
+        <section class="status-grid">
+          <div class="metric">
+            <div class="desc">Backend</div>
+            <div id="backend" class="value"><span class="dot warn"></span>Checking</div>
+          </div>
+          <div class="metric">
+            <div class="desc">Discord RPC</div>
+            <div id="discord" class="value"><span class="dot warn"></span>Checking</div>
+          </div>
+          <div class="metric">
+            <div class="desc">Last Activity</div>
+            <div id="activity" class="value">None</div>
+          </div>
+        </section>
+
+        <div class="actions">
+          <button id="start" class="command primary">Start Backend</button>
+          <button id="stop" class="command danger">Stop Backend</button>
+          <button id="restart" class="command">Restart Backend</button>
+          <button id="reconnect" class="command">Reconnect Discord RPC</button>
+          <button id="extensions" class="command">Open Chrome Extensions</button>
+          <button id="copyUrl" class="command">Copy Backend URL</button>
+        </div>
+      </section>
+
+      <section id="diagnostics" class="view">
+        <h1>Diagnostics</h1>
+        <div class="lede">Recent companion/backend state for quick debugging.</div>
+
+        <section class="panel">
+          <div class="row">
+            <div>
+              <div class="title">Backend URL</div>
+              <input id="backendUrl" class="field" type="text" readonly value="http://localhost:3000">
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <div class="title">Last RPC error</div>
+              <div id="rpcError" class="desc">None</div>
+            </div>
+          </div>
+          <div class="row">
+            <div style="width: 100%;">
+              <div class="title">Last backend log</div>
+              <div id="log" class="field log">Companion ready.</div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section id="updates-view" class="view">
+        <h1>Updates</h1>
+        <div class="lede">Install future companion releases from GitHub without manually replacing the app.</div>
+
+        <section class="panel">
+          <div class="row">
+            <div>
+              <div class="title">Current version</div>
+              <div id="currentVersion" class="desc">Checking</div>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <div class="title">Updater status</div>
+              <div id="updateStatus" class="desc">Ready</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="actions">
+              <button id="checkUpdates" class="command primary">Check for Updates</button>
+              <button id="installUpdates" class="command">Install Downloaded Update</button>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const { invoke } = window.__TAURI__.core;
+    const { listen } = window.__TAURI__.event;
+    const activityStatus = {
+      getStatus: () => invoke('get_status'),
+      getSettings: () => invoke('get_settings'),
+      setSettings: settings => invoke('set_settings', { settings }),
+      startBackend: () => invoke('start_backend'),
+      stopBackend: () => invoke('stop_backend'),
+      restartBackend: () => invoke('restart_backend'),
+      reconnectRpc: () => invoke('reconnect_rpc'),
+      checkForUpdates: () => invoke('check_for_updates'),
+      installUpdate: () => invoke('install_update'),
+      openExtensions: () => invoke('open_chrome_extensions'),
+      copyText: text => invoke('copy_text', { text }),
+      onStatusUpdate: callback => listen('status:update', event => callback(event.payload))
+    };
+
+    const navButtons = [...document.querySelectorAll('.nav-button')];
+    const views = {
+      general: document.getElementById('general'),
+      backend: document.getElementById('backend-view'),
+      updates: document.getElementById('updates-view'),
+      diagnostics: document.getElementById('diagnostics')
+    };
+    const settingInputs = ['launchAtLogin', 'autoStartBackend', 'hidePopoverOnBlur'].map(id => document.getElementById(id));
+    const portInput = document.getElementById('port');
+    const actionButtons = ['start', 'stop', 'restart', 'reconnect', 'checkUpdates'].map(id => document.getElementById(id));
+    let busy = false;
+
+    function showView(id) {
+      for (const [viewId, element] of Object.entries(views)) {
+        element.classList.toggle('active', viewId === id);
+      }
+      for (const button of navButtons) {
+        button.classList.toggle('active', button.dataset.view === id);
+      }
+    }
+
+    for (const button of navButtons) {
+      button.addEventListener('click', () => showView(button.dataset.view));
+    }
+
+    function dotClass(value, kind) {
+      if (kind === 'backend') {
+        if (value === 'online') return 'ok';
+        if (value === 'starting' || value === 'stopping') return 'warn';
+        return 'bad';
+      }
+      if (value === 'connected') return 'ok';
+      if (value === 'unknown') return 'warn';
+      return 'bad';
+    }
+
+    function setStatusLine(element, value, kind) {
+      element.replaceChildren();
+      const dot = document.createElement('span');
+      dot.className = `dot ${dotClass(value, kind)}`;
+      element.append(dot, document.createTextNode(value || 'unknown'));
+    }
+
+    function setStatus(status) {
+      setStatusLine(document.getElementById('backend'), status.backend, 'backend');
+      setStatusLine(document.getElementById('discord'), status.discord, 'discord');
+      document.getElementById('activity').textContent = status.lastActivity || 'None';
+      document.getElementById('rpcError').textContent = status.lastRpcError || 'None';
+      document.getElementById('log').textContent = status.log || '';
+      document.getElementById('backendUrl').value = status.url || 'http://localhost:3000';
+      const update = status.update || {};
+      document.getElementById('currentVersion').textContent = update.version ? `v${update.version}` : 'Unknown';
+      document.getElementById('updateStatus').textContent = update.message || 'Ready';
+      document.getElementById('installUpdates').disabled = update.state !== 'downloaded';
+    }
+
+    async function loadSettings() {
+      const settings = await activityStatus.getSettings();
+      for (const input of settingInputs) {
+        input.checked = Boolean(settings[input.id]);
+      }
+      portInput.value = settings.port || 3000;
+    }
+
+    async function saveSettings() {
+      await activityStatus.setSettings(Object.fromEntries(
+        [...settingInputs.map(input => [input.id, input.checked]), ['port', Number(portInput.value)]]
+      ));
+      await loadSettings();
+    }
+
+    async function refresh() {
+      setStatus(await activityStatus.getStatus());
+    }
+
+    async function runAction(action) {
+      if (busy) return;
+      busy = true;
+      actionButtons.forEach(button => {
+        button.disabled = true;
+      });
+      try {
+        setStatus(await action());
+      } finally {
+        busy = false;
+        actionButtons.forEach(button => {
+          button.disabled = false;
+        });
+      }
+    }
+
+    for (const input of settingInputs) {
+      input.addEventListener('change', saveSettings);
+    }
+    portInput.addEventListener('change', saveSettings);
+
+    document.getElementById('start').addEventListener('click', () => runAction(activityStatus.startBackend));
+    document.getElementById('stop').addEventListener('click', () => runAction(activityStatus.stopBackend));
+    document.getElementById('restart').addEventListener('click', () => runAction(activityStatus.restartBackend));
+    document.getElementById('reconnect').addEventListener('click', () => runAction(activityStatus.reconnectRpc));
+    document.getElementById('checkUpdates').addEventListener('click', () => runAction(activityStatus.checkForUpdates));
+    document.getElementById('installUpdates').addEventListener('click', () => activityStatus.installUpdate());
+    document.getElementById('extensions').addEventListener('click', () => activityStatus.openExtensions());
+    document.getElementById('copyUrl').addEventListener('click', async () => {
+      const status = await activityStatus.getStatus();
+      await activityStatus.copyText(status.url);
+    });
+
+    activityStatus.onStatusUpdate(setStatus);
+    loadSettings();
+    refresh();
+    setInterval(refresh, 2500);
+  </script>
+</body>
+</html>

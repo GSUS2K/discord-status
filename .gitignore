@@ -18,6 +18,8 @@ backend/.env
 dist/
 release/
 companion-dist/
+src-tauri/gen/schemas/
+src-tauri/target/
 *.zip
 discord-assets/*.zip
 discord-assets-real/*.zip
