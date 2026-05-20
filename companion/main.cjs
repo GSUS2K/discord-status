@@ -26,14 +26,15 @@ const isPackaged = app.isPackaged;
 const bundledAppRoot = isPackaged ? path.join(process.resourcesPath, 'app.asar') : path.resolve(__dirname, '..');
 const backendRoot = isPackaged ? process.resourcesPath : path.resolve(__dirname, '..');
 const backendScript = path.join(backendRoot, 'backend', 'server.js');
-const backendUrl = `http://localhost:${config.port || 3000}`;
 const iconPath = path.join(bundledAppRoot, 'extension', 'icons', 'icon128.png');
 const trayIconPath = path.join(bundledAppRoot, 'extension', 'icons', process.platform === 'darwin' ? 'icon16.png' : 'icon48.png');
 const settingsPath = path.join(app.getPath('userData'), 'companion-settings.json');
+const defaultPort = Number(config.port || 3000);
 const defaultSettings = {
   autoStartBackend: true,
   launchAtLogin: false,
-  hidePopoverOnBlur: true
+  hidePopoverOnBlur: true,
+  port: defaultPort
 };
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
@@ -46,7 +47,12 @@ app.on('second-instance', () => togglePopover());
 function readSettings() {
   try {
     const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
-    return { ...defaultSettings, ...settings, launchAtLogin: app.getLoginItemSettings().openAtLogin };
+    return {
+      ...defaultSettings,
+      ...settings,
+      port: normalizePort(settings.port),
+      launchAtLogin: app.getLoginItemSettings().openAtLogin
+    };
   } catch (error) {
     return { ...defaultSettings, launchAtLogin: app.getLoginItemSettings().openAtLogin };
   }
@@ -58,9 +64,26 @@ function saveSettings(nextSettings) {
   mkdirSync(path.dirname(settingsPath), { recursive: true });
   writeFileSync(settingsPath, JSON.stringify({
     autoStartBackend: Boolean(settings.autoStartBackend),
-    hidePopoverOnBlur: Boolean(settings.hidePopoverOnBlur)
+    hidePopoverOnBlur: Boolean(settings.hidePopoverOnBlur),
+    port: normalizePort(settings.port)
   }, null, 2));
   return readSettings();
+}
+
+function normalizePort(value) {
+  const port = Number(value);
+  if (!Number.isInteger(port) || port < 1024 || port > 65535) {
+    return defaultPort;
+  }
+  return port;
+}
+
+function getBackendPort() {
+  return normalizePort(readSettings().port);
+}
+
+function getBackendUrl() {
+  return `http://localhost:${getBackendPort()}`;
 }
 
 function createPopoverWindow() {
@@ -297,7 +320,7 @@ async function startBackendUnlocked() {
       ...process.env,
       ELECTRON_RUN_AS_NODE: '1',
       DISCORD_CLIENT_ID: clientId,
-      PORT: String(config.port || 3000),
+        PORT: String(getBackendPort()),
       LOG_LEVEL: process.env.LOG_LEVEL || 'info',
       ENABLE_PRESENCE_BUTTONS: process.env.ENABLE_PRESENCE_BUTTONS || 'true'
     },
@@ -391,6 +414,7 @@ async function reconnectRpc() {
     if (!backendProcess && cachedStatus.backend !== 'online') {
       await startBackend();
     }
+    const backendUrl = getBackendUrl();
     const response = await fetch(`${backendUrl}/api/reconnect-rpc`, { method: 'POST' });
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}));
@@ -405,6 +429,7 @@ async function reconnectRpc() {
 }
 
 async function getStatus() {
+  const backendUrl = getBackendUrl();
   try {
     const response = await fetch(`${backendUrl}/api/status`, { cache: 'no-store' });
     if (!response.ok) {
