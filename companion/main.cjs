@@ -182,12 +182,20 @@ function showSettingsWindow() {
 function createTray() {
   if (tray) return;
 
-  const image = nativeImage.createFromPath(trayIconPath).resize({ width: 18, height: 18 });
-  image.setTemplateImage(process.platform === 'darwin');
-  tray = new Tray(image);
+  tray = new Tray(createTrayImage());
   tray.setToolTip('Activity Status Companion');
   tray.on('click', () => togglePopover());
   tray.on('right-click', () => showNativeTrayMenu());
+}
+
+function createTrayImage() {
+  const size = process.platform === 'darwin' ? 20 : 24;
+  const source = nativeImage.createFromPath(iconPath).isEmpty()
+    ? nativeImage.createFromPath(trayIconPath)
+    : nativeImage.createFromPath(iconPath);
+  const image = source.resize({ width: size, height: size, quality: 'best' });
+  image.setTemplateImage(false);
+  return image;
 }
 
 function setupAutoUpdater() {
