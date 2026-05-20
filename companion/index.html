@@ -93,6 +93,7 @@
 
     .actions {
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
       margin-top: 14px;
     }
@@ -129,6 +130,25 @@
       padding: 12px;
       white-space: pre-wrap;
     }
+
+    .option-row {
+      align-items: center;
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .option-row input {
+      accent-color: var(--accent);
+      height: 16px;
+      width: 16px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 12px;
+    }
   </style>
 </head>
 <body>
@@ -160,7 +180,15 @@
       <button id="start" class="primary">Start</button>
       <button id="stop" class="danger">Stop</button>
       <button id="extensions">Open Chrome Extensions</button>
+      <button id="hide">Hide Window</button>
     </div>
+
+    <label class="option-row">
+      <input id="launchAtLogin" type="checkbox">
+      <span>Launch companion at login</span>
+    </label>
+
+    <div class="hint">The companion keeps running in the menu bar/system tray. Closing or hiding this window will not stop your Discord status.</div>
   </section>
 
   <section class="panel">
@@ -173,6 +201,7 @@
     const discord = document.getElementById('discord');
     const activity = document.getElementById('activity');
     const log = document.getElementById('log');
+    const launchAtLogin = document.getElementById('launchAtLogin');
 
     async function refresh() {
       const status = await window.activityStatus.getStatus();
@@ -196,11 +225,24 @@
       window.activityStatus.openExtensions();
     });
 
+    document.getElementById('hide').addEventListener('click', () => {
+      window.activityStatus.hideWindow();
+    });
+
+    launchAtLogin.addEventListener('change', async () => {
+      launchAtLogin.checked = await window.activityStatus.setLaunchAtLogin(launchAtLogin.checked);
+    });
+
     window.activityStatus.onBackendLog(line => {
       log.textContent = line;
       refresh();
     });
 
+    async function hydrateSettings() {
+      launchAtLogin.checked = await window.activityStatus.getLaunchAtLogin();
+    }
+
+    hydrateSettings();
     refresh();
     setInterval(refresh, 2500);
   </script>

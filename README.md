@@ -78,7 +78,7 @@ YouTube, Netflix, Spotify, GitHub, ChatGPT, Google Meet, Twitch, and a few other
 | Discord assets | Includes 512x512 logo assets ready for Discord Developer Portal upload |
 | Status controls | Enable, clear, refresh, reconnect, and select a specific tab from the popup |
 | Diagnostics | Backend health, Discord RPC health, and recent extension logs |
-| Companion app | Packages the local backend into a desktop app for one-click startup |
+| Tray companion | Runs the local backend from the macOS menu bar, Windows tray, or Linux system tray |
 | Release packaging | Builds extension and companion artifacts for GitHub Releases |
 
 ## Supported Sites
@@ -131,6 +131,8 @@ Then:
 Chrome Web Store publishing is the cleanest long-term extension install path. Until then, users can load the extension manually from the release zip and uploading the extension folder in chrome://extensions/ by pressing load unpacked button.
 
 macOS note: current companion builds are unsigned. If macOS says the app is damaged, see [docs/MAC_INSTALL.md](docs/MAC_INSTALL.md).
+
+Companion note: the companion runs as a background tray/menu-bar app. Use the tray icon to open the status window, start/stop the backend, toggle launch at login, or quit fully.
 
 ## Build Releases
 
@@ -284,6 +286,7 @@ scripts/               Release/package helpers
 | --- | --- |
 | Discord says disconnected | Make sure Discord desktop is open, then restart the companion app |
 | macOS says the companion app is damaged | The app is unsigned and quarantined; see [docs/MAC_INSTALL.md](docs/MAC_INSTALL.md) |
+| Companion disappeared after closing the window | It is still running in the menu bar/system tray; use the tray icon to reopen or quit |
 | Extension says backend offline | Confirm Activity Status Companion is running and settings use `http://localhost:3000` |
 | Auto mode swaps tabs | Reload the extension; auto mode should prioritize the active Chrome tab |
 | Netflix title is wrong | Reload the Netflix tab and click Refresh in the popup |

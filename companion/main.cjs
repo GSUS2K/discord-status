@@ -1,27 +1,41 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, nativeImage, shell, Tray } = require('electron');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
 const config = require('./activity-status.config.cjs');
 
 let mainWindow;
+let tray;
 let backendProcess;
 let lastBackendLine = 'Starting...';
+let isQuitting = false;
 
 const isPackaged = app.isPackaged;
 const bundledAppRoot = isPackaged ? path.join(process.resourcesPath, 'app.asar') : path.resolve(__dirname, '..');
 const backendRoot = isPackaged ? process.resourcesPath : path.resolve(__dirname, '..');
 const backendScript = path.join(backendRoot, 'backend', 'server.js');
 const backendUrl = `http://localhost:${config.port || 3000}`;
+const iconPath = path.join(bundledAppRoot, 'extension', 'icons', 'icon128.png');
+const trayIconPath = path.join(bundledAppRoot, 'extension', 'icons', process.platform === 'darwin' ? 'icon16.png' : 'icon48.png');
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+
+if (!hasSingleInstanceLock) {
+  app.quit();
+}
+
+app.on('second-instance', showWindow);
 
 function createWindow() {
+  if (mainWindow) return mainWindow;
+
   mainWindow = new BrowserWindow({
     width: 560,
     height: 520,
     minWidth: 480,
     minHeight: 420,
+    show: false,
     title: 'Activity Status Companion',
     backgroundColor: '#101114',
-    icon: path.join(bundledAppRoot, 'extension', 'icons', 'icon128.png'),
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -30,6 +44,93 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'index.html'));
+
+  mainWindow.on('close', event => {
+    if (isQuitting) return;
+    event.preventDefault();
+    mainWindow.hide();
+  });
+
+  return mainWindow;
+}
+
+function showWindow() {
+  const window = createWindow();
+  window.show();
+  window.focus();
+}
+
+function createTray() {
+  if (tray) return;
+
+  const image = nativeImage.createFromPath(trayIconPath).resize({ width: 18, height: 18 });
+  tray = new Tray(image);
+  tray.setToolTip('Activity Status Companion');
+  tray.on('click', showWindow);
+  updateTrayMenu();
+}
+
+function updateTrayMenu() {
+  if (!tray) return;
+
+  const menu = Menu.buildFromTemplate([
+    {
+      label: 'Open Activity Status Companion',
+      click: showWindow
+    },
+    {
+      label: backendProcess ? 'Backend: running' : 'Backend: stopped',
+      enabled: false
+    },
+    { type: 'separator' },
+    {
+      label: 'Start Backend',
+      enabled: !backendProcess,
+      click: () => {
+        startBackend();
+        updateTrayMenu();
+      }
+    },
+    {
+      label: 'Stop Backend',
+      enabled: Boolean(backendProcess),
+      click: async () => {
+        await stopBackend();
+        updateTrayMenu();
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Launch at Login',
+      type: 'checkbox',
+      checked: app.getLoginItemSettings().openAtLogin,
+      click: item => {
+        setLaunchAtLogin(item.checked);
+        updateTrayMenu();
+      }
+    },
+    {
+      label: 'Open Chrome Extensions',
+      click: () => shell.openExternal('chrome://extensions')
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => {
+        isQuitting = true;
+        app.quit();
+      }
+    }
+  ]);
+
+  tray.setContextMenu(menu);
+}
+
+function setLaunchAtLogin(openAtLogin) {
+  app.setLoginItemSettings({
+    openAtLogin,
+    openAsHidden: true
+  });
 }
 
 function startBackend() {
@@ -58,11 +159,13 @@ function startBackend() {
   backendProcess.stdout.on('data', data => {
     lastBackendLine = data.toString().trim().split('\n').at(-1) || lastBackendLine;
     mainWindow?.webContents.send('backend-log', lastBackendLine);
+    updateTrayMenu();
   });
 
   backendProcess.stderr.on('data', data => {
     lastBackendLine = data.toString().trim().split('\n').at(-1) || lastBackendLine;
     mainWindow?.webContents.send('backend-log', lastBackendLine);
+    updateTrayMenu();
   });
 
   backendProcess.on('exit', code => {
@@ -70,13 +173,17 @@ function startBackend() {
     backendProcess = null;
     lastBackendLine = `Backend stopped${Number.isFinite(code) ? ` with code ${code}` : ''}. Last message: ${previousLine}`;
     mainWindow?.webContents.send('backend-log', lastBackendLine);
+    updateTrayMenu();
   });
+
+  updateTrayMenu();
 }
 
 async function stopBackend() {
   if (!backendProcess) return;
   backendProcess.kill('SIGINT');
   backendProcess = null;
+  updateTrayMenu();
 }
 
 async function getStatus() {
@@ -122,18 +229,35 @@ ipcMain.handle('backend:stop', async () => {
 ipcMain.handle('open:extensions', () => {
   shell.openExternal('chrome://extensions');
 });
+ipcMain.handle('window:hide', () => {
+  mainWindow?.hide();
+});
+ipcMain.handle('launch-at-login:get', () => app.getLoginItemSettings().openAtLogin);
+ipcMain.handle('launch-at-login:set', (_event, openAtLogin) => {
+  setLaunchAtLogin(Boolean(openAtLogin));
+  updateTrayMenu();
+  return app.getLoginItemSettings().openAtLogin;
+});
 
 app.whenReady().then(() => {
+  if (process.platform === 'darwin') {
+    app.dock.hide();
+  }
+
   createWindow();
+  createTray();
   startBackend();
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    showWindow();
   });
 });
 
-app.on('before-quit', stopBackend);
+app.on('before-quit', () => {
+  isQuitting = true;
+  stopBackend();
+});
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  // Keep the tray/background helper alive until the user explicitly quits.
 });
