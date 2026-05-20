@@ -374,6 +374,13 @@
               <span class="slider"></span>
             </label>
           </div>
+          <div class="row">
+            <div style="width: 100%;">
+              <div class="title">Backend port</div>
+              <div class="desc">Use this when another app already owns port 3000. Restart the backend after changing it, then set the extension Backend Server URL to the same port.</div>
+              <input id="port" class="field" type="number" min="1024" max="65535" step="1" value="3000">
+            </div>
+          </div>
         </section>
       </section>
 
@@ -442,6 +449,7 @@
       diagnostics: document.getElementById('diagnostics')
     };
     const settingInputs = ['launchAtLogin', 'autoStartBackend', 'hidePopoverOnBlur'].map(id => document.getElementById(id));
+    const portInput = document.getElementById('port');
     const actionButtons = ['start', 'stop', 'restart', 'reconnect'].map(id => document.getElementById(id));
     let busy = false;
 
@@ -490,11 +498,12 @@
       for (const input of settingInputs) {
         input.checked = Boolean(settings[input.id]);
       }
+      portInput.value = settings.port || 3000;
     }
 
     async function saveSettings() {
       await window.activityStatus.setSettings(Object.fromEntries(
-        settingInputs.map(input => [input.id, input.checked])
+        [...settingInputs.map(input => [input.id, input.checked]), ['port', Number(portInput.value)]]
       ));
       await loadSettings();
     }
@@ -522,6 +531,7 @@
     for (const input of settingInputs) {
       input.addEventListener('change', saveSettings);
     }
+    portInput.addEventListener('change', saveSettings);
 
     document.getElementById('start').addEventListener('click', () => runAction(window.activityStatus.startBackend));
     document.getElementById('stop').addEventListener('click', () => runAction(window.activityStatus.stopBackend));
