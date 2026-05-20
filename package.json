@@ -1,6 +1,6 @@
 {
   "name": "activity-status",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "private": true,
   "description": "Chrome extension plus local Discord RPC backend for browser activity status.",
   "author": {
@@ -13,8 +13,11 @@
     "install:backend": "npm --prefix backend install",
     "start": "npm --prefix backend start",
     "dev": "npm --prefix backend run dev",
-    "companion:dev": "electron companion/main.cjs",
-    "dist:companion": "electron-builder --config electron-builder.json --publish never",
+    "companion:dev": "tauri dev",
+    "companion:dev:electron": "electron companion/main.cjs",
+    "dist:companion": "tauri build",
+    "dist:companion:tauri": "tauri build",
+    "dist:companion:electron": "electron-builder --config electron-builder.json --publish never",
     "dist:companion:mac": "electron-builder --mac --config electron-builder.json --publish never",
     "dist:companion:win": "electron-builder --win --config electron-builder.json --publish never",
     "dist:companion:linux": "electron-builder --linux --config electron-builder.json --publish never",
@@ -22,10 +25,12 @@
     "package:webstore": "node scripts/package-webstore.mjs"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.2",
     "electron": "^33.4.11",
     "electron-builder": "^25.1.8"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.11.0",
     "electron-updater": "^6.8.3"
   }
 }

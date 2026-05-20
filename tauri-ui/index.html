@@ -1,0 +1,474 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Activity Status Companion</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --glass: rgba(13, 15, 21, 0.78);
+      --panel: rgba(255, 255, 255, 0.07);
+      --panel-strong: rgba(255, 255, 255, 0.11);
+      --line: rgba(255, 255, 255, 0.14);
+      --text: #f5f7fb;
+      --muted: #aeb6c7;
+      --blue: #7b8cff;
+      --green: #32d477;
+      --red: #ff6573;
+      --amber: #ffd166;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background: transparent;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .popover {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 22% 0%, rgba(88, 101, 242, 0.28), transparent 34%),
+        radial-gradient(circle at 96% 16%, rgba(50, 212, 119, 0.14), transparent 30%),
+        var(--glass);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.48);
+      overflow: hidden;
+      backdrop-filter: blur(26px) saturate(1.3);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      flex: 0 0 auto;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 13px;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.1;
+      letter-spacing: 0;
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .content {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 14px;
+      scrollbar-width: thin;
+    }
+
+    .content::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(9, 10, 14, 0.38);
+      overflow: hidden;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .status-cell {
+      padding: 13px 14px;
+    }
+
+    .status-cell + .status-cell {
+      border-left: 1px solid var(--line);
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .value {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      margin-top: 5px;
+      font-size: 15px;
+      font-weight: 850;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      background: var(--muted);
+      box-shadow: 0 0 16px currentColor;
+    }
+
+    .dot.ok {
+      color: var(--green);
+      background: var(--green);
+    }
+
+    .dot.warn {
+      color: var(--amber);
+      background: var(--amber);
+    }
+
+    .dot.bad {
+      color: var(--red);
+      background: var(--red);
+    }
+
+    .activity {
+      margin-top: 12px;
+      padding: 14px;
+    }
+
+    .activity-title {
+      margin-top: 6px;
+      font-size: 15px;
+      font-weight: 850;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }
+
+    .error {
+      color: #ffb8be;
+      min-height: 16px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .btn {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      color: var(--text);
+      background: var(--panel);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 850;
+      padding: 10px 12px;
+      transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      background: var(--panel-strong);
+      border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    .btn:disabled {
+      cursor: default;
+      opacity: 0.48;
+      transform: none;
+    }
+
+    .primary {
+      background: rgba(50, 212, 119, 0.18);
+      border-color: rgba(50, 212, 119, 0.55);
+    }
+
+    .danger {
+      background: rgba(255, 101, 115, 0.13);
+      border-color: rgba(255, 101, 115, 0.5);
+      color: #ffd9dd;
+    }
+
+    .wide {
+      grid-column: 1 / -1;
+    }
+
+    .menu {
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .row {
+      width: 100%;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      padding: 11px 14px;
+      text-align: left;
+    }
+
+    .row:last-child {
+      border-bottom: 0;
+    }
+
+    .row:hover {
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .row:disabled {
+      cursor: default;
+      opacity: 0.48;
+    }
+
+    .row:disabled:hover {
+      background: transparent;
+    }
+
+    .row strong {
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .pill {
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 4px 8px;
+    }
+
+    .log {
+      margin-top: 12px;
+      padding: 12px;
+      color: var(--muted);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 10.5px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+<body>
+  <main class="popover">
+    <section class="header">
+      <img class="logo" src="icon128.png" alt="">
+      <div>
+        <h1>Activity Status</h1>
+        <div class="subtle">Discord Rich Presence bridge</div>
+      </div>
+    </section>
+
+    <section class="content">
+      <section class="card status-grid">
+        <div class="status-cell">
+          <div class="label">Backend</div>
+          <div id="backend" class="value"><span class="dot warn"></span>Checking</div>
+        </div>
+        <div class="status-cell">
+          <div class="label">Discord RPC</div>
+          <div id="discord" class="value"><span class="dot warn"></span>Checking</div>
+        </div>
+      </section>
+
+      <section class="card activity">
+        <div class="label">Last Activity</div>
+        <div id="activity" class="activity-title">None</div>
+        <div id="rpcError" class="subtle error"></div>
+      </section>
+
+      <section class="controls">
+        <button id="start" class="btn primary">Start</button>
+        <button id="stop" class="btn danger">Stop</button>
+        <button id="restart" class="btn wide">Restart Backend</button>
+        <button id="reconnect" class="btn wide">Reconnect Discord RPC</button>
+      </section>
+
+      <section class="card menu">
+        <button id="settings" class="row">
+          <strong>Settings</strong>
+          <span class="pill">Preferences</span>
+        </button>
+        <button id="extensions" class="row">
+          <strong>Open Chrome Extensions</strong>
+          <span class="pill">Chrome</span>
+        </button>
+        <button id="copyUrl" class="row">
+          <strong>Copy Backend URL</strong>
+          <span id="urlPill" class="pill">localhost</span>
+        </button>
+        <button id="updates" class="row">
+          <strong>Check for Updates</strong>
+          <span id="updatePill" class="pill">v</span>
+        </button>
+        <button id="installUpdate" class="row">
+          <strong>Install Downloaded Update</strong>
+          <span class="pill">Restart</span>
+        </button>
+        <button id="quit" class="row">
+          <strong>Quit Companion</strong>
+          <span class="pill">Exit</span>
+        </button>
+      </section>
+
+      <section id="log" class="card log">Companion ready.</section>
+    </section>
+  </main>
+
+  <script>
+    const { invoke } = window.__TAURI__.core;
+    const { listen } = window.__TAURI__.event;
+    const activityStatus = {
+      getStatus: () => invoke('get_status'),
+      startBackend: () => invoke('start_backend'),
+      stopBackend: () => invoke('stop_backend'),
+      restartBackend: () => invoke('restart_backend'),
+      reconnectRpc: () => invoke('reconnect_rpc'),
+      checkForUpdates: () => invoke('check_for_updates'),
+      installUpdate: () => invoke('install_update'),
+      openExtensions: () => invoke('open_chrome_extensions'),
+      openSettings: () => invoke('show_settings'),
+      hideIfConfigured: () => invoke('hide_main_if_configured'),
+      copyText: text => invoke('copy_text', { text }),
+      quit: () => invoke('quit_app'),
+      onStatusUpdate: callback => listen('status:update', event => callback(event.payload))
+    };
+
+    const backend = document.getElementById('backend');
+    const discord = document.getElementById('discord');
+    const activity = document.getElementById('activity');
+    const rpcError = document.getElementById('rpcError');
+    const log = document.getElementById('log');
+    const urlPill = document.getElementById('urlPill');
+    const updatePill = document.getElementById('updatePill');
+    const installUpdate = document.getElementById('installUpdate');
+    const actionButtons = ['start', 'stop', 'restart', 'reconnect'].map(id => document.getElementById(id));
+    let busy = false;
+
+    function dotClass(value, kind) {
+      if (kind === 'backend') {
+        if (value === 'online') return 'ok';
+        if (value === 'starting' || value === 'stopping') return 'warn';
+        return 'bad';
+      }
+      if (value === 'connected') return 'ok';
+      if (value === 'unknown') return 'warn';
+      return 'bad';
+    }
+
+    function setLine(element, value, kind) {
+      element.replaceChildren();
+      const dot = document.createElement('span');
+      dot.className = `dot ${dotClass(value, kind)}`;
+      element.append(dot, document.createTextNode(value || 'unknown'));
+    }
+
+    function setStatus(status) {
+      setLine(backend, status.backend, 'backend');
+      setLine(discord, status.discord, 'discord');
+      activity.textContent = status.lastActivity || 'None';
+      rpcError.textContent = status.lastRpcError ? `RPC: ${status.lastRpcError}` : '';
+      log.textContent = status.log || '';
+      const update = status.update || {};
+      updatePill.textContent = update.availableVersion || update.version || 'check';
+      installUpdate.disabled = update.state !== 'downloaded';
+      try {
+        urlPill.textContent = new URL(status.url || 'http://localhost:3000').host;
+      } catch {
+        urlPill.textContent = 'localhost';
+      }
+    }
+
+    async function refresh() {
+      setStatus(await activityStatus.getStatus());
+    }
+
+    async function runAction(action) {
+      if (busy) return;
+      busy = true;
+      actionButtons.forEach(button => {
+        button.disabled = true;
+      });
+      try {
+        setStatus(await action());
+      } finally {
+        busy = false;
+        actionButtons.forEach(button => {
+          button.disabled = false;
+        });
+      }
+    }
+
+    document.getElementById('start').addEventListener('click', () => runAction(activityStatus.startBackend));
+    document.getElementById('stop').addEventListener('click', () => runAction(activityStatus.stopBackend));
+    document.getElementById('restart').addEventListener('click', () => runAction(activityStatus.restartBackend));
+    document.getElementById('reconnect').addEventListener('click', () => runAction(activityStatus.reconnectRpc));
+
+    document.getElementById('settings').addEventListener('click', () => activityStatus.openSettings());
+    document.getElementById('extensions').addEventListener('click', () => activityStatus.openExtensions());
+    document.getElementById('updates').addEventListener('click', () => runAction(activityStatus.checkForUpdates));
+    installUpdate.addEventListener('click', () => activityStatus.installUpdate());
+    document.getElementById('copyUrl').addEventListener('click', async () => {
+      const status = await activityStatus.getStatus();
+      await activityStatus.copyText(status.url);
+      urlPill.textContent = 'copied';
+      setTimeout(refresh, 900);
+    });
+    document.getElementById('quit').addEventListener('click', () => activityStatus.quit());
+
+    activityStatus.onStatusUpdate(setStatus);
+    window.addEventListener('blur', () => activityStatus.hideIfConfigured().catch(() => {}));
+    refresh();
+    setInterval(refresh, 2500);
+  </script>
+</body>
+</html>

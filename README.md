@@ -56,8 +56,8 @@ Discord Rich Presence is local. A Chrome extension cannot directly access Discor
 | Part | What it does |
 | --- | --- |
 | `extension/` | Detects browser activity, lets you choose auto or manual mode, and sends updates to the backend |
-| `companion/` | Desktop app that starts and supervises the local backend |
-| `backend/` | Local Discord RPC bridge used by the companion app |
+| `src-tauri/` + `tauri-ui/` | Lightweight native companion that starts and supervises the local Discord RPC bridge |
+| `backend/` | Legacy Node backend kept for source/manual development |
 
 Because of that, the best user experience is not “extension only.” The best experience is **Chrome extension + native companion app**.
 
@@ -172,15 +172,18 @@ Build the companion app for your current platform:
 npm run dist:companion
 ```
 
-Platform-specific builds:
+The public companion is built with Tauri, so the downloads stay much smaller than the old Electron build.
+
+Legacy Electron build commands are still available for comparison/debugging:
 
 ```bash
+npm run dist:companion:electron
 npm run dist:companion:mac
 npm run dist:companion:win
 npm run dist:companion:linux
 ```
 
-Build output goes to `companion-dist/`.
+Tauri build output goes to `src-tauri/target/release/bundle/`.
 
 ## Publishing A GitHub Release
 
@@ -214,7 +217,7 @@ The release workflow uses GitHub's built-in `GITHUB_TOKEN`, so no personal acces
 | Forget Inactive Tabs After | Yes | Removes stale tab activity from the popup and auto picker |
 | Enabled Sites | Filter only | The checklist enables/disables already-supported detectors; new sites require code support |
 | Log Level | Yes | Controls extension-side diagnostic logging |
-| Discord Application ID | Companion build only | Maintainers set this in `companion/activity-status.config.cjs` before building public releases |
+| Discord Application ID | Companion build only | Maintainers set this in `src-tauri/src/main.rs` before building public releases |
 
 ## Run From Source
 
@@ -240,6 +243,12 @@ Run the companion app in development:
 
 ```bash
 npm run companion:dev
+```
+
+Run the legacy Electron companion:
+
+```bash
+npm run companion:dev:electron
 ```
 
 Run backend in watch mode:
@@ -274,7 +283,7 @@ flowchart LR
   Content --> Background["Extension background worker"]
   Popup["Extension popup"] --> Background
   Background --> Companion["Activity Status Companion"]
-  Companion --> API["Local Express backend"]
+  Companion --> API["Local HTTP API"]
   API --> RPC["Discord RPC IPC"]
   RPC --> Discord["Discord desktop app"]
   Assets["Discord Rich Presence assets"] --> Discord
@@ -285,8 +294,10 @@ flowchart LR
 ```text
 extension/             Chrome extension files
 extension/scripts/     Site detectors and background worker
-companion/             Desktop companion app shell
-backend/               Local Discord RPC bridge
+src-tauri/             Lightweight native companion and local HTTP/RPC bridge
+tauri-ui/              Companion tray popover and settings UI
+companion/             Legacy Electron companion shell
+backend/               Legacy Node Discord RPC bridge
 discord-assets-real/   Rich Presence logo assets
 scripts/               Release/package helpers
 .github/workflows/     GitHub Actions release packaging
@@ -308,9 +319,9 @@ GitHub Actions builds temporary artifacts on pushes, pull requests, and manual r
 
 The GitHub release assets include:
 
-- Activity Status Companion for macOS (`.dmg` and `.zip`)
-- Activity Status Companion for Windows (`.exe` and `.zip`)
-- Activity Status Companion for Linux (`.AppImage`)
+- Activity Status Companion for macOS (`.dmg`)
+- Activity Status Companion for Windows (`.exe` and `.msi`)
+- Activity Status Companion for Linux (`.AppImage` and `.deb`)
 - Discord Status extension/manual install bundle
 - Chrome Web Store upload zip
 - SHA-256 checksums
