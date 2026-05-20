@@ -7,23 +7,26 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg: #101114;
-      --panel: #181a20;
-      --panel-soft: #20232b;
-      --line: #30343f;
-      --text: #f4f5f7;
-      --muted: #a6adbb;
-      --accent: #5865f2;
-      --success: #2ecc71;
-      --danger: #ff5f68;
-      --warning: #f7c948;
+      --glass: rgba(13, 15, 21, 0.78);
+      --panel: rgba(255, 255, 255, 0.07);
+      --panel-strong: rgba(255, 255, 255, 0.11);
+      --line: rgba(255, 255, 255, 0.14);
+      --text: #f5f7fb;
+      --muted: #aeb6c7;
+      --blue: #7b8cff;
+      --green: #32d477;
+      --red: #ff6573;
+      --amber: #ffd166;
     }
 
     * {
       box-sizing: border-box;
     }
 
+    html,
     body {
+      width: 100%;
+      height: 100%;
       margin: 0;
       background: transparent;
       color: var(--text);
@@ -32,33 +35,47 @@
       user-select: none;
     }
 
-    .popover {
-      width: 360px;
-      min-height: 520px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 22px;
-      background: rgba(17, 18, 22, 0.98);
-      box-shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
-      overflow: hidden;
+    button {
+      font: inherit;
     }
 
-    .hero {
-      align-items: center;
+    .popover {
+      width: 100%;
+      height: 100%;
       display: flex;
+      flex-direction: column;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 22% 0%, rgba(88, 101, 242, 0.28), transparent 34%),
+        radial-gradient(circle at 96% 16%, rgba(50, 212, 119, 0.14), transparent 30%),
+        var(--glass);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.48);
+      overflow: hidden;
+      backdrop-filter: blur(26px) saturate(1.3);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
       gap: 12px;
-      padding: 18px 18px 14px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      flex: 0 0 auto;
     }
 
     .logo {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
+      width: 44px;
+      height: 44px;
+      border-radius: 13px;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 10px 30px rgba(0, 0, 0, 0.25);
     }
 
     h1 {
-      font-size: 16px;
-      line-height: 1.1;
       margin: 0;
+      font-size: 18px;
+      line-height: 1.1;
+      letter-spacing: 0;
     }
 
     .subtle {
@@ -67,15 +84,36 @@
       margin-top: 3px;
     }
 
-    .status-band {
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
+    .content {
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 14px;
+      scrollbar-width: thin;
+    }
+
+    .content::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(9, 10, 14, 0.38);
+      overflow: hidden;
+    }
+
+    .status-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
     }
 
     .status-cell {
-      padding: 14px 18px;
+      padding: 13px 14px;
     }
 
     .status-cell + .status-cell {
@@ -91,133 +129,169 @@
     }
 
     .value {
-      font-size: 15px;
-      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
       margin-top: 5px;
+      font-size: 15px;
+      font-weight: 850;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     .dot {
-      display: inline-block;
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      margin-right: 7px;
+      flex: 0 0 auto;
       background: var(--muted);
+      box-shadow: 0 0 16px currentColor;
     }
 
     .dot.ok {
-      background: var(--success);
+      color: var(--green);
+      background: var(--green);
     }
 
     .dot.warn {
-      background: var(--warning);
+      color: var(--amber);
+      background: var(--amber);
     }
 
     .dot.bad {
-      background: var(--danger);
+      color: var(--red);
+      background: var(--red);
     }
 
     .activity {
-      border-bottom: 1px solid var(--line);
-      padding: 14px 18px;
+      margin-top: 12px;
+      padding: 14px;
     }
 
     .activity-title {
-      font-size: 14px;
-      font-weight: 800;
       margin-top: 6px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      font-size: 15px;
+      font-weight: 850;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
     }
 
-    .button-grid {
+    .error {
+      color: #ffb8be;
+      min-height: 16px;
+    }
+
+    .controls {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      padding: 16px 18px;
+      gap: 9px;
+      margin-top: 12px;
     }
 
-    button {
+    .btn {
+      min-height: 40px;
       border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--panel-soft);
+      border-radius: 13px;
       color: var(--text);
+      background: var(--panel);
       cursor: pointer;
-      font: inherit;
       font-size: 13px;
-      font-weight: 800;
-      min-height: 42px;
+      font-weight: 850;
       padding: 10px 12px;
+      transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease, opacity 0.12s ease;
     }
 
-    button:hover {
-      border-color: #545b70;
-      background: #272b36;
+    .btn:hover {
+      transform: translateY(-1px);
+      background: var(--panel-strong);
+      border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    .btn:disabled {
+      cursor: default;
+      opacity: 0.48;
+      transform: none;
     }
 
     .primary {
-      border-color: rgba(46, 204, 113, 0.65);
-      background: rgba(46, 204, 113, 0.2);
+      background: rgba(50, 212, 119, 0.18);
+      border-color: rgba(50, 212, 119, 0.55);
     }
 
     .danger {
-      border-color: rgba(255, 95, 104, 0.6);
-      color: #ffd1d4;
+      background: rgba(255, 101, 115, 0.13);
+      border-color: rgba(255, 101, 115, 0.5);
+      color: #ffd9dd;
     }
 
     .wide {
       grid-column: 1 / -1;
     }
 
-    .menu-list {
-      border-top: 1px solid var(--line);
-      padding: 8px 0;
+    .menu {
+      margin-top: 12px;
+      overflow: hidden;
     }
 
-    .menu-row {
-      align-items: center;
-      background: transparent;
-      border: 0;
-      border-radius: 0;
-      display: flex;
-      justify-content: space-between;
-      min-height: 42px;
-      padding: 10px 18px;
+    .row {
       width: 100%;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      padding: 11px 14px;
+      text-align: left;
     }
 
-    .menu-row:hover {
-      background: rgba(255, 255, 255, 0.06);
-      border-color: transparent;
+    .row:last-child {
+      border-bottom: 0;
+    }
+
+    .row:hover {
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .row strong {
+      font-size: 13px;
+      font-weight: 850;
     }
 
     .pill {
-      border-radius: 99px;
-      background: rgba(255, 255, 255, 0.1);
+      max-width: 130px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
       color: var(--muted);
       font-size: 11px;
-      padding: 3px 8px;
+      font-weight: 800;
+      padding: 4px 8px;
     }
 
     .log {
-      border-top: 1px solid var(--line);
+      margin-top: 12px;
+      padding: 12px;
       color: var(--muted);
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 11px;
-      height: 66px;
-      overflow: hidden;
-      padding: 12px 18px;
+      font-size: 10.5px;
+      line-height: 1.45;
       white-space: pre-wrap;
+      overflow-wrap: anywhere;
     }
   </style>
 </head>
 <body>
   <main class="popover">
-    <section class="hero">
+    <section class="header">
       <img class="logo" src="../extension/icons/icon128.png" alt="">
       <div>
         <h1>Activity Status</h1>
@@ -225,49 +299,52 @@
       </div>
     </section>
 
-    <section class="status-band">
-      <div class="status-cell">
-        <div class="label">Backend</div>
-        <div id="backend" class="value"><span class="dot"></span>Checking</div>
-      </div>
-      <div class="status-cell">
-        <div class="label">Discord RPC</div>
-        <div id="discord" class="value"><span class="dot"></span>Checking</div>
-      </div>
-    </section>
+    <section class="content">
+      <section class="card status-grid">
+        <div class="status-cell">
+          <div class="label">Backend</div>
+          <div id="backend" class="value"><span class="dot warn"></span>Checking</div>
+        </div>
+        <div class="status-cell">
+          <div class="label">Discord RPC</div>
+          <div id="discord" class="value"><span class="dot warn"></span>Checking</div>
+        </div>
+      </section>
 
-    <section class="activity">
-      <div class="label">Last Activity</div>
-      <div id="activity" class="activity-title">None</div>
-      <div id="rpcError" class="subtle"></div>
-    </section>
+      <section class="card activity">
+        <div class="label">Last Activity</div>
+        <div id="activity" class="activity-title">None</div>
+        <div id="rpcError" class="subtle error"></div>
+      </section>
 
-    <section class="button-grid">
-      <button id="start" class="primary">Start</button>
-      <button id="stop" class="danger">Stop</button>
-      <button id="restart" class="wide">Restart Backend</button>
-    </section>
+      <section class="controls">
+        <button id="start" class="btn primary">Start</button>
+        <button id="stop" class="btn danger">Stop</button>
+        <button id="restart" class="btn wide">Restart Backend</button>
+        <button id="reconnect" class="btn wide">Reconnect Discord RPC</button>
+      </section>
 
-    <section class="menu-list">
-      <button id="settings" class="menu-row">
-        <span>Settings</span>
-        <span class="pill">Preferences</span>
-      </button>
-      <button id="extensions" class="menu-row">
-        <span>Open Chrome Extensions</span>
-        <span class="pill">Chrome</span>
-      </button>
-      <button id="copyUrl" class="menu-row">
-        <span>Copy Backend URL</span>
-        <span id="urlPill" class="pill">localhost</span>
-      </button>
-      <button id="quit" class="menu-row">
-        <span>Quit Companion</span>
-        <span class="pill">Exit</span>
-      </button>
-    </section>
+      <section class="card menu">
+        <button id="settings" class="row">
+          <strong>Settings</strong>
+          <span class="pill">Preferences</span>
+        </button>
+        <button id="extensions" class="row">
+          <strong>Open Chrome Extensions</strong>
+          <span class="pill">Chrome</span>
+        </button>
+        <button id="copyUrl" class="row">
+          <strong>Copy Backend URL</strong>
+          <span id="urlPill" class="pill">localhost</span>
+        </button>
+        <button id="quit" class="row">
+          <strong>Quit Companion</strong>
+          <span class="pill">Exit</span>
+        </button>
+      </section>
 
-    <section id="log" class="log">Starting...</section>
+      <section id="log" class="card log">Companion ready.</section>
+    </section>
   </main>
 
   <script>
@@ -277,11 +354,13 @@
     const rpcError = document.getElementById('rpcError');
     const log = document.getElementById('log');
     const urlPill = document.getElementById('urlPill');
+    const actionButtons = ['start', 'stop', 'restart', 'reconnect'].map(id => document.getElementById(id));
+    let busy = false;
 
     function dotClass(value, kind) {
       if (kind === 'backend') {
         if (value === 'online') return 'ok';
-        if (value === 'starting') return 'warn';
+        if (value === 'starting' || value === 'stopping') return 'warn';
         return 'bad';
       }
       if (value === 'connected') return 'ok';
@@ -289,47 +368,60 @@
       return 'bad';
     }
 
+    function setLine(element, value, kind) {
+      element.replaceChildren();
+      const dot = document.createElement('span');
+      dot.className = `dot ${dotClass(value, kind)}`;
+      element.append(dot, document.createTextNode(value || 'unknown'));
+    }
+
     function setStatus(status) {
-      backend.innerHTML = `<span class="dot ${dotClass(status.backend, 'backend')}"></span>${status.backend}`;
-      discord.innerHTML = `<span class="dot ${dotClass(status.discord, 'discord')}"></span>${status.discord}`;
+      setLine(backend, status.backend, 'backend');
+      setLine(discord, status.discord, 'discord');
       activity.textContent = status.lastActivity || 'None';
       rpcError.textContent = status.lastRpcError ? `RPC: ${status.lastRpcError}` : '';
       log.textContent = status.log || '';
-      urlPill.textContent = new URL(status.url || 'http://localhost:3000').host;
+      try {
+        urlPill.textContent = new URL(status.url || 'http://localhost:3000').host;
+      } catch {
+        urlPill.textContent = 'localhost';
+      }
     }
 
     async function refresh() {
       setStatus(await window.activityStatus.getStatus());
     }
 
-    document.getElementById('start').addEventListener('click', async () => {
-      setStatus(await window.activityStatus.startBackend());
-    });
+    async function runAction(action) {
+      if (busy) return;
+      busy = true;
+      actionButtons.forEach(button => {
+        button.disabled = true;
+      });
+      try {
+        setStatus(await action());
+      } finally {
+        busy = false;
+        actionButtons.forEach(button => {
+          button.disabled = false;
+        });
+      }
+    }
 
-    document.getElementById('stop').addEventListener('click', async () => {
-      setStatus(await window.activityStatus.stopBackend());
-    });
+    document.getElementById('start').addEventListener('click', () => runAction(window.activityStatus.startBackend));
+    document.getElementById('stop').addEventListener('click', () => runAction(window.activityStatus.stopBackend));
+    document.getElementById('restart').addEventListener('click', () => runAction(window.activityStatus.restartBackend));
+    document.getElementById('reconnect').addEventListener('click', () => runAction(window.activityStatus.reconnectRpc));
 
-    document.getElementById('restart').addEventListener('click', async () => {
-      setStatus(await window.activityStatus.restartBackend());
-    });
-
-    document.getElementById('settings').addEventListener('click', () => {
-      window.activityStatus.openSettings();
-    });
-
-    document.getElementById('extensions').addEventListener('click', () => {
-      window.activityStatus.openExtensions();
-    });
-
+    document.getElementById('settings').addEventListener('click', () => window.activityStatus.openSettings());
+    document.getElementById('extensions').addEventListener('click', () => window.activityStatus.openExtensions());
     document.getElementById('copyUrl').addEventListener('click', async () => {
       const status = await window.activityStatus.getStatus();
-      window.activityStatus.copyText(status.url);
+      await window.activityStatus.copyText(status.url);
+      urlPill.textContent = 'copied';
+      setTimeout(refresh, 900);
     });
-
-    document.getElementById('quit').addEventListener('click', () => {
-      window.activityStatus.quit();
-    });
+    document.getElementById('quit').addEventListener('click', () => window.activityStatus.quit());
 
     window.activityStatus.onStatusUpdate(setStatus);
     refresh();

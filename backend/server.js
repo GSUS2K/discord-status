@@ -39,6 +39,7 @@ let reconnectTimer = null;
 let lastActivity = null;
 let lastRpcError = null;
 let isShuttingDown = false;
+let suppressReconnect = false;
 
 function log(level, message, details = {}) {
   const normalizedLevel = LOG_LEVELS[level] ? level : 'info';
@@ -67,9 +68,12 @@ async function initializeRPC() {
 
     if (rpc) {
       try {
+        suppressReconnect = true;
         await rpc.destroy();
       } catch (error) {
         log('debug', 'Ignoring RPC destroy error before reconnect', { error: error.message });
+      } finally {
+        suppressReconnect = false;
       }
     }
 
@@ -84,9 +88,17 @@ async function initializeRPC() {
     rpc.on('disconnected', () => {
       log('warn', 'Discord RPC disconnected');
       isConnected = false;
-      if (!isShuttingDown) {
+      lastRpcError = 'connection closed';
+      if (!isShuttingDown && !suppressReconnect) {
         scheduleRPCReconnect();
       }
+    });
+
+    rpc.on('error', (error) => {
+      lastRpcError = error?.message || 'Discord RPC error';
+      log('warn', 'Discord RPC client error', { error: lastRpcError });
+      isConnected = false;
+      scheduleRPCReconnect();
     });
 
     await rpc.login({ clientId: CLIENT_ID });
@@ -121,6 +133,33 @@ function scheduleRPCReconnect() {
   }, delay);
 }
 
+async function reconnectRPC() {
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+
+  rpcRetryDelayMs = 5000;
+  isConnected = false;
+  lastRpcError = null;
+
+  if (rpc) {
+    try {
+      suppressReconnect = true;
+      await Promise.race([
+        rpc.destroy(),
+        new Promise(resolve => setTimeout(resolve, 1000))
+      ]);
+    } catch (error) {
+      log('debug', 'Ignoring RPC destroy error before manual reconnect', { error: error.message });
+    } finally {
+      suppressReconnect = false;
+    }
+  }
+
+  await initializeRPC();
+}
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({
@@ -139,6 +178,25 @@ app.get('/api/status', (req, res) => {
     uptime_seconds: Math.round(process.uptime()),
     timestamp: new Date().toISOString()
   });
+});
+
+app.post('/api/reconnect-rpc', async (req, res) => {
+  try {
+    await reconnectRPC();
+    res.json({
+      success: true,
+      discord_rpc: isConnected ? 'connected' : 'disconnected',
+      last_rpc_error: lastRpcError,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    lastRpcError = error.message;
+    log('error', 'Manual RPC reconnect failed', { error: error.message });
+    res.status(500).json({
+      error: 'Failed to reconnect Discord RPC',
+      message: error.message
+    });
+  }
 });
 
 // Update activity endpoint
@@ -216,6 +274,9 @@ app.post('/api/update-activity', async (req, res) => {
     });
   } catch (error) {
     log('error', 'Error updating activity', { error: error.message });
+    isConnected = false;
+    lastRpcError = error.message;
+    scheduleRPCReconnect();
     res.status(500).json({
       error: 'Failed to update activity',
       message: error.message
@@ -287,6 +348,25 @@ app.listen(PORT, () => {
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
+  isShuttingDown = true;
+  log('info', 'Shutting down');
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+  }
+  if (rpc) {
+    try {
+      await Promise.race([
+        rpc.destroy(),
+        new Promise(resolve => setTimeout(resolve, 1000))
+      ]);
+    } catch (error) {
+      log('debug', 'Ignoring RPC destroy error during shutdown', { error: error.message });
+    }
+  }
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
   isShuttingDown = true;
   log('info', 'Shutting down');
   if (reconnectTimer) {
