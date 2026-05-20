@@ -46,6 +46,7 @@ struct InnerState {
     settings: Settings,
     rpc: Option<DiscordIpcClient>,
     rpc_connected: bool,
+    rpc_connecting: bool,
     last_rpc_error: Option<String>,
     last_activity: Option<ActivitySnapshot>,
     last_log: String,
@@ -134,6 +135,7 @@ async fn main() {
             settings: settings.clone(),
             rpc: None,
             rpc_connected: false,
+            rpc_connecting: false,
             last_rpc_error: None,
             last_activity: None,
             last_log: "Companion ready.".to_string(),
@@ -384,12 +386,20 @@ async fn quit_app(app: AppHandle) {
 }
 
 async fn start_server(state: AppState) -> Result<(), String> {
-    let (port, already_running) = {
+    let (port, already_running, rpc_connected) = {
         let inner = state.inner.lock().map_err(|error| error.to_string())?;
-        (inner.settings.port, inner.shutdown.is_some())
+        (
+            inner.settings.port,
+            inner.shutdown.is_some(),
+            inner.rpc_connected,
+        )
     };
     if already_running {
-        set_log(&state, "Backend already running.".to_string());
+        if rpc_connected {
+            set_log(&state, "Backend already running.".to_string());
+        } else {
+            connect_rpc(&state).await?;
+        }
         return Ok(());
     }
 
@@ -439,6 +449,7 @@ async fn start_server(state: AppState) -> Result<(), String> {
         let mut inner = state.inner.lock().expect("state poisoned");
         inner.shutdown = None;
         inner.rpc_connected = false;
+        inner.rpc_connecting = false;
         inner.rpc = None;
     });
 
@@ -449,8 +460,9 @@ async fn stop_server(state: AppState) -> Result<(), String> {
     let shutdown = {
         let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
         inner.last_log = "Stopping backend...".to_string();
-        inner.rpc = None;
+        close_rpc_client(inner.rpc.take());
         inner.rpc_connected = false;
+        inner.rpc_connecting = false;
         inner.shutdown.take()
     };
 
@@ -462,12 +474,65 @@ async fn stop_server(state: AppState) -> Result<(), String> {
 }
 
 async fn reconnect_discord(state: AppState) -> Result<(), String> {
+    disconnect_rpc(&state, "Reconnecting Discord RPC...")?;
     connect_rpc(&state).await
 }
 
 async fn connect_rpc(state: &AppState) -> Result<(), String> {
-    set_log(state, "Connecting Discord RPC...".to_string());
-    let result = match tokio::time::timeout(
+    {
+        let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
+        if inner.rpc_connecting {
+            return Err("Discord RPC is already reconnecting.".to_string());
+        }
+        close_rpc_client(inner.rpc.take());
+        inner.rpc_connected = false;
+        inner.rpc_connecting = true;
+        inner.last_rpc_error = None;
+        inner.last_log = "Connecting Discord RPC...".to_string();
+    }
+
+    let result = connect_rpc_with_retry().await;
+
+    match result {
+        Ok(client) => {
+            let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
+            inner.rpc = Some(client);
+            inner.rpc_connected = true;
+            inner.rpc_connecting = false;
+            inner.last_rpc_error = None;
+            inner.last_log = "Discord RPC connected.".to_string();
+            Ok(())
+        }
+        Err(message) => {
+            let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
+            inner.rpc = None;
+            inner.rpc_connected = false;
+            inner.rpc_connecting = false;
+            inner.last_rpc_error = Some(message.clone());
+            inner.last_log = format!("Discord RPC failed: {message}");
+            Err(message)
+        }
+    }
+}
+
+async fn connect_rpc_with_retry() -> Result<DiscordIpcClient, String> {
+    let mut last_error = String::new();
+    for attempt in 1..=2 {
+        match connect_rpc_once().await {
+            Ok(client) => return Ok(client),
+            Err(error) => {
+                last_error = error;
+                if attempt == 1 {
+                    tokio::time::sleep(Duration::from_millis(550)).await;
+                }
+            }
+        }
+    }
+    Err(last_error)
+}
+
+async fn connect_rpc_once() -> Result<DiscordIpcClient, String> {
+    match tokio::time::timeout(
         RPC_CONNECT_TIMEOUT,
         tokio::task::spawn_blocking(|| {
             let mut client = DiscordIpcClient::new(CLIENT_ID);
@@ -481,34 +546,26 @@ async fn connect_rpc(state: &AppState) -> Result<(), String> {
     {
         Ok(join_result) => join_result.map_err(|error| error.to_string())?,
         Err(_) => {
-            let message =
-                "Discord RPC connection timed out. Make sure Discord desktop is open.".to_string();
-            let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
-            inner.rpc = None;
-            inner.rpc_connected = false;
-            inner.last_rpc_error = Some(message.clone());
-            inner.last_log = format!("Discord RPC failed: {message}");
-            return Err(message);
+            Err("Discord RPC connection timed out. Make sure Discord desktop is open.".to_string())
         }
-    };
+    }
+}
 
-    match result {
-        Ok(client) => {
-            let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
-            inner.rpc = Some(client);
-            inner.rpc_connected = true;
-            inner.last_rpc_error = None;
-            inner.last_log = "Discord RPC connected.".to_string();
-            Ok(())
-        }
-        Err(message) => {
-            let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
-            inner.rpc = None;
-            inner.rpc_connected = false;
-            inner.last_rpc_error = Some(message.clone());
-            inner.last_log = format!("Discord RPC failed: {message}");
-            Err(message)
-        }
+fn disconnect_rpc(state: &AppState, log: &str) -> Result<(), String> {
+    let rpc = {
+        let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
+        inner.rpc_connected = false;
+        inner.rpc_connecting = false;
+        inner.last_log = log.to_string();
+        inner.rpc.take()
+    };
+    close_rpc_client(rpc);
+    Ok(())
+}
+
+fn close_rpc_client(client: Option<DiscordIpcClient>) {
+    if let Some(mut rpc) = client {
+        let _ = rpc.close();
     }
 }
 
@@ -597,9 +654,11 @@ async fn reconnect_activity_rpc(State(state): State<AppState>) -> impl IntoRespo
 
 async fn clear_activity(State(state): State<AppState>) -> impl IntoResponse {
     let mut inner = state.inner.lock().expect("state poisoned");
-    if let Some(rpc) = inner.rpc.as_mut() {
+    if let Some(mut rpc) = inner.rpc.take() {
         match rpc.clear_activity() {
             Ok(()) => {
+                inner.rpc = Some(rpc);
+                inner.rpc_connected = true;
                 inner.last_activity = None;
                 inner.last_log = "Discord activity cleared.".to_string();
                 return (
@@ -609,8 +668,10 @@ async fn clear_activity(State(state): State<AppState>) -> impl IntoResponse {
             }
             Err(error) => {
                 let message = error.to_string();
+                close_rpc_client(Some(rpc));
                 inner.last_rpc_error = Some(message.clone());
                 inner.rpc_connected = false;
+                inner.rpc_connecting = false;
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(ApiMessage::error(message)),
@@ -700,9 +761,11 @@ async fn update_activity(
         );
     }
 
-    if let Some(rpc) = inner.rpc.as_mut() {
+    if let Some(mut rpc) = inner.rpc.take() {
         match rpc.set_activity(activity) {
             Ok(()) => {
+                inner.rpc = Some(rpc);
+                inner.rpc_connected = true;
                 inner.last_activity = Some(ActivitySnapshot {
                     platform,
                     details,
@@ -719,7 +782,9 @@ async fn update_activity(
             }
             Err(error) => {
                 let message = error.to_string();
+                close_rpc_client(Some(rpc));
                 inner.rpc_connected = false;
+                inner.rpc_connecting = false;
                 inner.last_rpc_error = Some(message.clone());
                 inner.last_log = format!("Discord activity failed: {message}");
                 (
@@ -763,6 +828,8 @@ fn companion_status(state: &AppState) -> CompanionStatus {
         .to_string(),
         discord: if inner.rpc_connected {
             "connected"
+        } else if inner.rpc_connecting {
+            "connecting"
         } else {
             "disconnected"
         }
