@@ -167,22 +167,27 @@ jobs:
           name: activity-status-companion-linux
           path: release-assets/linux
 
+      - name: Collect release assets
+        run: |
+          mkdir -p release-assets/upload
+          find release-assets -type f \
+            ! -path 'release-assets/upload/*' \
+            ! -name '*.blockmap' \
+            -print0 | while IFS= read -r -d '' file; do
+              cp "$file" "release-assets/upload/$(basename "$file")"
+            done
+
       - name: Generate checksums
         run: |
-          find release-assets -type f \
-            ! -name '*.blockmap' \
+          find release-assets/upload -type f \
             -print0 | sort -z | xargs -0 shasum -a 256 > release-assets/SHA256SUMS.txt
+          mv release-assets/SHA256SUMS.txt release-assets/upload/SHA256SUMS.txt
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release-assets/extension/*
-            release-assets/webstore/*
-            release-assets/macos/*
-            release-assets/windows/*
-            release-assets/linux/*
-            release-assets/SHA256SUMS.txt
+            release-assets/upload/*
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
