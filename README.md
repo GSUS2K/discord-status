@@ -112,13 +112,11 @@ YouTube, Netflix, Spotify, GitHub, ChatGPT, Google Meet, Twitch, and a few other
 
 ## Install
 
-### For Users
-
 Get the latest release from the [GitHub Releases page](https://github.com/GSUS2K/discord-status/releases/latest).
 
 Download:
 
-- the Discord Status browser extension from the Chrome Web Store (link will be updated soon)
+- Chrome Web Store listing is coming soon. Until then, install manually from the release zip.
 - the Activity Status Companion app for your platform
 
 Then:
@@ -128,9 +126,23 @@ Then:
 3. Install **Discord Status** from the Chrome Web Store.
 4. Keep the companion app running while using Discord status.
 
-Chrome Web Store publishing is the cleanest long-term extension install path. Until then, users can load the extension manually from the release zip and uploading the extension folder in chrome://extensions/ by pressing load unpacked button.
+Until the Chrome Web Store listing is live, download the manual extension zip from GitHub Releases, extract it, open chrome://extensions, enable Developer mode, click Load unpacked, and select the extracted extension folder.
 
-macOS note: current companion builds are unsigned. If macOS says the app is damaged, see [docs/MAC_INSTALL.md](docs/MAC_INSTALL.md).
+Installation note: current companion builds are unsigned.
+Windows SmartScreen/macOS Gatekeeper may warn because the app is not code-signed yet.
+
+Allow the companion to run from your OS settings.
+For macOS:
+```bash
+sudo xattr -cr "/Applications/Activity Status Companion.app"
+```
+
+or go to Privacy & Security settings and press on Allow in the Security section at bottom beside the warning.
+
+```bash
+npm install
+```
+
 
 Companion note: the companion runs as a background tray/menu-bar app. Use the tray icon to open the status window, start/stop the backend, toggle launch at login, or quit fully.
 
@@ -285,7 +297,6 @@ scripts/               Release/package helpers
 | Problem | Try this |
 | --- | --- |
 | Discord says disconnected | Make sure Discord desktop is open, then restart the companion app |
-| macOS says the companion app is damaged | The app is unsigned and quarantined; see [docs/MAC_INSTALL.md](docs/MAC_INSTALL.md) |
 | Companion disappeared after closing the window | It is still running in the menu bar/system tray; use the tray icon to reopen or quit |
 | Extension says backend offline | Confirm Activity Status Companion is running and settings use `http://localhost:3000` |
 | Auto mode swaps tabs | Reload the extension; auto mode should prioritize the active Chrome tab |
@@ -331,4 +342,4 @@ When adding a new site detector, include:
 
 ## License
 
-Add a license before publishing if you want others to use or contribute to this project clearly.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
