@@ -1,6 +1,6 @@
 const { app, BrowserWindow, clipboard, ipcMain, Menu, nativeImage, screen, shell, Tray } = require('electron');
+const { mkdirSync, readFileSync, writeFileSync } = require('node:fs');
 const { spawn } = require('node:child_process');
-const { readFileSync, writeFileSync } = require('node:fs');
 const path = require('node:path');
 const config = require('./activity-status.config.cjs');
 
@@ -8,14 +8,18 @@ let popoverWindow;
 let settingsWindow;
 let tray;
 let backendProcess;
-let lastBackendLine = 'Starting...';
+let backendState = 'stopped';
+let lastBackendLine = 'Companion ready.';
 let isQuitting = false;
+let didQuitCleanup = false;
+let lifecycleLock = Promise.resolve();
 let cachedStatus = {
   backend: 'offline',
   discord: 'unknown',
   lastActivity: 'None',
   lastRpcError: null,
-  url: `http://localhost:${config.port || 3000}`
+  url: `http://localhost:${config.port || 3000}`,
+  log: lastBackendLine
 };
 
 const isPackaged = app.isPackaged;
@@ -37,7 +41,7 @@ if (!hasSingleInstanceLock) {
   app.quit();
 }
 
-app.on('second-instance', togglePopover);
+app.on('second-instance', () => togglePopover());
 
 function readSettings() {
   try {
@@ -51,6 +55,7 @@ function readSettings() {
 function saveSettings(nextSettings) {
   const settings = { ...readSettings(), ...nextSettings };
   setLaunchAtLogin(Boolean(settings.launchAtLogin));
+  mkdirSync(path.dirname(settingsPath), { recursive: true });
   writeFileSync(settingsPath, JSON.stringify({
     autoStartBackend: Boolean(settings.autoStartBackend),
     hidePopoverOnBlur: Boolean(settings.hidePopoverOnBlur)
@@ -62,8 +67,8 @@ function createPopoverWindow() {
   if (popoverWindow) return popoverWindow;
 
   popoverWindow = new BrowserWindow({
-    width: 360,
-    height: 540,
+    width: 382,
+    height: 560,
     show: false,
     frame: false,
     resizable: false,
@@ -71,8 +76,11 @@ function createPopoverWindow() {
     movable: false,
     skipTaskbar: true,
     alwaysOnTop: true,
+    transparent: true,
     title: 'Activity Status Companion',
-    backgroundColor: '#101114',
+    backgroundColor: '#00000000',
+    vibrancy: process.platform === 'darwin' ? 'popover' : undefined,
+    visualEffectState: process.platform === 'darwin' ? 'active' : undefined,
     icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -102,13 +110,16 @@ function createSettingsWindow() {
   if (settingsWindow) return settingsWindow;
 
   settingsWindow = new BrowserWindow({
-    width: 860,
-    height: 620,
-    minWidth: 720,
-    minHeight: 520,
+    width: 930,
+    height: 680,
+    minWidth: 760,
+    minHeight: 560,
     show: false,
     title: 'Activity Status Companion Settings',
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     backgroundColor: '#101114',
+    vibrancy: process.platform === 'darwin' ? 'sidebar' : undefined,
+    visualEffectState: process.platform === 'darwin' ? 'active' : undefined,
     icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -130,19 +141,21 @@ function createSettingsWindow() {
 
 function showSettingsWindow() {
   const window = createSettingsWindow();
+  popoverWindow?.hide();
   window.show();
   window.focus();
-  popoverWindow?.hide();
+  pushStatusToRenderers();
 }
 
 function createTray() {
   if (tray) return;
 
   const image = nativeImage.createFromPath(trayIconPath).resize({ width: 18, height: 18 });
+  image.setTemplateImage(process.platform === 'darwin');
   tray = new Tray(image);
   tray.setToolTip('Activity Status Companion');
-  tray.on('click', togglePopover);
-  tray.on('right-click', showNativeTrayMenu);
+  tray.on('click', () => togglePopover());
+  tray.on('right-click', () => showNativeTrayMenu());
 }
 
 function togglePopover() {
@@ -186,17 +199,19 @@ function positionPopover(window) {
 
 function showNativeTrayMenu() {
   const menu = Menu.buildFromTemplate([
-    { label: 'Open Controls', click: togglePopover },
-    { label: backendProcess ? 'Backend: running' : 'Backend: stopped', enabled: false },
+    { label: 'Open Controls', click: () => togglePopover() },
+    { label: `Backend: ${backendState}`, enabled: false },
     { type: 'separator' },
-    { label: 'Start Backend', enabled: !backendProcess, click: startBackend },
-    { label: 'Stop Backend', enabled: Boolean(backendProcess), click: stopBackend },
-    { label: 'Restart Backend', click: restartBackend },
+    { label: 'Start Backend', enabled: !backendProcess && backendState !== 'starting', click: () => startBackend() },
+    { label: 'Stop Backend', enabled: Boolean(backendProcess), click: () => stopBackend() },
+    { label: 'Restart Backend', click: () => restartBackend() },
+    { label: 'Reconnect Discord RPC', click: () => reconnectRpc() },
     { type: 'separator' },
-    { label: 'Settings...', click: showSettingsWindow },
-    { label: 'Open Chrome Extensions', click: () => shell.openExternal('chrome://extensions') },
+    { label: readSettings().launchAtLogin ? 'Launch at Login: On' : 'Launch at Login: Off', enabled: false },
+    { label: 'Settings...', click: () => showSettingsWindow() },
+    { label: 'Open Chrome Extensions', click: () => openChromeExtensions() },
     { type: 'separator' },
-    { label: 'Quit', click: quitApp }
+    { label: 'Quit', click: () => quitApp() }
   ]);
   tray.popUpContextMenu(menu);
 }
@@ -208,20 +223,76 @@ function setLaunchAtLogin(openAtLogin) {
   });
 }
 
-function startBackend() {
-  if (backendProcess) return;
+function withLifecycle(task) {
+  lifecycleLock = lifecycleLock.then(task, task);
+  return lifecycleLock;
+}
+
+async function startBackend() {
+  return withLifecycle(startBackendUnlocked);
+}
+
+async function stopBackend() {
+  return withLifecycle(async () => {
+    if (!backendProcess) {
+      backendState = 'stopped';
+      lastBackendLine = 'Backend is already stopped.';
+      await pushStatusToRenderers();
+      return getStatus();
+    }
+
+    const processToStop = backendProcess;
+    backendState = 'stopping';
+    lastBackendLine = 'Stopping backend...';
+    await pushStatusToRenderers();
+
+    processToStop.kill('SIGINT');
+    const exited = await waitForExit(processToStop, 2500);
+    if (!exited && !processToStop.killed) {
+      processToStop.kill('SIGKILL');
+      await waitForExit(processToStop, 1000);
+    }
+
+    if (backendProcess === processToStop) {
+      backendProcess = null;
+    }
+    backendState = 'stopped';
+    lastBackendLine = 'Backend stopped by user.';
+    await delay(250);
+    return getStatus();
+  });
+}
+
+async function restartBackend() {
+  return withLifecycle(async () => {
+    await stopBackendUnlocked();
+    await delay(350);
+    return startBackendUnlocked();
+  });
+}
+
+async function startBackendUnlocked() {
+  if (backendProcess) {
+    lastBackendLine = backendState === 'running' ? 'Backend already running.' : lastBackendLine;
+    return getStatus();
+  }
 
   const clientId = process.env.DISCORD_CLIENT_ID || config.discordClientId;
   const hasClientId = clientId && !/^REPLACE_WITH_/i.test(clientId);
 
   if (!hasClientId) {
-    lastBackendLine = 'Missing Discord client ID. Set companion/activity-status.config.cjs before building.';
-    pushStatusToRenderers();
-    return;
+    backendState = 'stopped';
+    lastBackendLine = 'Missing Discord client ID. Update companion/activity-status.config.cjs before building.';
+    await pushStatusToRenderers();
+    return getStatus();
   }
 
+  backendState = 'starting';
   lastBackendLine = 'Starting backend...';
+  await pushStatusToRenderers();
+
   backendProcess = spawn(process.execPath, [backendScript], {
+    cwd: backendRoot,
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: '1',
@@ -235,6 +306,9 @@ function startBackend() {
 
   backendProcess.stdout.on('data', data => {
     lastBackendLine = data.toString().trim().split('\n').at(-1) || lastBackendLine;
+    if (lastBackendLine.includes('Backend running') || lastBackendLine.includes('HTTP request')) {
+      backendState = 'running';
+    }
     pushStatusToRenderers();
   });
 
@@ -243,27 +317,91 @@ function startBackend() {
     pushStatusToRenderers();
   });
 
-  backendProcess.on('exit', code => {
-    const previousLine = lastBackendLine;
-    backendProcess = null;
-    lastBackendLine = `Backend stopped${Number.isFinite(code) ? ` with code ${code}` : ''}. Last message: ${previousLine}`;
+  backendProcess.on('spawn', () => {
+    backendState = 'running';
+    lastBackendLine = 'Backend process started.';
     pushStatusToRenderers();
   });
 
-  pushStatusToRenderers();
+  backendProcess.on('error', error => {
+    backendState = 'stopped';
+    backendProcess = null;
+    lastBackendLine = `Backend failed to start: ${error.message}`;
+    pushStatusToRenderers();
+  });
+
+  backendProcess.on('exit', (code, signal) => {
+    const previousLine = lastBackendLine;
+    backendProcess = null;
+    backendState = 'stopped';
+    lastBackendLine = `Backend stopped${signal ? ` by ${signal}` : Number.isFinite(code) ? ` with code ${code}` : ''}. Last message: ${previousLine}`;
+    pushStatusToRenderers();
+  });
+
+  await delay(500);
+  return getStatus();
 }
 
-async function stopBackend() {
-  if (!backendProcess) return;
-  backendProcess.kill('SIGINT');
-  backendProcess = null;
-  lastBackendLine = 'Backend stopped by user.';
-  pushStatusToRenderers();
+async function stopBackendUnlocked() {
+  if (!backendProcess) {
+    backendState = 'stopped';
+    lastBackendLine = 'Backend is already stopped.';
+    await pushStatusToRenderers();
+    return;
+  }
+
+  const processToStop = backendProcess;
+  backendState = 'stopping';
+  lastBackendLine = 'Stopping backend...';
+  await pushStatusToRenderers();
+  processToStop.kill('SIGINT');
+  const exited = await waitForExit(processToStop, 2500);
+  if (!exited && !processToStop.killed) {
+    processToStop.kill('SIGKILL');
+    await waitForExit(processToStop, 1000);
+  }
+  if (backendProcess === processToStop) {
+    backendProcess = null;
+  }
+  backendState = 'stopped';
 }
 
-async function restartBackend() {
-  await stopBackend();
-  startBackend();
+function waitForExit(child, timeoutMs) {
+  if (child.exitCode !== null || child.signalCode !== null) {
+    return Promise.resolve(true);
+  }
+
+  return new Promise(resolve => {
+    let settled = false;
+    const done = value => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      child.off('exit', onExit);
+      resolve(value);
+    };
+    const onExit = () => done(true);
+    const timer = setTimeout(() => done(false), timeoutMs);
+    child.once('exit', onExit);
+  });
+}
+
+async function reconnectRpc() {
+  try {
+    if (!backendProcess && cachedStatus.backend !== 'online') {
+      await startBackend();
+    }
+    const response = await fetch(`${backendUrl}/api/reconnect-rpc`, { method: 'POST' });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.message || `HTTP ${response.status}`);
+    }
+    lastBackendLine = 'Discord RPC reconnect requested.';
+  } catch (error) {
+    lastBackendLine = `Discord RPC reconnect failed: ${error.message}`;
+  }
+  await pushStatusToRenderers();
+  return getStatus();
 }
 
 async function getStatus() {
@@ -288,15 +426,16 @@ async function getStatus() {
       lastActivity: payload.last_activity?.details || 'None',
       lastRpcError: payload.last_rpc_error || null,
       log: lastBackendLine,
-      url: backendUrl
+      url: backendUrl,
+      uptimeSeconds: payload.uptime_seconds || 0
     };
     return cachedStatus;
   } catch (error) {
     cachedStatus = {
-      backend: backendProcess ? 'starting' : 'offline',
+      backend: backendProcess ? backendState : 'offline',
       discord: 'unknown',
       lastActivity: 'None',
-      lastRpcError: null,
+      lastRpcError: backendProcess ? null : 'backend offline',
       log: lastBackendLine,
       url: backendUrl
     };
@@ -311,38 +450,66 @@ async function pushStatusToRenderers() {
   }
 }
 
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function openChromeExtensions() {
+  const chromeUrl = 'chrome://extensions/';
+  if (process.platform === 'darwin') {
+    const opener = spawn('open', ['-a', 'Google Chrome', chromeUrl], {
+      detached: true,
+      stdio: 'ignore'
+    });
+    opener.on('error', () => shell.openExternal('https://support.google.com/chrome_webstore/answer/2664769'));
+    opener.unref();
+    return;
+  }
+
+  if (process.platform === 'win32') {
+    const opener = spawn('cmd', ['/c', 'start', '', chromeUrl], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true
+    });
+    opener.on('error', () => shell.openExternal('https://support.google.com/chrome_webstore/answer/2664769'));
+    opener.unref();
+    return;
+  }
+
+  const opener = spawn('google-chrome', [chromeUrl], {
+    detached: true,
+    stdio: 'ignore'
+  });
+  opener.on('error', () => {
+    const chromium = spawn('chromium', [chromeUrl], { detached: true, stdio: 'ignore' });
+    chromium.on('error', () => shell.openExternal('https://support.google.com/chrome_webstore/answer/2664769'));
+    chromium.unref();
+  });
+  opener.unref();
+}
+
 function quitApp() {
+  if (didQuitCleanup) return;
+  didQuitCleanup = true;
   isQuitting = true;
-  app.quit();
+  stopBackend().finally(() => app.quit());
 }
 
 ipcMain.handle('status:get', getStatus);
-ipcMain.handle('backend:start', async () => {
-  startBackend();
-  return getStatus();
-});
-ipcMain.handle('backend:stop', async () => {
-  await stopBackend();
-  return getStatus();
-});
-ipcMain.handle('backend:restart', async () => {
-  await restartBackend();
-  return getStatus();
-});
-ipcMain.handle('open:extensions', () => {
-  shell.openExternal('chrome://extensions');
-});
-ipcMain.handle('window:hide', () => {
-  popoverWindow?.hide();
-});
-ipcMain.handle('settings:open', () => {
-  showSettingsWindow();
-});
+ipcMain.handle('backend:start', startBackend);
+ipcMain.handle('backend:stop', stopBackend);
+ipcMain.handle('backend:restart', restartBackend);
+ipcMain.handle('rpc:reconnect', reconnectRpc);
+ipcMain.handle('open:extensions', () => openChromeExtensions());
+ipcMain.handle('window:hide', () => popoverWindow?.hide());
+ipcMain.handle('settings:open', () => showSettingsWindow());
 ipcMain.handle('quit', quitApp);
 ipcMain.handle('settings:get', () => readSettings());
 ipcMain.handle('settings:set', (_event, settings) => saveSettings(settings));
 ipcMain.handle('clipboard:copy', (_event, text) => {
   clipboard.writeText(String(text || ''));
+  return true;
 });
 
 app.whenReady().then(() => {
@@ -359,14 +526,15 @@ app.whenReady().then(() => {
     startBackend();
   }
 
-  setInterval(pushStatusToRenderers, 3000);
-
-  app.on('activate', togglePopover);
+  setInterval(() => pushStatusToRenderers(), 3000);
 });
 
-app.on('before-quit', () => {
-  isQuitting = true;
-  stopBackend();
+app.on('activate', () => togglePopover());
+
+app.on('before-quit', event => {
+  if (didQuitCleanup) return;
+  event.preventDefault();
+  quitApp();
 });
 
 app.on('window-all-closed', () => {

@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('activityStatus', {
   startBackend: () => ipcRenderer.invoke('backend:start'),
   stopBackend: () => ipcRenderer.invoke('backend:stop'),
   restartBackend: () => ipcRenderer.invoke('backend:restart'),
+  reconnectRpc: () => ipcRenderer.invoke('rpc:reconnect'),
   openExtensions: () => ipcRenderer.invoke('open:extensions'),
   hideWindow: () => ipcRenderer.invoke('window:hide'),
   openSettings: () => ipcRenderer.invoke('settings:open'),
