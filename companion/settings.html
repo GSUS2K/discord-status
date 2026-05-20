@@ -334,6 +334,7 @@
       <nav>
         <button class="nav-button active" data-view="general">General</button>
         <button class="nav-button" data-view="backend">Backend</button>
+        <button class="nav-button" data-view="updates">Updates</button>
         <button class="nav-button" data-view="diagnostics">Diagnostics</button>
       </nav>
     </aside>
@@ -438,6 +439,32 @@
           </div>
         </section>
       </section>
+
+      <section id="updates-view" class="view">
+        <h1>Updates</h1>
+        <div class="lede">Install future companion releases from GitHub without manually replacing the app.</div>
+
+        <section class="panel">
+          <div class="row">
+            <div>
+              <div class="title">Current version</div>
+              <div id="currentVersion" class="desc">Checking</div>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <div class="title">Updater status</div>
+              <div id="updateStatus" class="desc">Ready</div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="actions">
+              <button id="checkUpdates" class="command primary">Check for Updates</button>
+              <button id="installUpdates" class="command">Install Downloaded Update</button>
+            </div>
+          </div>
+        </section>
+      </section>
     </main>
   </div>
 
@@ -446,11 +473,12 @@
     const views = {
       general: document.getElementById('general'),
       backend: document.getElementById('backend-view'),
+      updates: document.getElementById('updates-view'),
       diagnostics: document.getElementById('diagnostics')
     };
     const settingInputs = ['launchAtLogin', 'autoStartBackend', 'hidePopoverOnBlur'].map(id => document.getElementById(id));
     const portInput = document.getElementById('port');
-    const actionButtons = ['start', 'stop', 'restart', 'reconnect'].map(id => document.getElementById(id));
+    const actionButtons = ['start', 'stop', 'restart', 'reconnect', 'checkUpdates'].map(id => document.getElementById(id));
     let busy = false;
 
     function showView(id) {
@@ -491,6 +519,10 @@
       document.getElementById('rpcError').textContent = status.lastRpcError || 'None';
       document.getElementById('log').textContent = status.log || '';
       document.getElementById('backendUrl').value = status.url || 'http://localhost:3000';
+      const update = status.update || {};
+      document.getElementById('currentVersion').textContent = update.version ? `v${update.version}` : 'Unknown';
+      document.getElementById('updateStatus').textContent = update.message || 'Ready';
+      document.getElementById('installUpdates').disabled = update.state !== 'downloaded';
     }
 
     async function loadSettings() {
@@ -537,6 +569,8 @@
     document.getElementById('stop').addEventListener('click', () => runAction(window.activityStatus.stopBackend));
     document.getElementById('restart').addEventListener('click', () => runAction(window.activityStatus.restartBackend));
     document.getElementById('reconnect').addEventListener('click', () => runAction(window.activityStatus.reconnectRpc));
+    document.getElementById('checkUpdates').addEventListener('click', () => runAction(window.activityStatus.checkForUpdates));
+    document.getElementById('installUpdates').addEventListener('click', () => window.activityStatus.installUpdate());
     document.getElementById('extensions').addEventListener('click', () => window.activityStatus.openExtensions());
     document.getElementById('copyUrl').addEventListener('click', async () => {
       const status = await window.activityStatus.getStatus();

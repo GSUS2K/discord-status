@@ -34,6 +34,13 @@
     "main": "companion/main.cjs"
   },
   "afterPack": "scripts/ad-hoc-sign-mac.cjs",
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "GSUS2K",
+      "repo": "discord-status"
+    }
+  ],
   "mac": {
     "target": ["dmg", "zip"],
     "category": "public.app-category.utilities",
