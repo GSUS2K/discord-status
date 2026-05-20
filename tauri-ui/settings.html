@@ -7,15 +7,14 @@
   <style>
     :root {
       color-scheme: dark;
-      --bg: #0b0d12;
-      --glass: rgba(18, 20, 28, 0.72);
+      --bg: #05070a;
+      --glass: rgba(12, 16, 20, 0.74);
       --panel: rgba(255, 255, 255, 0.06);
       --panel-strong: rgba(255, 255, 255, 0.1);
-      --line: rgba(255, 255, 255, 0.13);
+      --line: rgba(126, 255, 199, 0.16);
       --text: #f5f7fb;
       --muted: #aeb6c7;
-      --blue: #7b8cff;
-      --green: #32d477;
+      --green: #6ff6bd;
       --red: #ff6573;
       --amber: #ffd166;
     }
@@ -29,8 +28,8 @@
       margin: 0;
       min-height: 100vh;
       background:
-        radial-gradient(circle at 18% 8%, rgba(88, 101, 242, 0.28), transparent 34%),
-        radial-gradient(circle at 88% 16%, rgba(50, 212, 119, 0.12), transparent 30%),
+        linear-gradient(145deg, rgba(91, 111, 255, 0.18), rgba(0, 0, 0, 0) 34%),
+        radial-gradient(circle at 88% 16%, rgba(111, 246, 189, 0.12), transparent 30%),
         var(--bg);
       color: var(--text);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -44,7 +43,7 @@
 
     .shell {
       display: grid;
-      grid-template-columns: 230px 1fr;
+      grid-template-columns: 240px 1fr;
       min-height: 100vh;
       border: 1px solid rgba(255, 255, 255, 0.08);
       background: rgba(8, 9, 13, 0.28);
@@ -53,7 +52,7 @@
 
     aside {
       border-right: 1px solid var(--line);
-      background: rgba(14, 16, 23, 0.64);
+      background: rgba(9, 11, 17, 0.7);
       padding: 26px 16px;
     }
 
@@ -74,7 +73,7 @@
 
     .brand-title {
       font-size: 16px;
-      font-weight: 900;
+      font-weight: 800;
       line-height: 1.08;
       letter-spacing: 0;
     }
@@ -96,7 +95,7 @@
       color: var(--text);
       cursor: pointer;
       font-size: 13px;
-      font-weight: 850;
+      font-weight: 800;
       padding: 12px 13px;
       text-align: left;
     }
@@ -106,14 +105,14 @@
     }
 
     .nav-button.active {
-      background: rgba(123, 140, 255, 0.22);
-      border-color: rgba(123, 140, 255, 0.32);
+      background: rgba(111, 246, 189, 0.14);
+      border-color: rgba(111, 246, 189, 0.32);
     }
 
     main {
       height: 100vh;
       overflow-y: auto;
-      padding: 34px 36px 44px;
+      padding: 32px 36px 44px;
       scrollbar-width: thin;
     }
 
@@ -128,7 +127,7 @@
 
     .view {
       display: none;
-      max-width: 780px;
+      max-width: 1120px;
     }
 
     .view.active {
@@ -137,7 +136,7 @@
 
     h1 {
       margin: 0;
-      font-size: 30px;
+      font-size: 28px;
       line-height: 1.05;
       letter-spacing: 0;
     }
@@ -170,7 +169,7 @@
 
     .title {
       font-size: 15px;
-      font-weight: 900;
+      font-weight: 800;
     }
 
     .desc {
@@ -279,7 +278,7 @@
       background: var(--panel);
       color: var(--text);
       cursor: pointer;
-      font-weight: 850;
+      font-weight: 800;
       padding: 10px 14px;
     }
 
@@ -294,8 +293,8 @@
     }
 
     .primary {
-      background: rgba(50, 212, 119, 0.18);
-      border-color: rgba(50, 212, 119, 0.55);
+      background: rgba(111, 246, 189, 0.16);
+      border-color: rgba(111, 246, 189, 0.52);
     }
 
     .danger {
@@ -321,6 +320,48 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 12px;
       line-height: 1.45;
+    }
+
+    .toasts {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      width: min(360px, calc(100vw - 48px));
+      display: grid;
+      gap: 10px;
+      pointer-events: none;
+      z-index: 30;
+    }
+
+    .toast {
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 16px;
+      background: rgba(7, 10, 14, 0.92);
+      color: var(--text);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.42);
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.35;
+      padding: 12px 14px;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: toast-in 0.16s ease forwards;
+    }
+
+    .toast.ok {
+      border-color: rgba(111, 246, 189, 0.42);
+    }
+
+    .toast.bad {
+      border-color: rgba(255, 101, 115, 0.52);
+      color: #ffd9dd;
+    }
+
+    @keyframes toast-in {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
   </style>
 </head>
@@ -442,7 +483,7 @@
 
       <section id="updates-view" class="view">
         <h1>Updates</h1>
-        <div class="lede">Install future companion releases from GitHub without manually replacing the app.</div>
+        <div class="lede">Open the latest GitHub release and copy diagnostics when something feels off.</div>
 
         <section class="panel">
           <div class="row">
@@ -459,14 +500,15 @@
           </div>
           <div class="row">
             <div class="actions">
-              <button id="checkUpdates" class="command primary">Check for Updates</button>
-              <button id="installUpdates" class="command">Install Downloaded Update</button>
+              <button id="checkUpdates" class="command primary">Open Latest Release</button>
+              <button id="installUpdates" class="command">Copy Diagnostics</button>
             </div>
           </div>
         </section>
       </section>
     </main>
   </div>
+  <section id="toasts" class="toasts" aria-live="polite"></section>
 
   <script>
     const { invoke } = window.__TAURI__.core;
@@ -496,7 +538,24 @@
     const settingInputs = ['launchAtLogin', 'autoStartBackend', 'hidePopoverOnBlur'].map(id => document.getElementById(id));
     const portInput = document.getElementById('port');
     const actionButtons = ['start', 'stop', 'restart', 'reconnect', 'checkUpdates'].map(id => document.getElementById(id));
+    const toasts = document.getElementById('toasts');
     let busy = false;
+    let lastToast = { message: '', time: 0 };
+
+    function toast(message, kind = 'ok') {
+      const now = Date.now();
+      if (message === lastToast.message && now - lastToast.time < 1600) return;
+      lastToast = { message, time: now };
+      const item = document.createElement('div');
+      item.className = `toast ${kind}`;
+      item.textContent = message;
+      toasts.append(item);
+      setTimeout(() => item.remove(), 3000);
+    }
+
+    function errorMessage(error) {
+      return typeof error === 'string' ? error : (error?.message || 'Something went wrong.');
+    }
 
     function showView(id) {
       for (const [viewId, element] of Object.entries(views)) {
@@ -539,7 +598,7 @@
       const update = status.update || {};
       document.getElementById('currentVersion').textContent = update.version ? `v${update.version}` : 'Unknown';
       document.getElementById('updateStatus').textContent = update.message || 'Ready';
-      document.getElementById('installUpdates').disabled = update.state !== 'downloaded';
+      document.getElementById('installUpdates').disabled = false;
     }
 
     async function loadSettings() {
@@ -551,17 +610,23 @@
     }
 
     async function saveSettings() {
-      await activityStatus.setSettings(Object.fromEntries(
-        [...settingInputs.map(input => [input.id, input.checked]), ['port', Number(portInput.value)]]
-      ));
-      await loadSettings();
+      try {
+        await activityStatus.setSettings(Object.fromEntries(
+          [...settingInputs.map(input => [input.id, input.checked]), ['port', Number(portInput.value)]]
+        ));
+        await loadSettings();
+        toast('Settings saved.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+        await loadSettings().catch(() => {});
+      }
     }
 
     async function refresh() {
       setStatus(await activityStatus.getStatus());
     }
 
-    async function runAction(action) {
+    async function runAction(action, successMessage) {
       if (busy) return;
       busy = true;
       actionButtons.forEach(button => {
@@ -569,6 +634,9 @@
       });
       try {
         setStatus(await action());
+        if (successMessage) toast(successMessage);
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
       } finally {
         busy = false;
         actionButtons.forEach(button => {
@@ -582,16 +650,37 @@
     }
     portInput.addEventListener('change', saveSettings);
 
-    document.getElementById('start').addEventListener('click', () => runAction(activityStatus.startBackend));
-    document.getElementById('stop').addEventListener('click', () => runAction(activityStatus.stopBackend));
-    document.getElementById('restart').addEventListener('click', () => runAction(activityStatus.restartBackend));
-    document.getElementById('reconnect').addEventListener('click', () => runAction(activityStatus.reconnectRpc));
-    document.getElementById('checkUpdates').addEventListener('click', () => runAction(activityStatus.checkForUpdates));
-    document.getElementById('installUpdates').addEventListener('click', () => activityStatus.installUpdate());
-    document.getElementById('extensions').addEventListener('click', () => activityStatus.openExtensions());
+    document.getElementById('start').addEventListener('click', () => runAction(activityStatus.startBackend, 'Backend started.'));
+    document.getElementById('stop').addEventListener('click', () => runAction(activityStatus.stopBackend, 'Backend stopped.'));
+    document.getElementById('restart').addEventListener('click', () => runAction(activityStatus.restartBackend, 'Backend restarted.'));
+    document.getElementById('reconnect').addEventListener('click', () => runAction(activityStatus.reconnectRpc, 'Discord RPC reconnected.'));
+    document.getElementById('checkUpdates').addEventListener('click', () => runAction(activityStatus.checkForUpdates, 'Latest release opened.'));
+    document.getElementById('installUpdates').addEventListener('click', async () => {
+      try {
+        const status = await activityStatus.getStatus();
+        await activityStatus.copyText(JSON.stringify(status, null, 2));
+        document.getElementById('updateStatus').textContent = 'Diagnostics copied to clipboard.';
+        toast('Diagnostics copied.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
+    });
+    document.getElementById('extensions').addEventListener('click', async () => {
+      try {
+        await activityStatus.openExtensions();
+        toast('Chrome extensions opened.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
+    });
     document.getElementById('copyUrl').addEventListener('click', async () => {
-      const status = await activityStatus.getStatus();
-      await activityStatus.copyText(status.url);
+      try {
+        const status = await activityStatus.getStatus();
+        await activityStatus.copyText(status.url);
+        toast('Backend URL copied.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
     });
 
     activityStatus.onStatusUpdate(setStatus);
