@@ -21,11 +21,12 @@ use std::{
     sync::{Arc, Mutex},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+#[cfg(target_os = "macos")]
+use tauri::ActivationPolicy;
 use tauri::{
     image::Image,
-    menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Emitter, Manager, Runtime, State as TauriState, WebviewWindow,
+    AppHandle, Emitter, Manager, PhysicalPosition, Runtime, State as TauriState, WebviewWindow,
 };
 use tauri_plugin_autostart::ManagerExt;
 use tokio::sync::oneshot;
@@ -33,6 +34,8 @@ use tower_http::cors::CorsLayer;
 
 const CLIENT_ID: &str = "1506289512207093890";
 const DEFAULT_PORT: u16 = 3000;
+const RPC_CONNECT_TIMEOUT: Duration = Duration::from_secs(4);
+const RELEASES_URL: &str = "https://github.com/GSUS2K/discord-status/releases/latest";
 
 #[derive(Clone)]
 struct AppState {
@@ -164,7 +167,10 @@ async fn main() {
             quit_app
         ])
         .setup(move |app| {
-            setup_tray(app.handle(), state.clone())?;
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(ActivationPolicy::Accessory);
+
+            setup_tray(app.handle())?;
             if let Err(error) = apply_launch_at_login(app.handle(), settings.launch_at_login) {
                 set_log(&state, format!("Launch at login setup failed: {error}"));
             }
@@ -184,73 +190,37 @@ async fn main() {
         .expect("failed to run Activity Status Companion");
 }
 
-fn setup_tray<R: Runtime>(app: &AppHandle<R>, state: AppState) -> tauri::Result<()> {
-    let open = MenuItem::with_id(app, "open", "Open Activity Status", true, None::<&str>)?;
-    let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
-    let start = MenuItem::with_id(app, "start", "Start Backend", true, None::<&str>)?;
-    let stop = MenuItem::with_id(app, "stop", "Stop Backend", true, None::<&str>)?;
-    let reconnect = MenuItem::with_id(
-        app,
-        "reconnect",
-        "Reconnect Discord RPC",
-        true,
-        None::<&str>,
-    )?;
-    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open, &settings, &start, &stop, &reconnect, &quit])?;
-
+fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let icon = Image::from_bytes(include_bytes!("../icons/icon.png"))?;
 
     TrayIconBuilder::with_id("activity-status")
         .tooltip("Activity Status Companion")
         .icon(icon)
-        .menu(&menu)
-        .on_menu_event(move |app, event| {
-            let state = state.clone();
-            match event.id.as_ref() {
-                "open" => show_window(app, "main"),
-                "settings" => show_window(app, "settings"),
-                "start" => spawn_command(app, state, start_server),
-                "stop" => spawn_command(app, state, stop_server),
-                "reconnect" => spawn_command(app, state, reconnect_discord),
-                "quit" => app.exit(0),
-                _ => {}
-            }
-        })
-        .on_tray_icon_event(|tray, event| {
+        .on_tray_icon_event(move |tray, event| {
             if let TrayIconEvent::Click {
+                position,
                 button: MouseButton::Left,
                 button_state: MouseButtonState::Up,
                 ..
             } = event
             {
-                toggle_window(tray.app_handle(), "main");
+                toggle_window_near(tray.app_handle(), "main", position);
             }
         })
         .build(app)?;
     Ok(())
 }
 
-fn spawn_command<F, Fut, R>(app: &AppHandle<R>, state: AppState, command: F)
-where
-    F: Fn(AppState) -> Fut + Send + Sync + 'static,
-    Fut: std::future::Future<Output = Result<(), String>> + Send + 'static,
-    R: Runtime,
-{
-    let app_handle = app.clone();
-    tauri::async_runtime::spawn(async move {
-        if let Err(error) = command(state.clone()).await {
-            set_log(&state, error);
-        }
-        emit_status(&app_handle, &state);
-    });
-}
-
-fn toggle_window<R: Runtime>(app: &AppHandle<R>, label: &str) {
+fn toggle_window_near<R: Runtime>(
+    app: &AppHandle<R>,
+    label: &str,
+    position: PhysicalPosition<f64>,
+) {
     if let Some(window) = app.get_webview_window(label) {
         if window.is_visible().unwrap_or(false) {
             let _ = window.hide();
         } else {
+            place_popover(&window, position);
             show_existing_window(&window);
         }
     }
@@ -265,6 +235,19 @@ fn show_window<R: Runtime>(app: &AppHandle<R>, label: &str) {
 fn show_existing_window<R: Runtime>(window: &WebviewWindow<R>) {
     let _ = window.show();
     let _ = window.set_focus();
+}
+
+fn place_popover<R: Runtime>(window: &WebviewWindow<R>, position: PhysicalPosition<f64>) {
+    let size = window.outer_size().ok();
+    let width = size.map(|value| value.width as f64).unwrap_or(382.0);
+    let height = size.map(|value| value.height as f64).unwrap_or(560.0);
+    let x = (position.x - width / 2.0).max(8.0);
+    let y = if position.y < 120.0 {
+        position.y + 12.0
+    } else {
+        (position.y - height - 12.0).max(8.0)
+    };
+    let _ = window.set_position(PhysicalPosition::new(x as i32, y as i32));
 }
 
 #[tauri::command]
@@ -351,13 +334,23 @@ async fn copy_text(text: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn check_for_updates(state: TauriState<'_, AppState>) -> Result<CompanionStatus, String> {
+async fn check_for_updates(
+    app: AppHandle,
+    state: TauriState<'_, AppState>,
+) -> Result<CompanionStatus, String> {
+    set_log(
+        &state,
+        "Opening the latest GitHub release in your browser.".to_string(),
+    );
+    let _ = open::that(RELEASES_URL);
+    emit_status(&app, &state);
     Ok(companion_status(&state))
 }
 
 #[tauri::command]
-async fn install_update() -> bool {
-    false
+async fn install_update() -> Result<bool, String> {
+    open::that(RELEASES_URL).map_err(|error| error.to_string())?;
+    Ok(false)
 }
 
 #[tauri::command]
@@ -400,13 +393,24 @@ async fn start_server(state: AppState) -> Result<(), String> {
         return Ok(());
     }
 
-    connect_rpc(&state)?;
+    if let Err(error) = connect_rpc(&state).await {
+        set_log(
+            &state,
+            format!("Backend started. Discord RPC needs reconnect: {error}"),
+        );
+    }
     let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
     {
         let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
         inner.shutdown = Some(shutdown_tx);
         inner.started_at = Instant::now();
-        inner.last_log = format!("Backend listening on http://localhost:{port}");
+        if inner.last_log.starts_with("Backend started.") {
+            inner.last_log = format!(
+                "Backend listening on http://localhost:{port}. Discord RPC needs reconnect."
+            );
+        } else {
+            inner.last_log = format!("Backend listening on http://localhost:{port}");
+        }
     }
 
     let router = Router::new()
@@ -458,13 +462,38 @@ async fn stop_server(state: AppState) -> Result<(), String> {
 }
 
 async fn reconnect_discord(state: AppState) -> Result<(), String> {
-    connect_rpc(&state)
+    connect_rpc(&state).await
 }
 
-fn connect_rpc(state: &AppState) -> Result<(), String> {
-    let mut client = DiscordIpcClient::new(CLIENT_ID);
-    match client.connect() {
-        Ok(()) => {
+async fn connect_rpc(state: &AppState) -> Result<(), String> {
+    set_log(state, "Connecting Discord RPC...".to_string());
+    let result = match tokio::time::timeout(
+        RPC_CONNECT_TIMEOUT,
+        tokio::task::spawn_blocking(|| {
+            let mut client = DiscordIpcClient::new(CLIENT_ID);
+            client
+                .connect()
+                .map(|()| client)
+                .map_err(|error| error.to_string())
+        }),
+    )
+    .await
+    {
+        Ok(join_result) => join_result.map_err(|error| error.to_string())?,
+        Err(_) => {
+            let message =
+                "Discord RPC connection timed out. Make sure Discord desktop is open.".to_string();
+            let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
+            inner.rpc = None;
+            inner.rpc_connected = false;
+            inner.last_rpc_error = Some(message.clone());
+            inner.last_log = format!("Discord RPC failed: {message}");
+            return Err(message);
+        }
+    };
+
+    match result {
+        Ok(client) => {
             let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
             inner.rpc = Some(client);
             inner.rpc_connected = true;
@@ -472,8 +501,7 @@ fn connect_rpc(state: &AppState) -> Result<(), String> {
             inner.last_log = "Discord RPC connected.".to_string();
             Ok(())
         }
-        Err(error) => {
-            let message = error.to_string();
+        Err(message) => {
             let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
             inner.rpc = None;
             inner.rpc_connected = false;
