@@ -4,9 +4,13 @@ contextBridge.exposeInMainWorld('activityStatus', {
   getStatus: () => ipcRenderer.invoke('status:get'),
   startBackend: () => ipcRenderer.invoke('backend:start'),
   stopBackend: () => ipcRenderer.invoke('backend:stop'),
+  restartBackend: () => ipcRenderer.invoke('backend:restart'),
   openExtensions: () => ipcRenderer.invoke('open:extensions'),
   hideWindow: () => ipcRenderer.invoke('window:hide'),
-  getLaunchAtLogin: () => ipcRenderer.invoke('launch-at-login:get'),
-  setLaunchAtLogin: openAtLogin => ipcRenderer.invoke('launch-at-login:set', openAtLogin),
-  onBackendLog: callback => ipcRenderer.on('backend-log', (_event, line) => callback(line))
+  openSettings: () => ipcRenderer.invoke('settings:open'),
+  quit: () => ipcRenderer.invoke('quit'),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  setSettings: settings => ipcRenderer.invoke('settings:set', settings),
+  copyText: text => ipcRenderer.invoke('clipboard:copy', text),
+  onStatusUpdate: callback => ipcRenderer.on('status:update', (_event, status) => callback(status))
 });
