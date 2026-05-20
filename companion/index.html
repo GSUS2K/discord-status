@@ -259,6 +259,15 @@
       background: rgba(255, 255, 255, 0.07);
     }
 
+    .row:disabled {
+      cursor: default;
+      opacity: 0.48;
+    }
+
+    .row:disabled:hover {
+      background: transparent;
+    }
+
     .row strong {
       font-size: 13px;
       font-weight: 850;
@@ -337,6 +346,14 @@
           <strong>Copy Backend URL</strong>
           <span id="urlPill" class="pill">localhost</span>
         </button>
+        <button id="updates" class="row">
+          <strong>Check for Updates</strong>
+          <span id="updatePill" class="pill">v</span>
+        </button>
+        <button id="installUpdate" class="row">
+          <strong>Install Downloaded Update</strong>
+          <span class="pill">Restart</span>
+        </button>
         <button id="quit" class="row">
           <strong>Quit Companion</strong>
           <span class="pill">Exit</span>
@@ -354,6 +371,8 @@
     const rpcError = document.getElementById('rpcError');
     const log = document.getElementById('log');
     const urlPill = document.getElementById('urlPill');
+    const updatePill = document.getElementById('updatePill');
+    const installUpdate = document.getElementById('installUpdate');
     const actionButtons = ['start', 'stop', 'restart', 'reconnect'].map(id => document.getElementById(id));
     let busy = false;
 
@@ -381,6 +400,9 @@
       activity.textContent = status.lastActivity || 'None';
       rpcError.textContent = status.lastRpcError ? `RPC: ${status.lastRpcError}` : '';
       log.textContent = status.log || '';
+      const update = status.update || {};
+      updatePill.textContent = update.availableVersion || update.version || 'check';
+      installUpdate.disabled = update.state !== 'downloaded';
       try {
         urlPill.textContent = new URL(status.url || 'http://localhost:3000').host;
       } catch {
@@ -415,6 +437,8 @@
 
     document.getElementById('settings').addEventListener('click', () => window.activityStatus.openSettings());
     document.getElementById('extensions').addEventListener('click', () => window.activityStatus.openExtensions());
+    document.getElementById('updates').addEventListener('click', () => runAction(window.activityStatus.checkForUpdates));
+    installUpdate.addEventListener('click', () => window.activityStatus.installUpdate());
     document.getElementById('copyUrl').addEventListener('click', async () => {
       const status = await window.activityStatus.getStatus();
       await window.activityStatus.copyText(status.url);

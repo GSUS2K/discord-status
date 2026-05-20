@@ -61,7 +61,7 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            command: npm run dist:companion:mac
+            command: npm run dist:companion:mac -- --x64 --arm64
             artifact: activity-status-companion-macos
             artifact_glob: |
               companion-dist/*.dmg

@@ -2,6 +2,7 @@ const { app, BrowserWindow, clipboard, ipcMain, Menu, nativeImage, screen, shell
 const { mkdirSync, readFileSync, writeFileSync } = require('node:fs');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
+const { autoUpdater } = require('electron-updater');
 const config = require('./activity-status.config.cjs');
 
 let popoverWindow;
@@ -13,13 +14,21 @@ let lastBackendLine = 'Companion ready.';
 let isQuitting = false;
 let didQuitCleanup = false;
 let lifecycleLock = Promise.resolve();
+let updateStatus = {
+  state: app.isPackaged ? 'idle' : 'dev',
+  message: app.isPackaged ? 'Updates ready' : 'Updates are available in release builds.',
+  version: app.getVersion(),
+  availableVersion: null,
+  progress: null
+};
 let cachedStatus = {
   backend: 'offline',
   discord: 'unknown',
   lastActivity: 'None',
   lastRpcError: null,
   url: `http://localhost:${config.port || 3000}`,
-  log: lastBackendLine
+  log: lastBackendLine,
+  update: updateStatus
 };
 
 const isPackaged = app.isPackaged;
@@ -181,6 +190,56 @@ function createTray() {
   tray.on('right-click', () => showNativeTrayMenu());
 }
 
+function setupAutoUpdater() {
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'GSUS2K',
+    repo: 'discord-status'
+  });
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('checking-for-update', () => {
+    setUpdateStatus('checking', 'Checking for updates...');
+  });
+
+  autoUpdater.on('update-available', info => {
+    setUpdateStatus('available', `Downloading ${info.version}...`, { availableVersion: info.version });
+  });
+
+  autoUpdater.on('download-progress', progress => {
+    setUpdateStatus('downloading', `Downloading update (${Math.round(progress.percent || 0)}%)`, {
+      progress: Math.round(progress.percent || 0)
+    });
+  });
+
+  autoUpdater.on('update-downloaded', info => {
+    setUpdateStatus('downloaded', `Update ${info.version} is ready to install.`, {
+      availableVersion: info.version,
+      progress: 100
+    });
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    setUpdateStatus('idle', 'You are on the latest version.', { availableVersion: null, progress: null });
+  });
+
+  autoUpdater.on('error', error => {
+    setUpdateStatus('error', `Update check failed: ${error.message}`, { progress: null });
+  });
+}
+
+function setUpdateStatus(state, message, extra = {}) {
+  updateStatus = {
+    ...updateStatus,
+    ...extra,
+    state,
+    message,
+    version: app.getVersion()
+  };
+  pushStatusToRenderers();
+}
+
 function togglePopover() {
   const window = createPopoverWindow();
   if (window.isVisible()) {
@@ -233,6 +292,8 @@ function showNativeTrayMenu() {
     { label: readSettings().launchAtLogin ? 'Launch at Login: On' : 'Launch at Login: Off', enabled: false },
     { label: 'Settings...', click: () => showSettingsWindow() },
     { label: 'Open Chrome Extensions', click: () => openChromeExtensions() },
+    { label: 'Check for Updates', click: () => checkForUpdates() },
+    { label: 'Install Downloaded Update', enabled: updateStatus.state === 'downloaded', click: () => installUpdate() },
     { type: 'separator' },
     { label: 'Quit', click: () => quitApp() }
   ]);
@@ -428,6 +489,32 @@ async function reconnectRpc() {
   return getStatus();
 }
 
+async function checkForUpdates() {
+  if (!app.isPackaged) {
+    setUpdateStatus('dev', 'Updates are available in installed release builds only.');
+    return getStatus();
+  }
+
+  try {
+    setUpdateStatus('checking', 'Checking for updates...');
+    await autoUpdater.checkForUpdates();
+  } catch (error) {
+    setUpdateStatus('error', `Update check failed: ${error.message}`);
+  }
+  return getStatus();
+}
+
+function installUpdate() {
+  if (updateStatus.state !== 'downloaded') {
+    setUpdateStatus(updateStatus.state, 'No downloaded update is ready yet.');
+    return false;
+  }
+
+  isQuitting = true;
+  autoUpdater.quitAndInstall(false, true);
+  return true;
+}
+
 async function getStatus() {
   const backendUrl = getBackendUrl();
   try {
@@ -439,7 +526,8 @@ async function getStatus() {
         lastActivity: 'None',
         lastRpcError: null,
         log: lastBackendLine,
-        url: backendUrl
+        url: backendUrl,
+        update: updateStatus
       };
       return cachedStatus;
     }
@@ -452,7 +540,8 @@ async function getStatus() {
       lastRpcError: payload.last_rpc_error || null,
       log: lastBackendLine,
       url: backendUrl,
-      uptimeSeconds: payload.uptime_seconds || 0
+      uptimeSeconds: payload.uptime_seconds || 0,
+      update: updateStatus
     };
     return cachedStatus;
   } catch (error) {
@@ -462,7 +551,8 @@ async function getStatus() {
       lastActivity: 'None',
       lastRpcError: backendProcess ? null : 'backend offline',
       log: lastBackendLine,
-      url: backendUrl
+      url: backendUrl,
+      update: updateStatus
     };
     return cachedStatus;
   }
@@ -526,6 +616,8 @@ ipcMain.handle('backend:start', startBackend);
 ipcMain.handle('backend:stop', stopBackend);
 ipcMain.handle('backend:restart', restartBackend);
 ipcMain.handle('rpc:reconnect', reconnectRpc);
+ipcMain.handle('update:check', checkForUpdates);
+ipcMain.handle('update:install', installUpdate);
 ipcMain.handle('open:extensions', () => openChromeExtensions());
 ipcMain.handle('window:hide', () => popoverWindow?.hide());
 ipcMain.handle('settings:open', () => showSettingsWindow());
@@ -546,6 +638,7 @@ app.whenReady().then(() => {
 
   createTray();
   createPopoverWindow();
+  setupAutoUpdater();
 
   if (readSettings().autoStartBackend) {
     startBackend();
