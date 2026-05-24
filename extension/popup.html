@@ -175,6 +175,29 @@
       border: 1px solid #2b2f39;
     }
 
+    .activity-row,
+    .tab-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .activity-copy {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .site-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      object-fit: contain;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 3px;
+      flex: 0 0 auto;
+    }
+
     .activity-platform {
       font-size: 11px;
       color: var(--muted);
@@ -367,6 +390,13 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .site-chip .site-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      padding: 2px;
     }
 
     .tab-card {

@@ -207,6 +207,28 @@
       text-align: left;
     }
 
+    .choice-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .choice-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      object-fit: contain;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 3px;
+      flex: 0 0 auto;
+    }
+
+    .choice-copy {
+      min-width: 0;
+      flex: 1;
+    }
+
     .activity-choice:hover,
     .activity-choice.active {
       background: rgba(111, 246, 189, 0.12);
@@ -492,6 +514,10 @@
     const updatePill = document.getElementById('updatePill');
     const installUpdate = document.getElementById('installUpdate');
     const toasts = document.getElementById('toasts');
+    const SITE_ICON_ALIASES = {
+      googlemeet: 'meet',
+      manualactivity: 'manual'
+    };
     const actionButtons = ['start', 'stop', 'restart', 'reconnect'].map(id => document.getElementById(id));
     let busy = false;
     let lastToast = { message: '', time: 0 };
@@ -561,6 +587,14 @@
         button.className = `activity-choice${item.id === selectedId ? ' active' : ''}`;
         button.type = 'button';
 
+        const row = document.createElement('div');
+        row.className = 'choice-row';
+
+        const icon = createSiteIcon(item.platform);
+
+        const copy = document.createElement('div');
+        copy.className = 'choice-copy';
+
         const title = document.createElement('div');
         title.className = 'choice-title';
         title.textContent = `${item.isActiveTab ? 'Current - ' : ''}${item.platform || 'Browser'} - ${item.details || 'Activity'}`;
@@ -569,10 +603,31 @@
         meta.className = 'choice-meta';
         meta.textContent = item.state || item.tabTitle || 'Active';
 
-        button.append(title, meta);
+        copy.append(title, meta);
+        row.append(icon, copy);
+        button.append(row);
         button.addEventListener('click', () => runAction(() => activityStatus.selectActivity(item.id), 'Activity selected.'));
         activityInbox.append(button);
       }
+    }
+
+    function createSiteIcon(platform) {
+      const key = siteIconKey(platform);
+      const img = document.createElement('img');
+      img.className = 'choice-icon';
+      img.alt = `${platform || 'Activity'} logo`;
+      img.src = `site-icons/${key}.png`;
+      img.addEventListener('error', () => {
+        img.src = 'site-icons/manual.png';
+      }, { once: true });
+      return img;
+    }
+
+    function siteIconKey(platform = '') {
+      const normalized = String(platform)
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+      return SITE_ICON_ALIASES[normalized] || normalized || 'manual';
     }
 
     async function refresh() {
