@@ -245,13 +245,22 @@
       margin-top: 10px;
     }
 
-    .mode-btn {
+    .pick-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .mode-btn,
+    .pick-btn {
       height: 34px;
       font-size: 12px;
       font-weight: 750;
     }
 
-    .mode-btn.active {
+    .mode-btn.active,
+    .pick-btn.active {
       border-color: rgba(88, 101, 242, 0.9);
       background: rgba(88, 101, 242, 0.35);
     }
@@ -318,6 +327,46 @@
       max-height: 156px;
       overflow: auto;
       padding-right: 2px;
+    }
+
+    .site-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 10px;
+      max-height: 132px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .site-chip {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      min-height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--panel-soft);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 750;
+      padding: 7px 8px;
+      user-select: none;
+    }
+
+    .site-chip input {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+      accent-color: var(--accent);
+    }
+
+    .site-chip span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .tab-card {
@@ -398,6 +447,13 @@
       font-size: 11px;
       padding: 2px 0;
     }
+
+    .footer-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 <body>
@@ -439,6 +495,10 @@
         <button class="mode-btn active" data-mode="auto">Auto Detect</button>
         <button class="mode-btn" data-mode="manual">Manual</button>
       </div>
+      <div class="pick-selector" id="autoPickSection">
+        <button class="pick-btn active" data-auto-pick-mode="smart">Smart Auto</button>
+        <button class="pick-btn" data-auto-pick-mode="active">Active Tab Only</button>
+      </div>
       <div id="manualSection" class="manual-fields" style="display: none;">
         <div class="manual-row">
           <input type="text" id="manualTitleInput" maxlength="128" placeholder="Title">
@@ -446,6 +506,14 @@
         </div>
         <button id="setActivityBtn" class="action-btn primary">Set</button>
       </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div class="section-title">Sites</div>
+        <button id="allSitesBtn" class="mini-btn">Enable all</button>
+      </div>
+      <div id="siteList" class="site-grid"></div>
     </section>
 
     <section class="section">
@@ -467,6 +535,11 @@
         <div class="empty">No logs yet.</div>
       </div>
     </section>
+
+    <div class="footer-actions">
+      <button class="action-btn" id="supportBtn">Support</button>
+      <button class="action-btn" id="repoBtn">GitHub</button>
+    </div>
   </main>
 
   <script src="popup.js"></script>

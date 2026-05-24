@@ -10,6 +10,7 @@ const BACKEND_CANDIDATE_URLS = [
 ];
 const DEFAULT_UPDATE_INTERVAL_SECONDS = 5;
 const DEFAULT_STALE_THRESHOLD_MS = 30000;
+const DEFAULT_AUTO_PICK_MODE = 'smart';
 const DEFAULT_ENABLED_SITES = [
   'youtube',
   'netflix',
@@ -30,6 +31,7 @@ const ACTIVE_TAB_GRACE_MS = 45000;
 
 let isEnabled = true;
 let mode = 'auto';
+let autoPickMode = DEFAULT_AUTO_PICK_MODE;
 let currentActivity = null;
 let lastActivity = null;
 let selectedTabId = null;
@@ -52,6 +54,7 @@ log('info', 'Service worker started');
 chrome.storage.local.get([
   'enabled',
   'mode',
+  'autoPickMode',
   'selectedTabId',
   'detectedActivities',
   'serverUrl',
@@ -62,6 +65,7 @@ chrome.storage.local.get([
 ], (result) => {
   isEnabled = result.enabled !== false;
   mode = normalizeMode(result.mode);
+  autoPickMode = normalizeAutoPickMode(result.autoPickMode);
   selectedTabId = normalizeTabId(result.selectedTabId);
   settings = normalizeSettings(result);
   activityRegistry = arrayToRegistry(result.detectedActivities || []);
@@ -100,6 +104,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     log('info', 'Mode changed', { mode });
 
     if (mode === 'auto') {
+      applyBestActivity();
+    }
+  } else if (request.action === 'changeAutoPickMode') {
+    autoPickMode = normalizeAutoPickMode(request.autoPickMode);
+    chrome.storage.local.set({ autoPickMode });
+    log('info', 'Auto pick mode changed', { autoPickMode });
+
+    if (mode === 'auto' && isEnabled) {
+      applyBestActivity();
+    }
+  } else if (request.action === 'setEnabledSites') {
+    const enabledSites = Array.isArray(request.enabledSites)
+      ? request.enabledSites.map(site => String(site).trim().toLowerCase()).filter(Boolean)
+      : DEFAULT_ENABLED_SITES;
+    settings = { ...settings, enabledSites };
+    chrome.storage.local.set({ enabledSites });
+    log('info', 'Enabled sites changed', { enabledSites });
+    removeDisabledActivities();
+    refreshOpenTabs();
+
+    if (mode === 'auto' && isEnabled) {
       applyBestActivity();
     }
   } else if (request.action === 'setManualActivity') {
@@ -158,6 +183,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       ...request.activity,
       tabId,
       tabTitle: sender.tab?.title || request.activity?.details || 'Unknown tab',
+      sourceUrl: sender.tab?.url || request.activity?.url || '',
       lastSeen: Date.now(),
       isActiveTab: tabId === activeTabId
     };
@@ -213,9 +239,14 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     ], (result) => {
       settings = normalizeSettings(result);
       log('info', 'Settings reloaded', { settings });
+      removeDisabledActivities();
       startTimers();
       refreshBackendHealth();
     });
+  }
+
+  if (changes.autoPickMode) {
+    autoPickMode = normalizeAutoPickMode(changes.autoPickMode.newValue);
   }
 });
 
@@ -263,6 +294,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 function normalizeMode(value) {
   return value === 'manual' ? 'manual' : 'auto';
+}
+
+function normalizeAutoPickMode(value) {
+  return value === 'active' ? 'active' : DEFAULT_AUTO_PICK_MODE;
 }
 
 function normalizeTabId(value) {
@@ -397,6 +432,10 @@ function pickAutoActivity() {
     return activeActivity;
   }
 
+  if (autoPickMode === 'active') {
+    return null;
+  }
+
   const entries = registryToArray();
   return entries.length > 0 ? entries[0] : null;
 }
@@ -462,6 +501,34 @@ function pruneStaleActivities() {
   }
 }
 
+function removeDisabledActivities() {
+  let changed = false;
+
+  for (const [tabId, activity] of Object.entries(activityRegistry)) {
+    if (!isSiteEnabled(activity, activity.sourceUrl || activity.url || '')) {
+      delete activityRegistry[tabId];
+      changed = true;
+    }
+  }
+
+  if (!changed) {
+    return;
+  }
+
+  if (selectedTabId !== null && !activityRegistry[selectedTabId]) {
+    selectedTabId = null;
+    currentActivity = null;
+    lastActivity = null;
+  }
+
+  if (mode === 'auto' && currentActivity?.tabId && !activityRegistry[currentActivity.tabId]) {
+    currentActivity = null;
+    lastActivity = null;
+  }
+
+  persistActivityRegistry();
+}
+
 function refreshOpenTabs() {
   chrome.tabs.query({}, (tabs) => {
     for (const tab of tabs) {
@@ -497,7 +564,7 @@ function isUrlSupported(url = '') {
 }
 
 function isSiteEnabled(activity, url = '') {
-  if (settings.enabledSites.length === 0) return true;
+  if (settings.enabledSites.length === 0) return false;
   const platform = String(activity?.platform || '').toLowerCase().replace(/\s+/g, '');
   const haystack = `${platform} ${url}`.toLowerCase();
   return settings.enabledSites.some(site => haystack.includes(site));
