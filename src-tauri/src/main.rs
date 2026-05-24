@@ -50,6 +50,8 @@ struct InnerState {
     rpc_connecting: bool,
     last_rpc_error: Option<String>,
     last_activity: Option<ActivitySnapshot>,
+    activity_inbox: Vec<ActivityEntry>,
+    selected_activity_id: Option<String>,
     last_log: String,
     started_at: Instant,
     shutdown: Option<oneshot::Sender<()>>,
@@ -65,13 +67,41 @@ struct Settings {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct ActivitySnapshot {
+    id: Option<String>,
+    tab_id: Option<i64>,
+    tab_title: Option<String>,
     platform: String,
     details: String,
     state: String,
+    url: Option<String>,
+    is_active_tab: bool,
     large_image_key: Option<String>,
     small_image_key: Option<String>,
     updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ActivityEntry {
+    id: String,
+    tab_id: Option<i64>,
+    tab_title: Option<String>,
+    platform: String,
+    details: String,
+    state: String,
+    url: Option<String>,
+    large_image_key: Option<String>,
+    large_image_text: Option<String>,
+    thumbnail_url: Option<String>,
+    small_image_key: Option<String>,
+    small_image_text: Option<String>,
+    is_playing: Option<bool>,
+    media_current_time: Option<f64>,
+    media_duration: Option<f64>,
+    is_active_tab: bool,
+    last_seen: i64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -83,6 +113,9 @@ struct CompanionStatus {
     last_rpc_error: Option<String>,
     log: String,
     url: String,
+    activities: Vec<ActivityEntry>,
+    selected_activity_id: Option<String>,
+    current_activity_id: Option<String>,
     update: UpdateStatus,
 }
 
@@ -101,24 +134,47 @@ struct ApiStatus {
     discord_rpc: String,
     last_rpc_error: Option<String>,
     last_activity: Option<ActivitySnapshot>,
+    activities: Vec<ActivityEntry>,
+    selected_activity_id: Option<String>,
     uptime_seconds: u64,
     timestamp: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct IncomingActivity {
+    id: Option<String>,
+    tab_id: Option<i64>,
+    tab_title: Option<String>,
     details: Option<String>,
     state: Option<String>,
     platform: Option<String>,
     large_image_key: Option<String>,
     large_image_text: Option<String>,
+    thumbnail_url: Option<String>,
     small_image_key: Option<String>,
     small_image_text: Option<String>,
     is_playing: Option<bool>,
     media_current_time: Option<f64>,
     media_duration: Option<f64>,
     url: Option<String>,
+    source_url: Option<String>,
+    is_active_tab: Option<bool>,
+    last_seen: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ActivityReport {
+    activities: Vec<IncomingActivity>,
+    selected_activity_id: Option<String>,
+    auto_pick_mode: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SelectActivityRequest {
+    selected_activity_id: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -139,6 +195,8 @@ async fn main() {
             rpc_connecting: false,
             last_rpc_error: None,
             last_activity: None,
+            activity_inbox: Vec::new(),
+            selected_activity_id: None,
             last_log: "Companion ready.".to_string(),
             started_at: Instant::now(),
             shutdown: None,
@@ -161,6 +219,7 @@ async fn main() {
             stop_backend,
             restart_backend,
             reconnect_rpc,
+            select_activity_id,
             open_chrome_extensions,
             copy_text,
             check_for_updates,
@@ -326,6 +385,29 @@ async fn reconnect_rpc(
 }
 
 #[tauri::command]
+async fn select_activity_id(
+    app: AppHandle,
+    activity_id: Option<String>,
+    state: TauriState<'_, AppState>,
+) -> Result<CompanionStatus, String> {
+    let selected = select_activity_from_inbox(&state, activity_id);
+    if let Some(activity) = selected {
+        let (status, message) =
+            apply_activity_payload(&state, payload_from_activity_entry(&activity));
+        if !status.is_success() {
+            return Err(message.0.message);
+        }
+    } else {
+        set_log(
+            &state,
+            "Companion returned to auto activity selection.".to_string(),
+        );
+    }
+    emit_status(&app, &state);
+    Ok(companion_status(&state))
+}
+
+#[tauri::command]
 async fn open_chrome_extensions() -> Result<(), String> {
     open_chrome_url("chrome://extensions/")
 }
@@ -428,6 +510,8 @@ async fn start_server(state: AppState) -> Result<(), String> {
         .route("/health", get(health))
         .route("/api/status", get(api_status))
         .route("/api/update-activity", post(update_activity))
+        .route("/api/report-activities", post(report_activities))
+        .route("/api/select-activity", post(select_activity))
         .route("/api/clear-activity", post(clear_activity))
         .route("/api/reconnect-rpc", post(reconnect_activity_rpc))
         .layer(CorsLayer::permissive())
@@ -693,6 +777,10 @@ async fn reconnect_activity_rpc(State(state): State<AppState>) -> impl IntoRespo
 }
 
 async fn clear_activity(State(state): State<AppState>) -> impl IntoResponse {
+    clear_activity_response(&state)
+}
+
+fn clear_activity_response(state: &AppState) -> (StatusCode, Json<ApiMessage>) {
     let mut inner = state.inner.lock().expect("state poisoned");
     if let Some(mut rpc) = inner.rpc.take() {
         match rpc.clear_activity() {
@@ -700,6 +788,8 @@ async fn clear_activity(State(state): State<AppState>) -> impl IntoResponse {
                 inner.rpc = Some(rpc);
                 inner.rpc_connected = true;
                 inner.last_activity = None;
+                inner.activity_inbox.clear();
+                inner.selected_activity_id = None;
                 inner.last_log = "Discord activity cleared.".to_string();
                 return (
                     StatusCode::OK,
@@ -729,6 +819,224 @@ async fn update_activity(
     State(state): State<AppState>,
     Json(payload): Json<IncomingActivity>,
 ) -> impl IntoResponse {
+    {
+        let mut inner = state.inner.lock().expect("state poisoned");
+        inner.activity_inbox = vec![activity_entry_from_payload(&payload)];
+        inner.selected_activity_id = None;
+    }
+    apply_activity_payload(&state, payload)
+}
+
+async fn report_activities(
+    State(state): State<AppState>,
+    Json(report): Json<ActivityReport>,
+) -> impl IntoResponse {
+    let activities = normalize_activity_report(report.activities);
+    let previous_selected_id = state
+        .inner
+        .lock()
+        .expect("state poisoned")
+        .selected_activity_id
+        .clone();
+    let selected_id = report
+        .selected_activity_id
+        .or(previous_selected_id)
+        .filter(|id| {
+            activities
+                .iter()
+                .any(|activity| activity_id(activity).as_str() == id.as_str())
+        });
+    let auto_pick_mode = report.auto_pick_mode.unwrap_or_else(|| "smart".to_string());
+    let chosen = choose_report_activity(&activities, selected_id.as_deref(), &auto_pick_mode);
+
+    {
+        let mut inner = state.inner.lock().expect("state poisoned");
+        inner.activity_inbox = activities.iter().map(activity_entry_from_payload).collect();
+        inner.selected_activity_id = selected_id.clone();
+    }
+
+    if let Some(activity) = chosen {
+        apply_activity_payload(&state, activity)
+    } else {
+        clear_activity_response(&state)
+    }
+}
+
+async fn select_activity(
+    State(state): State<AppState>,
+    Json(selection): Json<SelectActivityRequest>,
+) -> impl IntoResponse {
+    let selected = select_activity_from_inbox(&state, selection.selected_activity_id);
+
+    if let Some(activity) = selected {
+        apply_activity_payload(&state, payload_from_activity_entry(&activity))
+    } else {
+        (
+            StatusCode::OK,
+            Json(ApiMessage::success("Companion returned to auto selection")),
+        )
+    }
+}
+
+fn select_activity_from_inbox(
+    state: &AppState,
+    activity_id: Option<String>,
+) -> Option<ActivityEntry> {
+    let mut inner = state.inner.lock().expect("state poisoned");
+    let selected = activity_id
+        .as_ref()
+        .and_then(|id| {
+            inner
+                .activity_inbox
+                .iter()
+                .find(|activity| &activity.id == id)
+        })
+        .cloned();
+    inner.selected_activity_id = selected.as_ref().map(|activity| activity.id.clone());
+    selected
+}
+
+fn normalize_activity_report(activities: Vec<IncomingActivity>) -> Vec<IncomingActivity> {
+    let mut entries = activities
+        .into_iter()
+        .filter(|activity| {
+            activity
+                .details
+                .as_deref()
+                .map(|details| !details.trim().is_empty())
+                .unwrap_or(false)
+        })
+        .collect::<Vec<_>>();
+
+    entries.sort_by(|a, b| {
+        let a_time = a.last_seen.unwrap_or(0);
+        let b_time = b.last_seen.unwrap_or(0);
+        b.is_active_tab
+            .unwrap_or(false)
+            .cmp(&a.is_active_tab.unwrap_or(false))
+            .then_with(|| b_time.cmp(&a_time))
+    });
+    entries.truncate(20);
+    entries
+}
+
+fn choose_report_activity(
+    activities: &[IncomingActivity],
+    selected_id: Option<&str>,
+    auto_pick_mode: &str,
+) -> Option<IncomingActivity> {
+    if let Some(id) = selected_id {
+        if let Some(activity) = activities
+            .iter()
+            .find(|activity| activity_id(activity) == id)
+        {
+            return Some(activity.clone());
+        }
+    }
+
+    if let Some(activity) = activities
+        .iter()
+        .find(|activity| activity.is_active_tab == Some(true))
+    {
+        return Some(activity.clone());
+    }
+
+    if auto_pick_mode == "active" {
+        None
+    } else {
+        activities.first().cloned()
+    }
+}
+
+fn activity_entry_from_payload(payload: &IncomingActivity) -> ActivityEntry {
+    ActivityEntry {
+        id: activity_id(payload),
+        tab_id: payload.tab_id,
+        tab_title: payload.tab_title.clone(),
+        platform: truncate(payload.platform.as_deref().unwrap_or("Browser"), 64),
+        details: truncate(
+            payload.details.as_deref().unwrap_or("Browser Activity"),
+            128,
+        ),
+        state: truncate(payload.state.as_deref().unwrap_or("Active"), 128),
+        url: payload.url.clone().or_else(|| payload.source_url.clone()),
+        large_image_key: payload.large_image_key.clone(),
+        large_image_text: payload.large_image_text.clone(),
+        thumbnail_url: payload.thumbnail_url.clone(),
+        small_image_key: payload.small_image_key.clone(),
+        small_image_text: payload.small_image_text.clone(),
+        is_playing: payload.is_playing,
+        media_current_time: payload.media_current_time,
+        media_duration: payload.media_duration,
+        is_active_tab: payload.is_active_tab.unwrap_or(false),
+        last_seen: payload.last_seen.unwrap_or_else(now_millis),
+    }
+}
+
+fn payload_from_activity_entry(entry: &ActivityEntry) -> IncomingActivity {
+    IncomingActivity {
+        id: Some(entry.id.clone()),
+        tab_id: entry.tab_id,
+        tab_title: entry.tab_title.clone(),
+        details: Some(entry.details.clone()),
+        state: Some(entry.state.clone()),
+        platform: Some(entry.platform.clone()),
+        large_image_key: entry
+            .large_image_key
+            .clone()
+            .or_else(|| Some(asset_key_for_platform(&entry.platform).to_string())),
+        large_image_text: entry
+            .large_image_text
+            .clone()
+            .or_else(|| Some(format!("Using {}", entry.platform))),
+        thumbnail_url: entry.thumbnail_url.clone(),
+        small_image_key: entry.small_image_key.clone(),
+        small_image_text: entry.small_image_text.clone(),
+        is_playing: entry.is_playing,
+        media_current_time: entry.media_current_time,
+        media_duration: entry.media_duration,
+        url: entry.url.clone(),
+        source_url: entry.url.clone(),
+        is_active_tab: Some(entry.is_active_tab),
+        last_seen: Some(entry.last_seen),
+    }
+}
+
+fn activity_id(payload: &IncomingActivity) -> String {
+    if let Some(id) = payload.id.as_deref().filter(|id| !id.trim().is_empty()) {
+        return id.to_string();
+    }
+    if let Some(tab_id) = payload.tab_id {
+        return format!("tab:{tab_id}");
+    }
+    let platform = payload.platform.as_deref().unwrap_or("browser");
+    let details = payload.details.as_deref().unwrap_or("activity");
+    format!("{platform}:{details}")
+}
+
+fn asset_key_for_platform(platform: &str) -> &'static str {
+    match platform.to_lowercase().replace(' ', "").as_str() {
+        "youtube" => "youtube",
+        "netflix" => "netflix",
+        "spotify" => "spotify",
+        "twitch" => "twitch",
+        "discord" => "discord",
+        "googlemeet" | "meet" => "meet",
+        "github" => "github",
+        "chatgpt" => "chatgpt",
+        "hotstar" => "hotstar",
+        "crunchyroll" => "crunchyroll",
+        "wikipedia" => "wikipedia",
+        "google" => "google",
+        "manual" => "manual",
+        _ => "manual",
+    }
+}
+
+fn apply_activity_payload(
+    state: &AppState,
+    payload: IncomingActivity,
+) -> (StatusCode, Json<ApiMessage>) {
     let details = truncate(
         payload.details.as_deref().unwrap_or("Browser Activity"),
         128,
@@ -743,11 +1051,17 @@ async fn update_activity(
         .state(presence_state.clone());
 
     let mut assets = Assets::new().small_text(platform.clone());
-    if let Some(key) = payload
-        .large_image_key
+    let large_image = payload
+        .thumbnail_url
         .as_deref()
-        .filter(|value| !value.is_empty())
-    {
+        .filter(|value| value.starts_with("https://"))
+        .or_else(|| {
+            payload
+                .large_image_key
+                .as_deref()
+                .filter(|value| !value.is_empty())
+        });
+    if let Some(key) = large_image {
         assets = assets.large_image(key.to_string());
     }
     if let Some(text) = payload
@@ -807,10 +1121,15 @@ async fn update_activity(
                 inner.rpc = Some(rpc);
                 inner.rpc_connected = true;
                 inner.last_activity = Some(ActivitySnapshot {
+                    id: Some(activity_id(&payload)),
+                    tab_id: payload.tab_id,
+                    tab_title: payload.tab_title,
                     platform,
                     details,
                     state: presence_state,
-                    large_image_key: payload.large_image_key,
+                    url: payload.url.or(payload.source_url),
+                    is_active_tab: payload.is_active_tab.unwrap_or(false),
+                    large_image_key: payload.thumbnail_url.or(payload.large_image_key),
                     small_image_key: payload.small_image_key,
                     updated_at: Utc::now().to_rfc3339(),
                 });
@@ -852,6 +1171,8 @@ fn api_status_payload(state: &AppState) -> ApiStatus {
         .to_string(),
         last_rpc_error: inner.last_rpc_error.clone(),
         last_activity: inner.last_activity.clone(),
+        activities: inner.activity_inbox.clone(),
+        selected_activity_id: inner.selected_activity_id.clone(),
         uptime_seconds: inner.started_at.elapsed().as_secs(),
         timestamp: Utc::now().to_rfc3339(),
     }
@@ -882,6 +1203,12 @@ fn companion_status(state: &AppState) -> CompanionStatus {
         last_rpc_error: inner.last_rpc_error.clone(),
         log: inner.last_log.clone(),
         url: format!("http://localhost:{}", inner.settings.port),
+        activities: inner.activity_inbox.clone(),
+        selected_activity_id: inner.selected_activity_id.clone(),
+        current_activity_id: inner
+            .last_activity
+            .as_ref()
+            .and_then(|activity| activity.id.clone()),
         update: UpdateStatus {
             state: "manual".to_string(),
             message: "Tauri builds update through GitHub releases for now.".to_string(),

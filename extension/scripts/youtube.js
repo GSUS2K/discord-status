@@ -61,6 +61,7 @@ function detectYouTubeActivity() {
       state: state,
       largeImageKey: 'youtube',
       largeImageText: 'Watching YouTube',
+      thumbnailUrl: getYouTubeThumbnailUrl(),
       url: window.location.href,
       isPlaying,
       mediaCurrentTime: currentTime,
@@ -73,6 +74,12 @@ function detectYouTubeActivity() {
     console.log('[YouTube] Error:', error.message);
     return null;
   }
+}
+
+function getYouTubeThumbnailUrl() {
+  return document.querySelector('meta[property="og:image"]')?.content?.trim()
+    || document.querySelector('link[itemprop="thumbnailUrl"]')?.href?.trim()
+    || '';
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

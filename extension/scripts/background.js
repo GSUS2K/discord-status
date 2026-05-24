@@ -138,6 +138,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const state = String(request.message || 'Manual Activity').trim();
 
     currentActivity = {
+      id: 'manual',
       details,
       state,
       largeImageKey: 'manual',
@@ -181,6 +182,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     const enrichedActivity = {
       ...request.activity,
+      id: `tab:${tabId}`,
       tabId,
       tabTitle: sender.tab?.title || request.activity?.details || 'Unknown tab',
       sourceUrl: sender.tab?.url || request.activity?.url || '',
@@ -576,12 +578,9 @@ async function updateDiscordStatus(activity) {
     return;
   }
 
-  if (JSON.stringify(activity) === JSON.stringify(lastActivity)) {
-    return; // Activity hasn't changed
-  }
-
   try {
     let serverUrl = settings.serverUrl;
+    const activityChanged = JSON.stringify(activity) !== JSON.stringify(lastActivity);
     log('info', 'Updating Discord status', {
       platform: activity.platform,
       details: activity.details,
@@ -592,24 +591,29 @@ async function updateDiscordStatus(activity) {
     // Store activity for popup to display
     chrome.storage.local.set({ currentActivity: activity });
     
-    let response = await sendActivityToBackend(serverUrl, activity);
+    let response = await reportActivitiesToBackend(serverUrl, activity);
 
     if (!response.ok) {
       const discovered = await discoverBackendServer();
       if (discovered && discovered.serverUrl !== serverUrl) {
         serverUrl = discovered.serverUrl;
-        response = await sendActivityToBackend(serverUrl, activity);
+        response = await reportActivitiesToBackend(serverUrl, activity);
       }
     }
 
     if (!response.ok) {
-      chrome.storage.local.set({ backendStatus: 'unreachable' });
+      chrome.storage.local.set({
+        backendStatus: 'connected',
+        discordRpcStatus: response.status === 503 ? 'disconnected' : 'unknown'
+      });
       log('warn', 'Backend rejected activity update', { status: response.status, serverUrl });
       return;
     }
 
-    lastActivity = activity;
-    chrome.storage.local.set({ backendStatus: 'connected' });
+    if (activityChanged) {
+      lastActivity = activity;
+    }
+    chrome.storage.local.set({ backendStatus: 'connected', discordRpcStatus: 'connected' });
     log('info', 'Activity sent successfully', { serverUrl });
   } catch (error) {
     chrome.storage.local.set({ backendStatus: 'unreachable' });
@@ -621,8 +625,47 @@ function sendActivityToBackend(serverUrl, activity) {
   return fetch(`${serverUrl}/api/update-activity`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(activity)
+      body: JSON.stringify(normalizeActivityForBackend(activity))
   });
+}
+
+async function reportActivitiesToBackend(serverUrl, fallbackActivity) {
+  const activities = registryToArray().map(normalizeActivityForBackend);
+  if (fallbackActivity && !activities.some(activity => activity.id === (fallbackActivity.id || `tab:${fallbackActivity.tabId}`))) {
+    activities.unshift(normalizeActivityForBackend(fallbackActivity));
+  }
+
+  const selectedActivity = selectedTabId !== null ? activityRegistry[selectedTabId] : null;
+  const body = {
+    activities,
+    selectedActivityId: selectedActivity?.id || (selectedTabId !== null ? `tab:${selectedTabId}` : null),
+    autoPickMode
+  };
+
+  const response = await fetch(`${serverUrl}/api/report-activities`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+
+  if (response.status === 404) {
+    return sendActivityToBackend(serverUrl, fallbackActivity);
+  }
+
+  return response;
+}
+
+function normalizeActivityForBackend(activity) {
+  const tabId = normalizeTabId(activity?.tabId);
+  return {
+    ...activity,
+    id: activity?.id || (tabId !== null ? `tab:${tabId}` : 'manual'),
+    tabId,
+    tabTitle: activity?.tabTitle || activity?.details || activity?.platform || 'Activity',
+    sourceUrl: activity?.sourceUrl || activity?.url || '',
+    isActiveTab: tabId !== null && tabId === activeTabId,
+    lastSeen: activity?.lastSeen || Date.now()
+  };
 }
 
 async function clearDiscordStatus() {

@@ -31,11 +31,19 @@ function detectSpotifyActivity() {
     state: (artist ? `${artist} • ${state}` : state).substring(0, 128),
     largeImageKey: 'spotify',
     largeImageText: 'Listening on Spotify',
+    thumbnailUrl: getSpotifyCoverUrl(),
     url: window.location.href,
     isPlaying,
     mediaCurrentTime: currentTime,
     mediaDuration: duration
   };
+}
+
+function getSpotifyCoverUrl() {
+  return document.querySelector('[data-testid="cover-art-image"] img')?.src
+    || document.querySelector('img[data-testid="cover-art-image"]')?.src
+    || document.querySelector('meta[property="og:image"]')?.content
+    || '';
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
