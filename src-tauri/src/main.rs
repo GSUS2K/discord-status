@@ -1033,101 +1033,6 @@ fn asset_key_for_platform(platform: &str) -> &'static str {
     }
 }
 
-fn discord_image_ref(payload: &IncomingActivity, platform: &str) -> Option<String> {
-    let thumbnail = payload.thumbnail_url.as_deref().unwrap_or_default();
-    let url = payload
-        .url
-        .as_deref()
-        .or(payload.source_url.as_deref())
-        .unwrap_or_default();
-    let platform_key = platform.to_lowercase().replace(' ', "");
-
-    if platform_key == "youtube" {
-        if let Some(video_id) = youtube_video_id(thumbnail).or_else(|| youtube_video_id(url)) {
-            return Some(format!("youtube:{video_id}"));
-        }
-    }
-
-    if platform_key == "spotify" {
-        if let Some(image_id) = spotify_image_id(thumbnail) {
-            return Some(format!("spotify:{image_id}"));
-        }
-    }
-
-    if platform_key == "twitch" {
-        if let Some(channel) = twitch_channel(url).or_else(|| twitch_channel(thumbnail)) {
-            return Some(format!("twitch:{channel}"));
-        }
-    }
-
-    discord_media_proxy_ref(thumbnail).or_else(|| {
-        if thumbnail.starts_with("https://") {
-            Some(thumbnail.to_string())
-        } else {
-            None
-        }
-    })
-}
-
-fn youtube_video_id(value: &str) -> Option<String> {
-    if let Some(after) = value.split("/vi/").nth(1) {
-        return after
-            .split(['/', '?', '&'])
-            .next()
-            .filter(|id| !id.is_empty())
-            .map(ToString::to_string);
-    }
-
-    if let Some(after) = value.split("youtu.be/").nth(1) {
-        return after
-            .split(['/', '?', '&'])
-            .next()
-            .filter(|id| !id.is_empty())
-            .map(ToString::to_string);
-    }
-
-    value
-        .split(['?', '&'])
-        .find_map(|part| part.strip_prefix("v="))
-        .filter(|id| !id.is_empty())
-        .map(ToString::to_string)
-}
-
-fn spotify_image_id(value: &str) -> Option<String> {
-    value
-        .split("/image/")
-        .nth(1)
-        .and_then(|after| after.split(['?', '/', '&']).next())
-        .filter(|id| !id.is_empty())
-        .map(ToString::to_string)
-}
-
-fn twitch_channel(value: &str) -> Option<String> {
-    if let Some(after) = value.split("twitch.tv/").nth(1) {
-        return after
-            .split(['/', '?', '&'])
-            .next()
-            .filter(|channel| !channel.is_empty())
-            .map(|channel| channel.to_lowercase());
-    }
-
-    value
-        .split("live_user_")
-        .nth(1)
-        .and_then(|after| after.split(['-', '.', '/', '?', '&']).next())
-        .filter(|channel| !channel.is_empty())
-        .map(|channel| channel.to_lowercase())
-}
-
-fn discord_media_proxy_ref(value: &str) -> Option<String> {
-    value
-        .split("media.discordapp.net/external/")
-        .nth(1)
-        .or_else(|| value.split("cdn.discordapp.com/external/").nth(1))
-        .filter(|path| !path.is_empty())
-        .map(|path| format!("mp:external/{path}"))
-}
-
 fn apply_activity_payload(
     state: &AppState,
     payload: IncomingActivity,
@@ -1141,22 +1046,18 @@ fn apply_activity_payload(
         128,
     );
     let platform = truncate(payload.platform.as_deref().unwrap_or("Browser"), 64);
-    let resolved_large_image = discord_image_ref(&payload, &platform);
+    let stable_large_image = payload
+        .large_image_key
+        .as_deref()
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string)
+        .unwrap_or_else(|| asset_key_for_platform(&platform).to_string());
     let mut activity = Activity::new()
         .details(details.clone())
         .state(presence_state.clone());
 
     let mut assets = Assets::new().small_text(platform.clone());
-    let large_image = resolved_large_image.clone().or_else(|| {
-        payload
-            .large_image_key
-            .as_deref()
-            .filter(|value| !value.is_empty())
-            .map(ToString::to_string)
-    });
-    if let Some(key) = large_image {
-        assets = assets.large_image(key);
-    }
+    assets = assets.large_image(stable_large_image.clone());
     if let Some(text) = payload
         .large_image_text
         .as_deref()
@@ -1222,9 +1123,7 @@ fn apply_activity_payload(
                     state: presence_state,
                     url: payload.url.or(payload.source_url),
                     is_active_tab: payload.is_active_tab.unwrap_or(false),
-                    large_image_key: resolved_large_image
-                        .or(payload.thumbnail_url)
-                        .or(payload.large_image_key),
+                    large_image_key: Some(stable_large_image),
                     small_image_key: payload.small_image_key,
                     updated_at: Utc::now().to_rfc3339(),
                 });
