@@ -13,3 +13,34 @@ crunchyroll.png -> crunchyroll
 wikipedia.png -> wikipedia
 google.png -> google
 manual.png -> manual
+
+New supported keys to add when you have PNG logos ready:
+
+youtubemusic.png -> youtubemusic
+primevideo.png -> primevideo
+hulu.png -> hulu
+disneyplus.png -> disneyplus
+appletv.png -> appletv
+soundcloud.png -> soundcloud
+applemusic.png -> applemusic
+bandcamp.png -> bandcamp
+vscode.png -> vscode
+linear.png -> linear
+jira.png -> jira
+notion.png -> notion
+googledocs.png -> googledocs
+figma.png -> figma
+canva.png -> canva
+coursera.png -> coursera
+udemy.png -> udemy
+khanacademy.png -> khanacademy
+leetcode.png -> leetcode
+reddit.png -> reddit
+twitter.png -> twitter
+instagram.png -> instagram
+linkedin.png -> linkedin
+steam.png -> steam
+chess.png -> chess
+lichess.png -> lichess
+skribbl.png -> skribbl
+geoguessr.png -> geoguessr

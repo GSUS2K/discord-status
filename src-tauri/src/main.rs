@@ -52,6 +52,8 @@ struct InnerState {
     last_activity: Option<ActivitySnapshot>,
     activity_inbox: Vec<ActivityEntry>,
     selected_activity_id: Option<String>,
+    last_extension_seen: Option<String>,
+    system_activity: Option<SystemActivity>,
     last_log: String,
     started_at: Instant,
     shutdown: Option<oneshot::Sender<()>>,
@@ -60,10 +62,18 @@ struct InnerState {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Settings {
+    #[serde(default = "default_true")]
     auto_start_backend: bool,
+    #[serde(default)]
     launch_at_login: bool,
+    #[serde(default = "default_true")]
     hide_popover_on_blur: bool,
+    #[serde(default = "default_port")]
     port: u16,
+    #[serde(default)]
+    system_activity_enabled: bool,
+    #[serde(default)]
+    system_activity_allowed_apps: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -116,7 +126,18 @@ struct CompanionStatus {
     activities: Vec<ActivityEntry>,
     selected_activity_id: Option<String>,
     current_activity_id: Option<String>,
+    extension_connected: bool,
+    last_extension_seen: Option<String>,
+    system_activity: Option<SystemActivity>,
     update: UpdateStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SystemActivity {
+    app_name: String,
+    details: String,
+    updated_at: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -136,6 +157,9 @@ struct ApiStatus {
     last_activity: Option<ActivitySnapshot>,
     activities: Vec<ActivityEntry>,
     selected_activity_id: Option<String>,
+    extension_connected: bool,
+    last_extension_seen: Option<String>,
+    system_activity: Option<SystemActivity>,
     uptime_seconds: u64,
     timestamp: String,
 }
@@ -197,6 +221,8 @@ async fn main() {
             last_activity: None,
             activity_inbox: Vec::new(),
             selected_activity_id: None,
+            last_extension_seen: None,
+            system_activity: None,
             last_log: "Companion ready.".to_string(),
             started_at: Instant::now(),
             shutdown: None,
@@ -218,6 +244,7 @@ async fn main() {
             start_backend,
             stop_backend,
             restart_backend,
+            fix_connection,
             reconnect_rpc,
             select_activity_id,
             open_chrome_extensions,
@@ -246,6 +273,7 @@ async fn main() {
                     emit_status(&app_handle, &state);
                 });
             }
+            spawn_system_activity_monitor(app.handle().clone(), state.clone());
             Ok(())
         })
         .run(tauri::generate_context!())
@@ -370,6 +398,27 @@ async fn restart_backend(
 ) -> Result<CompanionStatus, String> {
     stop_server(state.inner().clone()).await?;
     start_server(state.inner().clone()).await?;
+    emit_status(&app, &state);
+    Ok(companion_status(&state))
+}
+
+#[tauri::command]
+async fn fix_connection(
+    app: AppHandle,
+    state: TauriState<'_, AppState>,
+) -> Result<CompanionStatus, String> {
+    let state_clone = state.inner().clone();
+    set_log(&state_clone, "Fixing connection: restarting backend and Discord RPC...".to_string());
+    let _ = stop_server(state_clone.clone()).await;
+    start_server(state_clone.clone()).await?;
+    if let Err(error) = reconnect_discord(state_clone.clone()).await {
+        set_log(
+            &state_clone,
+            format!("Backend fixed, but Discord RPC still needs attention: {error}"),
+        );
+    } else {
+        set_log(&state_clone, "Connection fixed. Backend and Discord RPC are online.".to_string());
+    }
     emit_status(&app, &state);
     Ok(companion_status(&state))
 }
@@ -693,6 +742,12 @@ fn close_rpc_client(client: Option<DiscordIpcClient>) {
     }
 }
 
+fn mark_extension_seen(state: &AppState) {
+    if let Ok(mut inner) = state.inner.lock() {
+        inner.last_extension_seen = Some(Utc::now().to_rfc3339());
+    }
+}
+
 fn apply_launch_at_login<R: Runtime>(app: &AppHandle<R>, enabled: bool) -> Result<(), String> {
     let autolaunch = app.autolaunch();
     let is_enabled = autolaunch.is_enabled().map_err(|error| error.to_string())?;
@@ -744,6 +799,125 @@ fn open_chrome_url(url: &str) -> Result<(), String> {
     }
 }
 
+fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
+    tauri::async_runtime::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(8)).await;
+            let settings = match state.inner.lock() {
+                Ok(inner) => inner.settings.clone(),
+                Err(_) => continue,
+            };
+            if !settings.system_activity_enabled {
+                continue;
+            }
+
+            let Some(app_name) = detect_foreground_app() else {
+                continue;
+            };
+            let allowed = settings
+                .system_activity_allowed_apps
+                .iter()
+                .map(|value| value.to_lowercase())
+                .collect::<Vec<_>>();
+            if allowed.is_empty()
+                || !allowed
+                    .iter()
+                    .any(|value| app_name.to_lowercase().contains(value))
+            {
+                continue;
+            }
+
+            let snapshot = SystemActivity {
+                app_name: app_name.clone(),
+                details: format!("Using {app_name}"),
+                updated_at: Utc::now().to_rfc3339(),
+            };
+            let should_apply = {
+                let mut inner = match state.inner.lock() {
+                    Ok(inner) => inner,
+                    Err(_) => continue,
+                };
+                inner.system_activity = Some(snapshot.clone());
+                inner.activity_inbox.is_empty() && inner.rpc_connected
+            };
+
+            if should_apply {
+                let payload = IncomingActivity {
+                    id: Some(format!("system:{}", app_name.to_lowercase())),
+                    tab_id: None,
+                    tab_title: None,
+                    details: Some(snapshot.details.clone()),
+                    state: Some("System app".to_string()),
+                    platform: Some("System".to_string()),
+                    large_image_key: Some("manual".to_string()),
+                    large_image_text: Some("Local system app".to_string()),
+                    thumbnail_url: None,
+                    small_image_key: None,
+                    small_image_text: None,
+                    is_playing: None,
+                    media_current_time: None,
+                    media_duration: None,
+                    url: None,
+                    source_url: None,
+                    is_active_tab: Some(false),
+                    last_seen: Some(now_millis()),
+                };
+                let _ = apply_activity_payload(&state, payload);
+            }
+            emit_status(&app, &state);
+        }
+    });
+}
+
+fn detect_foreground_app() -> Option<String> {
+    #[cfg(target_os = "macos")]
+    {
+        run_command_text(
+            "osascript",
+            &[
+                "-e",
+                "tell application \"System Events\" to get name of first application process whose frontmost is true",
+            ],
+        )
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        run_command_text(
+            "powershell",
+            &[
+                "-NoProfile",
+                "-Command",
+                "Add-Type @'\nusing System;\nusing System.Runtime.InteropServices;\npublic class W { [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId); }\n'@; $hwnd=[W]::GetForegroundWindow(); [uint32]$pid=0; [void][W]::GetWindowThreadProcessId($hwnd,[ref]$pid); (Get-Process -Id $pid).ProcessName",
+            ],
+        )
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        run_command_text(
+            "sh",
+            &[
+                "-lc",
+                "pid=$(xdotool getactivewindow getwindowpid 2>/dev/null) && ps -p \"$pid\" -o comm= 2>/dev/null",
+            ],
+        )
+    }
+}
+
+fn run_command_text(command: &str, args: &[&str]) -> Option<String> {
+    let output = Command::new(command).args(args).output().ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if text.is_empty() {
+        None
+    } else {
+        Some(text)
+    }
+}
+
 fn status_result(status: std::process::ExitStatus) -> Result<(), String> {
     if status.success() {
         Ok(())
@@ -777,6 +951,7 @@ async fn reconnect_activity_rpc(State(state): State<AppState>) -> impl IntoRespo
 }
 
 async fn clear_activity(State(state): State<AppState>) -> impl IntoResponse {
+    mark_extension_seen(&state);
     clear_activity_response(&state)
 }
 
@@ -819,6 +994,7 @@ async fn update_activity(
     State(state): State<AppState>,
     Json(payload): Json<IncomingActivity>,
 ) -> impl IntoResponse {
+    mark_extension_seen(&state);
     {
         let mut inner = state.inner.lock().expect("state poisoned");
         inner.activity_inbox = vec![activity_entry_from_payload(&payload)];
@@ -831,6 +1007,7 @@ async fn report_activities(
     State(state): State<AppState>,
     Json(report): Json<ActivityReport>,
 ) -> impl IntoResponse {
+    mark_extension_seen(&state);
     let activities = normalize_activity_report(report.activities);
     let previous_selected_id = state
         .inner
@@ -1017,13 +1194,41 @@ fn activity_id(payload: &IncomingActivity) -> String {
 fn asset_key_for_platform(platform: &str) -> &'static str {
     match platform.to_lowercase().replace(' ', "").as_str() {
         "youtube" => "youtube",
+        "youtubemusic" => "youtubemusic",
         "netflix" => "netflix",
+        "primevideo" => "primevideo",
+        "hulu" => "hulu",
+        "disney+" | "disneyplus" => "disneyplus",
+        "appletv" => "appletv",
         "spotify" => "spotify",
+        "soundcloud" => "soundcloud",
+        "applemusic" => "applemusic",
+        "bandcamp" => "bandcamp",
         "twitch" => "twitch",
         "discord" => "discord",
         "googlemeet" | "meet" => "meet",
         "github" => "github",
+        "vscodeweb" | "vscode" | "visualstudiocode" => "vscode",
+        "linear" => "linear",
+        "jira" => "jira",
+        "notion" => "notion",
+        "googledocs" => "googledocs",
+        "figma" => "figma",
+        "canva" => "canva",
         "chatgpt" => "chatgpt",
+        "coursera" => "coursera",
+        "udemy" => "udemy",
+        "khanacademy" => "khanacademy",
+        "leetcode" => "leetcode",
+        "reddit" => "reddit",
+        "x" | "twitter" => "twitter",
+        "instagram" => "instagram",
+        "linkedin" => "linkedin",
+        "steam" => "steam",
+        "chess.com" | "chess" => "chess",
+        "lichess" => "lichess",
+        "skribbl.io" | "skribbl" => "skribbl",
+        "geoguessr" => "geoguessr",
         "hotstar" => "hotstar",
         "crunchyroll" => "crunchyroll",
         "wikipedia" => "wikipedia",
@@ -1167,6 +1372,9 @@ fn api_status_payload(state: &AppState) -> ApiStatus {
         last_activity: inner.last_activity.clone(),
         activities: inner.activity_inbox.clone(),
         selected_activity_id: inner.selected_activity_id.clone(),
+        extension_connected: extension_seen_recent(inner.last_extension_seen.as_deref()),
+        last_extension_seen: inner.last_extension_seen.clone(),
+        system_activity: inner.system_activity.clone(),
         uptime_seconds: inner.started_at.elapsed().as_secs(),
         timestamp: Utc::now().to_rfc3339(),
     }
@@ -1203,6 +1411,9 @@ fn companion_status(state: &AppState) -> CompanionStatus {
             .last_activity
             .as_ref()
             .and_then(|activity| activity.id.clone()),
+        extension_connected: extension_seen_recent(inner.last_extension_seen.as_deref()),
+        last_extension_seen: inner.last_extension_seen.clone(),
+        system_activity: inner.system_activity.clone(),
         update: UpdateStatus {
             state: "manual".to_string(),
             message: "Tauri builds update through GitHub releases for now.".to_string(),
@@ -1211,6 +1422,15 @@ fn companion_status(state: &AppState) -> CompanionStatus {
             progress: None,
         },
     }
+}
+
+fn extension_seen_recent(value: Option<&str>) -> bool {
+    let Some(value) = value else {
+        return false;
+    };
+    chrono::DateTime::parse_from_rfc3339(value)
+        .map(|seen| Utc::now().signed_duration_since(seen.with_timezone(&Utc)).num_seconds() < 45)
+        .unwrap_or(false)
 }
 
 fn emit_status<R: Runtime>(app: &AppHandle<R>, state: &AppState) {
@@ -1272,6 +1492,13 @@ fn normalize_settings(settings: Settings) -> Settings {
         } else {
             DEFAULT_PORT
         },
+        system_activity_enabled: settings.system_activity_enabled,
+        system_activity_allowed_apps: settings
+            .system_activity_allowed_apps
+            .into_iter()
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty())
+            .collect(),
     }
 }
 
@@ -1285,6 +1512,8 @@ fn read_settings() -> Settings {
             launch_at_login: false,
             hide_popover_on_blur: true,
             port: DEFAULT_PORT,
+            system_activity_enabled: false,
+            system_activity_allowed_apps: Vec::new(),
         })
 }
 
@@ -1299,4 +1528,12 @@ fn write_settings(settings: &Settings) -> Result<(), String> {
 
 fn settings_path() -> Option<PathBuf> {
     dirs::config_dir().map(|dir| dir.join("activity-status-companion").join("settings.json"))
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_port() -> u16 {
+    DEFAULT_PORT
 }

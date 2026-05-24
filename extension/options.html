@@ -137,6 +137,41 @@
       accent-color: var(--accent);
     }
 
+    .check-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #0f1014;
+      cursor: pointer;
+      margin-bottom: 8px;
+      padding: 11px;
+    }
+
+    .check-option input {
+      width: 17px;
+      height: 17px;
+      margin-top: 2px;
+      flex: 0 0 auto;
+      accent-color: var(--accent);
+    }
+
+    .check-option span {
+      display: block;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 750;
+      margin-bottom: 3px;
+    }
+
+    .check-option small {
+      color: var(--muted);
+      display: block;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
     input:focus,
     select:focus,
     textarea:focus {
@@ -298,6 +333,47 @@
         <div id="enabledSitesList" class="site-grid"></div>
         <div class="hint">Choose which built-in detectors can run. New sites require code support, not just a setting.</div>
       </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title">Privacy & Rules</div>
+      <div class="grid">
+        <div class="setting-group">
+          <label for="privacyMode">Privacy Mode</label>
+          <select id="privacyMode">
+            <option value="normal">Show detected title</option>
+            <option value="platform">Only show platform</option>
+            <option value="private">Private mode (pause status)</option>
+          </select>
+          <div class="hint">Use platform-only mode for privacy. Private mode clears Discord activity.</div>
+        </div>
+        <div class="setting-group">
+          <label for="blockedDomains">Never Show Domains</label>
+          <input type="text" id="blockedDomains" placeholder="example.com, private.local">
+          <div class="hint">Comma-separated domains that should never update Discord.</div>
+        </div>
+      </div>
+      <label class="check-option">
+        <input type="checkbox" id="incognitoNever">
+        <div>
+          <span>Never update from incognito tabs</span>
+          <small>Incognito activity is ignored even if a supported site is open.</small>
+        </div>
+      </label>
+      <label class="check-option">
+        <input type="checkbox" id="requirePlaying">
+        <div>
+          <span>Only show media sites while playing</span>
+          <small>YouTube, Netflix, Spotify, Twitch, and similar sites will not update Discord while paused.</small>
+        </div>
+      </label>
+      <label class="check-option">
+        <input type="checkbox" id="pauseDuringMeetings">
+        <div>
+          <span>Pause status during meetings</span>
+          <small>Google Meet activity is ignored so meetings do not leak into Discord.</small>
+        </div>
+      </label>
     </section>
 
     <section class="panel">

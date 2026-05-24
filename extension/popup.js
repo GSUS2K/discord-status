@@ -24,32 +24,91 @@ const siteList = document.getElementById('siteList');
 const selectedTabLabel = document.getElementById('selectedTabLabel');
 const rpcHealthBadge = document.getElementById('rpcHealthBadge');
 const rpcHealthText = document.getElementById('rpcHealthText');
+const setupChecklist = document.getElementById('setupChecklist');
+const toastRoot = document.getElementById('toastRoot');
 
 const REPO_URL = 'https://github.com/GSUS2K/discord-status';
 const ISSUES_URL = `${REPO_URL}/issues`;
+const COMPANION_URL = `${REPO_URL}/releases/latest`;
 const DEFAULT_ENABLED_SITES = [
   'youtube',
+  'youtubemusic',
   'netflix',
+  'primevideo',
+  'hulu',
+  'disneyplus',
+  'appletv',
   'hotstar',
   'crunchyroll',
   'spotify',
+  'soundcloud',
+  'applemusic',
+  'bandcamp',
   'twitch',
   'discord',
   'meet',
   'github',
+  'vscode',
+  'linear',
+  'jira',
+  'notion',
+  'googledocs',
+  'figma',
+  'canva',
   'chatgpt',
+  'coursera',
+  'udemy',
+  'khanacademy',
+  'leetcode',
+  'reddit',
+  'twitter',
+  'instagram',
+  'linkedin',
+  'steam',
+  'chess',
+  'lichess',
+  'skribbl',
+  'geoguessr',
   'google',
   'wikipedia'
 ];
 const SUPPORTED_SITES = [
   ['youtube', 'YouTube'],
+  ['youtubemusic', 'YT Music'],
   ['netflix', 'Netflix'],
+  ['primevideo', 'Prime Video'],
+  ['hulu', 'Hulu'],
+  ['disneyplus', 'Disney+'],
+  ['appletv', 'Apple TV'],
   ['spotify', 'Spotify'],
+  ['soundcloud', 'SoundCloud'],
+  ['applemusic', 'Apple Music'],
+  ['bandcamp', 'Bandcamp'],
   ['twitch', 'Twitch'],
   ['discord', 'Discord'],
   ['meet', 'Meet'],
   ['github', 'GitHub'],
+  ['vscode', 'VS Code'],
+  ['linear', 'Linear'],
+  ['jira', 'Jira'],
+  ['notion', 'Notion'],
+  ['googledocs', 'Docs'],
+  ['figma', 'Figma'],
+  ['canva', 'Canva'],
   ['chatgpt', 'ChatGPT'],
+  ['coursera', 'Coursera'],
+  ['udemy', 'Udemy'],
+  ['khanacademy', 'Khan'],
+  ['leetcode', 'LeetCode'],
+  ['reddit', 'Reddit'],
+  ['twitter', 'X/Twitter'],
+  ['instagram', 'Instagram'],
+  ['linkedin', 'LinkedIn'],
+  ['steam', 'Steam'],
+  ['chess', 'Chess.com'],
+  ['lichess', 'Lichess'],
+  ['skribbl', 'Skribbl'],
+  ['geoguessr', 'GeoGuessr'],
   ['hotstar', 'Hotstar'],
   ['crunchyroll', 'Crunchyroll'],
   ['google', 'Google'],
@@ -57,7 +116,20 @@ const SUPPORTED_SITES = [
 ];
 const SITE_ICON_ALIASES = {
   googlemeet: 'meet',
-  manualactivity: 'manual'
+  manualactivity: 'manual',
+  youtubemusic: 'youtube',
+  primevideo: 'manual',
+  disney: 'manual',
+  disneyplus: 'manual',
+  appletv: 'manual',
+  applemusic: 'manual',
+  soundcloud: 'manual',
+  bandcamp: 'manual',
+  vscode: 'github',
+  visualstudiocode: 'github',
+  googledocs: 'google',
+  twitter: 'manual',
+  x: 'manual'
 };
 
 chrome.storage.local.get(['enabled', 'mode', 'autoPickMode'], (result) => {
@@ -153,18 +225,46 @@ function updateRpcHealthBadge() {
     if (backendStatus !== 'connected') {
       rpcHealthBadge.classList.add('disconnected');
       rpcHealthText.textContent = 'Backend offline';
+      renderSetupChecklist(backendStatus, rpcStatus);
       return;
     }
 
     if (rpcStatus === 'connected') {
       rpcHealthBadge.classList.add('connected');
       rpcHealthText.textContent = 'Discord connected';
+      renderSetupChecklist(backendStatus, rpcStatus);
       return;
     }
 
     rpcHealthBadge.classList.add('disconnected');
     rpcHealthText.textContent = 'Discord disconnected';
+    renderSetupChecklist(backendStatus, rpcStatus);
   });
+}
+
+function renderSetupChecklist(backendStatus, rpcStatus) {
+  if (!setupChecklist) return;
+  const rows = [
+    ['Extension installed', true, 'Done'],
+    ['Companion running', backendStatus === 'connected', backendStatus === 'connected' ? 'Online' : 'Install / start'],
+    ['Discord desktop connected', backendStatus === 'connected' && rpcStatus === 'connected', rpcStatus === 'connected' ? 'Connected' : 'Open Discord']
+  ];
+
+  setupChecklist.textContent = '';
+  for (const [label, ok, action] of rows) {
+    const row = document.createElement('div');
+    row.className = `check-row${ok ? ' ok' : ''}`;
+    row.innerHTML = `<span class="check-dot"></span><span>${label}</span><strong>${action}</strong>`;
+    setupChecklist.appendChild(row);
+  }
+
+  if (backendStatus !== 'connected') {
+    const install = document.createElement('button');
+    install.className = 'setup-link';
+    install.textContent = 'Install companion';
+    install.addEventListener('click', () => chrome.tabs.create({ url: COMPANION_URL }));
+    setupChecklist.appendChild(install);
+  }
 }
 
 function renderDetectedTabs() {
@@ -215,6 +315,7 @@ function renderDetectedTabs() {
       button.disabled = tabId === null;
       button.addEventListener('click', () => {
         sendRuntimeMessage({ action: 'selectActivityTab', tabId });
+        showToast(`Showing ${activity.platform || 'activity'} in Discord`);
       });
 
       card.append(main, button);
@@ -257,9 +358,23 @@ function createSiteIcon(platform) {
   img.alt = `${platform || 'Activity'} logo`;
   img.src = chrome.runtime.getURL(`site-icons/${key}.png`);
   img.addEventListener('error', () => {
-    img.src = chrome.runtime.getURL('site-icons/manual.png');
+    img.src = makeFallbackIcon(platform);
   }, { once: true });
   return img;
+}
+
+function makeFallbackIcon(platform = 'Activity') {
+  const label = String(platform || 'Activity').trim();
+  const letters = label
+    .replace(/[^a-z0-9\s+]/gi, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0].toUpperCase())
+    .join('') || 'A';
+  const hue = Math.abs([...label].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % 360;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="hsl(${hue} 58% 24%)"/><circle cx="50" cy="14" r="7" fill="hsl(${(hue + 120) % 360} 80% 58%)"/><text x="32" y="39" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="800" fill="#fff">${letters}</text></svg>`;
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
 function siteIconKey(platform = '') {
@@ -299,6 +414,7 @@ toggleBtn.addEventListener('click', () => {
     chrome.storage.local.set({ enabled: newState });
     updateToggle(newState);
     sendRuntimeMessage({ action: 'toggleStatus', enabled: newState });
+    showToast(newState ? 'Discord status enabled' : 'Discord status paused');
   });
 });
 
@@ -313,6 +429,7 @@ modeBtns.forEach(btn => {
     chrome.storage.local.set({ mode });
     updateMode(mode);
     sendRuntimeMessage({ action: 'changeMode', mode });
+    showToast(mode === 'manual' ? 'Manual mode enabled' : 'Auto detect enabled');
   });
 });
 
@@ -322,6 +439,7 @@ pickBtns.forEach(btn => {
     chrome.storage.local.set({ autoPickMode });
     updateAutoPickMode(autoPickMode);
     sendRuntimeMessage({ action: 'changeAutoPickMode', autoPickMode });
+    showToast(autoPickMode === 'active' ? 'Only active tab will update' : 'Smart auto pick enabled');
   });
 });
 
@@ -352,6 +470,7 @@ setActivityBtn.addEventListener('click', () => {
   });
   manualTitleInput.value = '';
   manualMessageInput.value = '';
+  showToast('Manual activity sent');
 });
 
 for (const input of [manualTitleInput, manualMessageInput]) {
@@ -377,24 +496,29 @@ settingsBtn.addEventListener('click', async () => {
 
 reconnectBtn.addEventListener('click', () => {
   sendRuntimeMessage({ action: 'refreshBackendHealth' });
+  showToast('Checking companion connection');
 });
 
 refreshBtn.addEventListener('click', () => {
   sendRuntimeMessage({ action: 'refreshSelectedActivity' });
+  showToast('Refreshing detected tabs');
 });
 
 clearBtn.addEventListener('click', () => {
   sendRuntimeMessage({ action: 'clearActivity' });
+  showToast('Discord activity cleared');
 });
 
 clearSelectionBtn.addEventListener('click', () => {
   sendRuntimeMessage({ action: 'selectActivityTab', tabId: null });
+  showToast('Companion returned to auto pick');
 });
 
 clearLogsBtn.addEventListener('click', () => {
   chrome.storage.local.set({ activityLogs: [] }, () => {
     renderLogs();
     sendRuntimeMessage({ action: 'clearLogs' });
+    showToast('Logs cleared');
   });
 });
 
@@ -402,6 +526,7 @@ allSitesBtn.addEventListener('click', () => {
   chrome.storage.local.set({ enabledSites: DEFAULT_ENABLED_SITES }, () => {
     renderSiteToggles();
     sendRuntimeMessage({ action: 'setEnabledSites', enabledSites: DEFAULT_ENABLED_SITES });
+    showToast('All supported sites enabled');
   });
 });
 
@@ -413,7 +538,21 @@ function saveSiteToggles() {
     .map(input => input.value);
   chrome.storage.local.set({ enabledSites }, () => {
     sendRuntimeMessage({ action: 'setEnabledSites', enabledSites });
+    showToast('Site toggles saved');
   });
+}
+
+function showToast(message, type = 'info') {
+  if (!toastRoot || !message) return;
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  toastRoot.appendChild(toast);
+  setTimeout(() => toast.classList.add('visible'), 10);
+  setTimeout(() => {
+    toast.classList.remove('visible');
+    setTimeout(() => toast.remove(), 180);
+  }, 2200);
 }
 
 function normalizeTabId(value) {

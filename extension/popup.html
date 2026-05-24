@@ -261,6 +261,59 @@
       white-space: nowrap;
     }
 
+    .setup-checklist {
+      display: grid;
+      gap: 6px;
+      margin-top: 10px;
+      border: 1px solid #2b2f39;
+      border-radius: 7px;
+      background: #111318;
+      padding: 8px;
+    }
+
+    .check-row {
+      display: grid;
+      grid-template-columns: 10px 1fr auto;
+      align-items: center;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 11px;
+      min-width: 0;
+    }
+
+    .check-row strong {
+      color: #f7dc8a;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .check-row.ok strong {
+      color: #adf3c8;
+    }
+
+    .check-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--warning);
+    }
+
+    .check-row.ok .check-dot {
+      background: var(--success);
+    }
+
+    .setup-link {
+      height: 30px;
+      margin-top: 2px;
+      border: 1px solid rgba(88, 101, 242, 0.7);
+      border-radius: 6px;
+      background: rgba(88, 101, 242, 0.22);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 750;
+    }
+
     .mode-selector {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -484,6 +537,37 @@
       gap: 8px;
       margin-bottom: 10px;
     }
+
+    .toast-root {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      z-index: 20;
+      display: grid;
+      gap: 6px;
+      pointer-events: none;
+    }
+
+    .toast {
+      max-width: 260px;
+      border: 1px solid rgba(88, 101, 242, 0.45);
+      border-radius: 7px;
+      background: rgba(16, 17, 20, 0.96);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 750;
+      line-height: 1.35;
+      opacity: 0;
+      padding: 9px 10px;
+      transform: translateY(6px);
+      transition: opacity 0.16s ease, transform 0.16s ease;
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -511,6 +595,7 @@
         <button id="toggleBtn" class="toggle-switch" title="Enable or disable Discord status" aria-label="Enable status"></button>
       </div>
       <div id="status" class="status-display empty">No activity detected yet.</div>
+      <div id="setupChecklist" class="setup-checklist" aria-live="polite"></div>
       <div id="selectedTabLabel" class="selected-tab-label">Selected tab: Auto</div>
       <div class="actions">
         <button class="action-btn" id="refreshBtn">Refresh</button>
@@ -572,6 +657,7 @@
     </div>
   </main>
 
+  <div id="toastRoot" class="toast-root"></div>
   <script src="popup.js"></script>
 </body>
 </html>

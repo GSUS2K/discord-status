@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Discord Status",
   "short_name": "Discord Status",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "description": "Show supported browser activity as Discord Rich Presence using the Activity Status Companion app.",
   "permissions": [
     "tabs",
@@ -34,35 +34,160 @@
     "http://localhost:3000/*",
     "http://127.0.0.1/*",
     "http://127.0.0.1:17654/*",
-    "http://127.0.0.1:3000/*"
+    "http://127.0.0.1:3000/*",
+    "https://music.youtube.com/*",
+    "https://www.primevideo.com/*",
+    "https://primevideo.com/*",
+    "https://www.amazon.com/gp/video/*",
+    "https://www.hulu.com/*",
+    "https://www.disneyplus.com/*",
+    "https://tv.apple.com/*",
+    "https://soundcloud.com/*",
+    "https://music.apple.com/*",
+    "https://bandcamp.com/*",
+    "https://*.bandcamp.com/*",
+    "https://vscode.dev/*",
+    "https://github.dev/*",
+    "https://linear.app/*",
+    "https://*.atlassian.net/*",
+    "https://www.notion.so/*",
+    "https://notion.so/*",
+    "https://docs.google.com/*",
+    "https://www.figma.com/*",
+    "https://figma.com/*",
+    "https://www.canva.com/*",
+    "https://canva.com/*",
+    "https://www.coursera.org/*",
+    "https://coursera.org/*",
+    "https://www.udemy.com/*",
+    "https://udemy.com/*",
+    "https://www.khanacademy.org/*",
+    "https://khanacademy.org/*",
+    "https://leetcode.com/*",
+    "https://www.reddit.com/*",
+    "https://reddit.com/*",
+    "https://x.com/*",
+    "https://twitter.com/*",
+    "https://www.instagram.com/*",
+    "https://instagram.com/*",
+    "https://www.linkedin.com/*",
+    "https://linkedin.com/*",
+    "https://store.steampowered.com/*",
+    "https://steamcommunity.com/*",
+    "https://www.chess.com/*",
+    "https://chess.com/*",
+    "https://lichess.org/*",
+    "https://skribbl.io/*",
+    "https://www.geoguessr.com/*",
+    "https://geoguessr.com/*"
   ],
   "background": {
     "service_worker": "scripts/background.js"
   },
   "content_scripts": [
     {
-      "matches": ["https://netflix.com/*", "https://www.netflix.com/*"],
-      "js": ["scripts/netflix.js"],
+      "matches": [
+        "https://netflix.com/*",
+        "https://www.netflix.com/*"
+      ],
+      "js": [
+        "scripts/netflix.js"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["https://youtube.com/*", "https://www.youtube.com/*"],
-      "js": ["scripts/youtube.js"],
+      "matches": [
+        "https://youtube.com/*",
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "scripts/youtube.js"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["https://spotify.com/*", "https://www.spotify.com/*", "https://open.spotify.com/*"],
-      "js": ["scripts/spotify.js"],
+      "matches": [
+        "https://spotify.com/*",
+        "https://www.spotify.com/*",
+        "https://open.spotify.com/*"
+      ],
+      "js": [
+        "scripts/spotify.js"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["https://meet.google.com/*"],
-      "js": ["scripts/googlemeet.js"],
+      "matches": [
+        "https://meet.google.com/*"
+      ],
+      "js": [
+        "scripts/googlemeet.js"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["https://twitch.tv/*", "https://www.twitch.tv/*", "https://discord.com/*", "https://github.com/*", "https://chatgpt.com/*", "https://hotstar.com/*", "https://www.hotstar.com/*", "https://crunchyroll.com/*", "https://www.crunchyroll.com/*", "https://en.wikipedia.org/*", "https://google.com/*", "https://www.google.com/*"],
-      "js": ["scripts/generic.js"],
+      "matches": [
+        "https://twitch.tv/*",
+        "https://www.twitch.tv/*",
+        "https://discord.com/*",
+        "https://github.com/*",
+        "https://chatgpt.com/*",
+        "https://hotstar.com/*",
+        "https://www.hotstar.com/*",
+        "https://crunchyroll.com/*",
+        "https://www.crunchyroll.com/*",
+        "https://en.wikipedia.org/*",
+        "https://google.com/*",
+        "https://www.google.com/*",
+        "https://music.youtube.com/*",
+        "https://www.primevideo.com/*",
+        "https://primevideo.com/*",
+        "https://www.amazon.com/gp/video/*",
+        "https://www.hulu.com/*",
+        "https://www.disneyplus.com/*",
+        "https://tv.apple.com/*",
+        "https://soundcloud.com/*",
+        "https://music.apple.com/*",
+        "https://bandcamp.com/*",
+        "https://*.bandcamp.com/*",
+        "https://vscode.dev/*",
+        "https://github.dev/*",
+        "https://linear.app/*",
+        "https://*.atlassian.net/*",
+        "https://www.notion.so/*",
+        "https://notion.so/*",
+        "https://docs.google.com/*",
+        "https://www.figma.com/*",
+        "https://figma.com/*",
+        "https://www.canva.com/*",
+        "https://canva.com/*",
+        "https://www.coursera.org/*",
+        "https://coursera.org/*",
+        "https://www.udemy.com/*",
+        "https://udemy.com/*",
+        "https://www.khanacademy.org/*",
+        "https://khanacademy.org/*",
+        "https://leetcode.com/*",
+        "https://www.reddit.com/*",
+        "https://reddit.com/*",
+        "https://x.com/*",
+        "https://twitter.com/*",
+        "https://www.instagram.com/*",
+        "https://instagram.com/*",
+        "https://www.linkedin.com/*",
+        "https://linkedin.com/*",
+        "https://store.steampowered.com/*",
+        "https://steamcommunity.com/*",
+        "https://www.chess.com/*",
+        "https://chess.com/*",
+        "https://lichess.org/*",
+        "https://skribbl.io/*",
+        "https://www.geoguessr.com/*",
+        "https://geoguessr.com/*"
+      ],
+      "js": [
+        "scripts/generic.js"
+      ],
       "run_at": "document_start"
     }
   ],

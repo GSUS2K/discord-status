@@ -4,19 +4,52 @@ const DEFAULTS = {
   serverUrl: 'http://localhost:17654',
   updateInterval: 5,
   staleThresholdMs: 30000,
-  enabledSites: 'youtube,netflix,hotstar,crunchyroll,spotify,twitch,discord,meet,github,chatgpt,google,wikipedia',
-  logLevel: 'info'
+  enabledSites: 'youtube,youtubemusic,netflix,primevideo,hulu,disneyplus,appletv,hotstar,crunchyroll,spotify,soundcloud,applemusic,bandcamp,twitch,discord,meet,github,vscode,linear,jira,notion,googledocs,figma,canva,chatgpt,coursera,udemy,khanacademy,leetcode,reddit,twitter,instagram,linkedin,steam,chess,lichess,skribbl,geoguessr,google,wikipedia',
+  logLevel: 'info',
+  privacyMode: 'normal',
+  incognitoNever: true,
+  requirePlayingSites: ['youtube','youtubemusic','netflix','primevideo','hulu','disneyplus','appletv','hotstar','crunchyroll','spotify','soundcloud','applemusic','bandcamp','twitch'],
+  blockedDomains: [],
+  pauseDuringMeetings: false
 };
 
 const SUPPORTED_SITES = [
   ['youtube', 'YouTube'],
+  ['youtubemusic', 'YouTube Music'],
   ['netflix', 'Netflix'],
+  ['primevideo', 'Prime Video'],
+  ['hulu', 'Hulu'],
+  ['disneyplus', 'Disney+'],
+  ['appletv', 'Apple TV'],
   ['spotify', 'Spotify'],
+  ['soundcloud', 'SoundCloud'],
+  ['applemusic', 'Apple Music'],
+  ['bandcamp', 'Bandcamp'],
   ['twitch', 'Twitch'],
   ['discord', 'Discord'],
   ['meet', 'Google Meet'],
   ['github', 'GitHub'],
+  ['vscode', 'VS Code Web'],
+  ['linear', 'Linear'],
+  ['jira', 'Jira'],
+  ['notion', 'Notion'],
+  ['googledocs', 'Google Docs'],
+  ['figma', 'Figma'],
+  ['canva', 'Canva'],
   ['chatgpt', 'ChatGPT'],
+  ['coursera', 'Coursera'],
+  ['udemy', 'Udemy'],
+  ['khanacademy', 'Khan Academy'],
+  ['leetcode', 'LeetCode'],
+  ['reddit', 'Reddit'],
+  ['twitter', 'X/Twitter'],
+  ['instagram', 'Instagram'],
+  ['linkedin', 'LinkedIn'],
+  ['steam', 'Steam'],
+  ['chess', 'Chess.com'],
+  ['lichess', 'Lichess'],
+  ['skribbl', 'Skribbl.io'],
+  ['geoguessr', 'GeoGuessr'],
   ['hotstar', 'Hotstar'],
   ['crunchyroll', 'Crunchyroll'],
   ['google', 'Google'],
@@ -28,6 +61,11 @@ const updateIntervalInput = document.getElementById('updateInterval');
 const staleThresholdMsInput = document.getElementById('staleThresholdMs');
 const enabledSitesList = document.getElementById('enabledSitesList');
 const logLevelInput = document.getElementById('logLevel');
+const privacyModeInput = document.getElementById('privacyMode');
+const incognitoNeverInput = document.getElementById('incognitoNever');
+const requirePlayingInput = document.getElementById('requirePlaying');
+const pauseDuringMeetingsInput = document.getElementById('pauseDuringMeetings');
+const blockedDomainsInput = document.getElementById('blockedDomains');
 const backendStatusValue = document.getElementById('backendStatusValue');
 const rpcStatusValue = document.getElementById('rpcStatusValue');
 const lastActivityValue = document.getElementById('lastActivityValue');
@@ -100,15 +138,31 @@ function setFormValues(values) {
     ? values.enabledSites
     : String(values.enabledSites || DEFAULTS.enabledSites).split(','));
   logLevelInput.value = values.logLevel || DEFAULTS.logLevel;
+  privacyModeInput.value = values.privacyMode || DEFAULTS.privacyMode;
+  incognitoNeverInput.checked = values.incognitoNever !== false;
+  pauseDuringMeetingsInput.checked = values.pauseDuringMeetings === true;
+  const requirePlayingSites = Array.isArray(values.requirePlayingSites)
+    ? values.requirePlayingSites
+    : DEFAULTS.requirePlayingSites;
+  requirePlayingInput.checked = DEFAULTS.requirePlayingSites.every(site => requirePlayingSites.includes(site));
+  blockedDomainsInput.value = Array.isArray(values.blockedDomains)
+    ? values.blockedDomains.join(', ')
+    : String(values.blockedDomains || '');
 }
 
 function readSettingsFromForm() {
+  const requirePlayingSites = requirePlayingInput.checked ? DEFAULTS.requirePlayingSites : [];
   return {
     serverUrl: normalizeServerUrl(serverUrlInput.value),
     updateInterval: clampNumber(updateIntervalInput.value, 2, 60, DEFAULTS.updateInterval),
     staleThresholdMs: clampNumber(staleThresholdMsInput.value, 10, 300, 30) * 1000,
     enabledSites: getEnabledSiteValues(),
-    logLevel: ['debug', 'info', 'warn', 'error'].includes(logLevelInput.value) ? logLevelInput.value : DEFAULTS.logLevel
+    logLevel: ['debug', 'info', 'warn', 'error'].includes(logLevelInput.value) ? logLevelInput.value : DEFAULTS.logLevel,
+    privacyMode: ['normal', 'platform', 'private'].includes(privacyModeInput.value) ? privacyModeInput.value : DEFAULTS.privacyMode,
+    incognitoNever: incognitoNeverInput.checked,
+    requirePlayingSites,
+    blockedDomains: blockedDomainsInput.value.split(',').map(value => value.trim().toLowerCase()).filter(Boolean),
+    pauseDuringMeetings: pauseDuringMeetingsInput.checked
   };
 }
 
