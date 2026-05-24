@@ -481,7 +481,7 @@
       updatePill.textContent = update.availableVersion || update.version || 'check';
       installUpdate.disabled = false;
       try {
-        urlPill.textContent = new URL(status.url || 'http://localhost:3000').host;
+        urlPill.textContent = new URL(status.url || 'http://localhost:17654').host;
       } catch {
         urlPill.textContent = 'localhost';
       }

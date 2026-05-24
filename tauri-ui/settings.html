@@ -419,8 +419,8 @@
           <div class="row">
             <div style="width: 100%;">
               <div class="title">Backend port</div>
-              <div class="desc">Use this when another app already owns port 3000. Restart the backend after changing it, then set the extension Backend Server URL to the same port.</div>
-              <input id="port" class="field" type="number" min="1024" max="65535" step="1" value="3000">
+              <div class="desc">Use this when another app already owns the default port. Restart the backend after changing it, then set the extension Backend Server URL to the same port.</div>
+              <input id="port" class="field" type="number" min="1024" max="65535" step="1" value="17654">
             </div>
           </div>
         </section>
@@ -463,7 +463,7 @@
           <div class="row">
             <div>
               <div class="title">Backend URL</div>
-              <input id="backendUrl" class="field" type="text" readonly value="http://localhost:3000">
+              <input id="backendUrl" class="field" type="text" readonly value="http://localhost:17654">
             </div>
           </div>
           <div class="row">
@@ -594,7 +594,7 @@
       document.getElementById('activity').textContent = status.lastActivity || 'None';
       document.getElementById('rpcError').textContent = status.lastRpcError || 'None';
       document.getElementById('log').textContent = status.log || '';
-      document.getElementById('backendUrl').value = status.url || 'http://localhost:3000';
+      document.getElementById('backendUrl').value = status.url || 'http://localhost:17654';
       const update = status.update || {};
       document.getElementById('currentVersion').textContent = update.version ? `v${update.version}` : 'Unknown';
       document.getElementById('updateStatus').textContent = update.message || 'Ready';
@@ -606,7 +606,7 @@
       for (const input of settingInputs) {
         input.checked = Boolean(settings[input.id]);
       }
-      portInput.value = settings.port || 3000;
+      portInput.value = settings.port || 17654;
     }
 
     async function saveSettings() {

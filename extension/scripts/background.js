@@ -1,6 +1,13 @@
 // Background Service Worker
 
-const DEFAULT_SERVER_URL = 'http://localhost:3000';
+const DEFAULT_SERVER_URL = 'http://localhost:17654';
+const LEGACY_SERVER_URL = 'http://localhost:3000';
+const BACKEND_CANDIDATE_URLS = [
+  DEFAULT_SERVER_URL,
+  'http://127.0.0.1:17654',
+  LEGACY_SERVER_URL,
+  'http://127.0.0.1:3000'
+];
 const DEFAULT_UPDATE_INTERVAL_SECONDS = 5;
 const DEFAULT_STALE_THRESHOLD_MS = 30000;
 const DEFAULT_ENABLED_SITES = [
@@ -294,6 +301,54 @@ function normalizeServerUrl(url) {
   return String(url || DEFAULT_SERVER_URL).trim().replace(/\/+$/, '') || DEFAULT_SERVER_URL;
 }
 
+function backendCandidates(preferredUrl = settings.serverUrl) {
+  return [...new Set([
+    normalizeServerUrl(preferredUrl),
+    ...BACKEND_CANDIDATE_URLS.map(normalizeServerUrl)
+  ])];
+}
+
+function looksLikeCompanionStatus(payload) {
+  return payload && typeof payload === 'object' && typeof payload.discord_rpc === 'string';
+}
+
+async function fetchCompanionHealth(serverUrl) {
+  const response = await fetch(`${serverUrl}/health`, {
+    cache: 'no-store',
+    redirect: 'manual'
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = await response.json().catch(() => null);
+  return looksLikeCompanionStatus(payload) ? payload : null;
+}
+
+async function discoverBackendServer() {
+  for (const serverUrl of backendCandidates()) {
+    try {
+      const health = await fetchCompanionHealth(serverUrl);
+      if (!health) {
+        continue;
+      }
+
+      if (settings.serverUrl !== serverUrl) {
+        settings.serverUrl = serverUrl;
+        chrome.storage.local.set({ serverUrl });
+        log('info', 'Companion backend discovered', { serverUrl });
+      }
+
+      return { serverUrl, health };
+    } catch (error) {
+      log('debug', 'Companion discovery probe failed', { serverUrl, error: error.message });
+    }
+  }
+
+  return null;
+}
+
 function startTimers() {
   if (pruneTimer) clearInterval(pruneTimer);
   if (healthTimer) clearInterval(healthTimer);
@@ -457,11 +512,9 @@ async function updateDiscordStatus(activity) {
   if (JSON.stringify(activity) === JSON.stringify(lastActivity)) {
     return; // Activity hasn't changed
   }
-  
-  lastActivity = activity;
-  
+
   try {
-    const serverUrl = settings.serverUrl;
+    let serverUrl = settings.serverUrl;
     log('info', 'Updating Discord status', {
       platform: activity.platform,
       details: activity.details,
@@ -472,30 +525,43 @@ async function updateDiscordStatus(activity) {
     // Store activity for popup to display
     chrome.storage.local.set({ currentActivity: activity });
     
-    // Send to backend
-    const response = await fetch(`${serverUrl}/api/update-activity`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(activity)
-    });
+    let response = await sendActivityToBackend(serverUrl, activity);
+
+    if (!response.ok) {
+      const discovered = await discoverBackendServer();
+      if (discovered && discovered.serverUrl !== serverUrl) {
+        serverUrl = discovered.serverUrl;
+        response = await sendActivityToBackend(serverUrl, activity);
+      }
+    }
 
     if (!response.ok) {
       chrome.storage.local.set({ backendStatus: 'unreachable' });
-      log('warn', 'Backend rejected activity update', { status: response.status });
+      log('warn', 'Backend rejected activity update', { status: response.status, serverUrl });
       return;
     }
 
+    lastActivity = activity;
     chrome.storage.local.set({ backendStatus: 'connected' });
-    log('info', 'Activity sent successfully');
+    log('info', 'Activity sent successfully', { serverUrl });
   } catch (error) {
     chrome.storage.local.set({ backendStatus: 'unreachable' });
     log('warn', 'Backend not reachable', { error: error.message });
   }
 }
 
+function sendActivityToBackend(serverUrl, activity) {
+  return fetch(`${serverUrl}/api/update-activity`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(activity)
+  });
+}
+
 async function clearDiscordStatus() {
   try {
-    const serverUrl = settings.serverUrl;
+    const discovered = await discoverBackendServer();
+    const serverUrl = discovered?.serverUrl || settings.serverUrl;
 
     await fetch(`${serverUrl}/api/clear-activity`, {
       method: 'POST',
@@ -513,21 +579,21 @@ async function clearDiscordStatus() {
 
 async function refreshBackendHealth() {
   try {
-    const serverUrl = settings.serverUrl;
-
-    const response = await fetch(`${serverUrl}/health`, { cache: 'no-store' });
-    if (!response.ok) {
+    const discovered = await discoverBackendServer();
+    if (!discovered) {
       chrome.storage.local.set({ backendStatus: 'unreachable', discordRpcStatus: 'disconnected' });
-      log('warn', 'Health check failed', { status: response.status });
+      log('warn', 'Health check failed', { serverUrl: settings.serverUrl });
       return;
     }
 
-    const health = await response.json();
     chrome.storage.local.set({
       backendStatus: 'connected',
-      discordRpcStatus: health.discord_rpc || 'disconnected'
+      discordRpcStatus: discovered.health.discord_rpc || 'disconnected'
     });
-    log('debug', 'Health check passed', { discordRpcStatus: health.discord_rpc || 'disconnected' });
+    log('debug', 'Health check passed', {
+      serverUrl: discovered.serverUrl,
+      discordRpcStatus: discovered.health.discord_rpc || 'disconnected'
+    });
   } catch (error) {
     chrome.storage.local.set({ backendStatus: 'unreachable', discordRpcStatus: 'disconnected' });
     log('debug', 'Health check could not reach backend', { error: error.message });

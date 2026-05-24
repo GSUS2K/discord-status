@@ -33,7 +33,8 @@ use tokio::sync::oneshot;
 use tower_http::cors::CorsLayer;
 
 const CLIENT_ID: &str = "1506289512207093890";
-const DEFAULT_PORT: u16 = 3000;
+const DEFAULT_PORT: u16 = 17654;
+const LEGACY_PORT: u16 = 3000;
 const RPC_CONNECT_TIMEOUT: Duration = Duration::from_secs(4);
 const RELEASES_URL: &str = "https://github.com/GSUS2K/discord-status/releases/latest";
 
@@ -432,10 +433,14 @@ async fn start_server(state: AppState) -> Result<(), String> {
         .layer(CorsLayer::permissive())
         .with_state(state.clone());
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    let listener = tokio::net::TcpListener::bind(addr)
-        .await
-        .map_err(|error| format!("Could not bind port {port}: {error}"))?;
+    let (listener, bound_port) = bind_listener_with_fallback(&state, port).await?;
+    if bound_port != port {
+        let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
+        inner.settings.port = bound_port;
+        let _ = write_settings(&inner.settings);
+        inner.last_log =
+            format!("Port {port} was busy, so the backend moved to http://localhost:{bound_port}");
+    }
 
     tauri::async_runtime::spawn(async move {
         let result = axum::serve(listener, router)
@@ -454,6 +459,41 @@ async fn start_server(state: AppState) -> Result<(), String> {
     });
 
     Ok(())
+}
+
+async fn bind_listener_with_fallback(
+    state: &AppState,
+    port: u16,
+) -> Result<(tokio::net::TcpListener, u16), String> {
+    match bind_listener(port).await {
+        Ok(listener) => Ok((listener, port)),
+        Err(first_error) => {
+            if port != DEFAULT_PORT {
+                if let Ok(listener) = bind_listener(DEFAULT_PORT).await {
+                    set_log(
+                        state,
+                        format!(
+                            "Port {port} was busy ({first_error}). Using http://localhost:{DEFAULT_PORT}"
+                        ),
+                    );
+                    return Ok((listener, DEFAULT_PORT));
+                }
+            }
+
+            if port == LEGACY_PORT {
+                Err(format!(
+                    "Could not bind port {port}: {first_error}. Another local app is using the old Activity Status port."
+                ))
+            } else {
+                Err(format!("Could not bind port {port}: {first_error}"))
+            }
+        }
+    }
+}
+
+async fn bind_listener(port: u16) -> std::io::Result<tokio::net::TcpListener> {
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    tokio::net::TcpListener::bind(addr).await
 }
 
 async fn stop_server(state: AppState) -> Result<(), String> {
