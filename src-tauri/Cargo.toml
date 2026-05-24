@@ -1,6 +1,6 @@
 [package]
 name = "activity-status-companion"
-version = "1.0.13"
+version = "1.0.14"
 description = "Small cross-platform companion for Discord Status"
 authors = ["GSUS2K <ganesh21112000@gmail.com>"]
 edition = "2021"

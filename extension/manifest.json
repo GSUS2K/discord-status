@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Discord Status",
   "short_name": "Discord Status",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Show supported browser activity as Discord Rich Presence using the Activity Status Companion app.",
   "permissions": [
     "tabs",
@@ -30,7 +30,11 @@
     "https://www.google.com/*",
     "https://en.wikipedia.org/*",
     "http://localhost/*",
-    "http://127.0.0.1/*"
+    "http://localhost:17654/*",
+    "http://localhost:3000/*",
+    "http://127.0.0.1/*",
+    "http://127.0.0.1:17654/*",
+    "http://127.0.0.1:3000/*"
   ],
   "background": {
     "service_worker": "scripts/background.js"

@@ -1,7 +1,7 @@
 // Options page script
 
 const DEFAULTS = {
-  serverUrl: 'http://localhost:3000',
+  serverUrl: 'http://localhost:17654',
   updateInterval: 5,
   staleThresholdMs: 30000,
   enabledSites: 'youtube,netflix,hotstar,crunchyroll,spotify,twitch,discord,meet,github,chatgpt,google,wikipedia',
@@ -129,7 +129,7 @@ function validateServerUrl(serverUrl) {
   }
 
   if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(serverUrl)) {
-    return 'Discord Rich Presence requires a local backend. Use http://localhost:3000 unless you have a local reverse proxy.';
+    return 'Discord Rich Presence requires a local backend. Use http://localhost:17654 unless you have a local reverse proxy.';
   }
 
   return '';

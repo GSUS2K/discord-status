@@ -212,7 +212,7 @@ The release workflow uses GitHub's built-in `GITHUB_TOKEN`, so no personal acces
 
 | Setting | Works? | Notes |
 | --- | --- | --- |
-| Backend Server URL | Yes | Keep it as `http://localhost:3000` unless you run the local backend somewhere else on the same machine |
+| Backend Server URL | Yes | Keep it as `http://localhost:17654` unless you run the local backend somewhere else on the same machine |
 | Update Interval | Yes | Controls how often supported tabs are asked to refresh activity |
 | Forget Inactive Tabs After | Yes | Removes stale tab activity from the popup and auto picker |
 | Enabled Sites | Filter only | The checklist enables/disables already-supported detectors; new sites require code support |
@@ -272,7 +272,7 @@ npm run package:webstore
 Check backend status:
 
 ```bash
-curl http://localhost:3000/api/status
+curl http://localhost:17654/api/status
 ```
 
 ## Architecture
@@ -309,7 +309,7 @@ scripts/               Release/package helpers
 | --- | --- |
 | Discord says disconnected | Make sure Discord desktop is open, then restart the companion app |
 | Companion has no Dock/window presence | This is intentional; click the menu bar/system tray icon for controls and Settings |
-| Extension says backend offline | Confirm Activity Status Companion is running and settings use `http://localhost:3000` |
+| Extension says backend offline | Confirm Activity Status Companion is running and settings use `http://localhost:17654` |
 | Auto mode swaps tabs | Reload the extension; auto mode should prioritize the active Chrome tab |
 | Netflix title is wrong | Reload the Netflix tab and click Refresh in the popup |
 
