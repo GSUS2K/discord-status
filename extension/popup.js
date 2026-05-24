@@ -55,6 +55,10 @@ const SUPPORTED_SITES = [
   ['google', 'Google'],
   ['wikipedia', 'Wikipedia']
 ];
+const SITE_ICON_ALIASES = {
+  googlemeet: 'meet',
+  manualactivity: 'manual'
+};
 
 chrome.storage.local.get(['enabled', 'mode', 'autoPickMode'], (result) => {
   updateToggle(result.enabled !== false);
@@ -87,6 +91,13 @@ function updateStatus() {
     statusDiv.classList.remove('empty');
     statusDiv.textContent = '';
 
+    const row = document.createElement('div');
+    row.className = 'activity-row';
+
+    const icon = createSiteIcon(activity.platform);
+    const copy = document.createElement('div');
+    copy.className = 'activity-copy';
+
     const platform = document.createElement('div');
     platform.className = 'activity-platform';
     platform.textContent = activity.platform || 'Browser';
@@ -99,7 +110,9 @@ function updateStatus() {
     state.className = 'activity-state';
     state.textContent = activity.state || 'Active';
 
-    statusDiv.append(platform, details, state);
+    copy.append(platform, details, state);
+    row.append(icon, copy);
+    statusDiv.append(row);
   });
 }
 
@@ -177,6 +190,11 @@ function renderDetectedTabs() {
       const card = document.createElement('div');
       card.className = `tab-card${isSelected ? ' active' : ''}`;
 
+      const main = document.createElement('div');
+      main.className = 'tab-main';
+
+      const icon = createSiteIcon(activity.platform);
+
       const info = document.createElement('div');
       info.className = 'tab-info';
 
@@ -189,6 +207,7 @@ function renderDetectedTabs() {
       subtitle.textContent = formatSubtitle(activity);
 
       info.append(title, subtitle);
+      main.append(icon, info);
 
       const button = document.createElement('button');
       button.className = `tab-select${isSelected ? ' active' : ''}`;
@@ -198,7 +217,7 @@ function renderDetectedTabs() {
         sendRuntimeMessage({ action: 'selectActivityTab', tabId });
       });
 
-      card.append(info, button);
+      card.append(main, button);
       tabList.appendChild(card);
     }
   });
@@ -225,10 +244,29 @@ function renderSiteToggles() {
       const text = document.createElement('span');
       text.textContent = label;
 
-      chip.append(input, text);
+      chip.append(input, createSiteIcon(value), text);
       siteList.appendChild(chip);
     }
   });
+}
+
+function createSiteIcon(platform) {
+  const key = siteIconKey(platform);
+  const img = document.createElement('img');
+  img.className = 'site-icon';
+  img.alt = `${platform || 'Activity'} logo`;
+  img.src = chrome.runtime.getURL(`site-icons/${key}.png`);
+  img.addEventListener('error', () => {
+    img.src = chrome.runtime.getURL('site-icons/manual.png');
+  }, { once: true });
+  return img;
+}
+
+function siteIconKey(platform = '') {
+  const normalized = String(platform)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+  return SITE_ICON_ALIASES[normalized] || normalized || 'manual';
 }
 
 function renderLogs() {

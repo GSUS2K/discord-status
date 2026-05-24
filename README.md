@@ -125,7 +125,7 @@ Upload them in Discord Developer Portal with the exact keys listed in:
 discord-assets-real/UPLOAD_KEYS.txt
 ```
 
-Dynamic thumbnails are different from uploaded assets. Some Discord RPC clients can pass external image references or resolved media proxy URLs, but compatibility depends on the RPC library and Discord behavior. For public extension reliability, static uploaded asset keys are still the safest default.
+Dynamic thumbnails are different from uploaded assets. The companion now converts known media thumbnails into Discord-friendly refs such as `youtube:<video_id>`, `spotify:<image_id>`, `twitch:<channel>`, and Discord media proxy refs when available. Static uploaded asset keys remain the fallback when Discord cannot resolve a media thumbnail.
 
 ## Troubleshooting
 
