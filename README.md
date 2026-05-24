@@ -125,7 +125,7 @@ Upload them in Discord Developer Portal with the exact keys listed in:
 discord-assets-real/UPLOAD_KEYS.txt
 ```
 
-Dynamic thumbnails are different from uploaded assets. The companion now converts known media thumbnails into Discord-friendly refs such as `youtube:<video_id>`, `spotify:<image_id>`, `twitch:<channel>`, and Discord media proxy refs when available. Static uploaded asset keys remain the fallback when Discord cannot resolve a media thumbnail.
+Dynamic thumbnails are different from uploaded assets. Discord's local Rich Presence RPC is strict about image keys, so the companion uses the uploaded website logo asset as the stable main image. Detectors still capture thumbnail URLs as metadata for future experiments, but the public build avoids sending unsupported image refs that make Discord fall back to the app icon.
 
 ## Troubleshooting
 
