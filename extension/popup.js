@@ -3,6 +3,8 @@
 const toggleBtn = document.getElementById('toggleBtn');
 const statusDiv = document.getElementById('status');
 const modeBtns = document.querySelectorAll('.mode-btn');
+const pickBtns = document.querySelectorAll('.pick-btn');
+const autoPickSection = document.getElementById('autoPickSection');
 const manualSection = document.getElementById('manualSection');
 const manualTitleInput = document.getElementById('manualTitleInput');
 const manualMessageInput = document.getElementById('manualMessageInput');
@@ -13,15 +15,51 @@ const refreshBtn = document.getElementById('refreshBtn');
 const clearBtn = document.getElementById('clearBtn');
 const clearSelectionBtn = document.getElementById('clearSelectionBtn');
 const clearLogsBtn = document.getElementById('clearLogsBtn');
+const allSitesBtn = document.getElementById('allSitesBtn');
+const supportBtn = document.getElementById('supportBtn');
+const repoBtn = document.getElementById('repoBtn');
 const tabList = document.getElementById('tabList');
 const logList = document.getElementById('logList');
+const siteList = document.getElementById('siteList');
 const selectedTabLabel = document.getElementById('selectedTabLabel');
 const rpcHealthBadge = document.getElementById('rpcHealthBadge');
 const rpcHealthText = document.getElementById('rpcHealthText');
 
-chrome.storage.local.get(['enabled', 'mode'], (result) => {
+const REPO_URL = 'https://github.com/GSUS2K/discord-status';
+const ISSUES_URL = `${REPO_URL}/issues`;
+const DEFAULT_ENABLED_SITES = [
+  'youtube',
+  'netflix',
+  'hotstar',
+  'crunchyroll',
+  'spotify',
+  'twitch',
+  'discord',
+  'meet',
+  'github',
+  'chatgpt',
+  'google',
+  'wikipedia'
+];
+const SUPPORTED_SITES = [
+  ['youtube', 'YouTube'],
+  ['netflix', 'Netflix'],
+  ['spotify', 'Spotify'],
+  ['twitch', 'Twitch'],
+  ['discord', 'Discord'],
+  ['meet', 'Meet'],
+  ['github', 'GitHub'],
+  ['chatgpt', 'ChatGPT'],
+  ['hotstar', 'Hotstar'],
+  ['crunchyroll', 'Crunchyroll'],
+  ['google', 'Google'],
+  ['wikipedia', 'Wikipedia']
+];
+
+chrome.storage.local.get(['enabled', 'mode', 'autoPickMode'], (result) => {
   updateToggle(result.enabled !== false);
   updateMode(result.mode || 'auto');
+  updateAutoPickMode(result.autoPickMode || 'smart');
 });
 
 function sendRuntimeMessage(message) {
@@ -166,6 +204,33 @@ function renderDetectedTabs() {
   });
 }
 
+function renderSiteToggles() {
+  chrome.storage.local.get(['enabledSites'], (result) => {
+    const enabled = new Set(Array.isArray(result.enabledSites)
+      ? result.enabledSites
+      : DEFAULT_ENABLED_SITES);
+
+    siteList.textContent = '';
+
+    for (const [value, label] of SUPPORTED_SITES) {
+      const chip = document.createElement('label');
+      chip.className = 'site-chip';
+
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.value = value;
+      input.checked = enabled.has(value);
+      input.addEventListener('change', saveSiteToggles);
+
+      const text = document.createElement('span');
+      text.textContent = label;
+
+      chip.append(input, text);
+      siteList.appendChild(chip);
+    }
+  });
+}
+
 function renderLogs() {
   chrome.storage.local.get(['activityLogs'], (result) => {
     const logs = Array.isArray(result.activityLogs) ? result.activityLogs : [];
@@ -213,11 +278,28 @@ modeBtns.forEach(btn => {
   });
 });
 
+pickBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const autoPickMode = btn.dataset.autoPickMode;
+    chrome.storage.local.set({ autoPickMode });
+    updateAutoPickMode(autoPickMode);
+    sendRuntimeMessage({ action: 'changeAutoPickMode', autoPickMode });
+  });
+});
+
 function updateMode(mode) {
   modeBtns.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
   manualSection.style.display = mode === 'manual' ? 'grid' : 'none';
+  autoPickSection.style.display = mode === 'auto' ? 'grid' : 'none';
+}
+
+function updateAutoPickMode(autoPickMode) {
+  const normalized = autoPickMode === 'active' ? 'active' : 'smart';
+  pickBtns.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.autoPickMode === normalized);
+  });
 }
 
 setActivityBtn.addEventListener('click', () => {
@@ -278,6 +360,24 @@ clearLogsBtn.addEventListener('click', () => {
   });
 });
 
+allSitesBtn.addEventListener('click', () => {
+  chrome.storage.local.set({ enabledSites: DEFAULT_ENABLED_SITES }, () => {
+    renderSiteToggles();
+    sendRuntimeMessage({ action: 'setEnabledSites', enabledSites: DEFAULT_ENABLED_SITES });
+  });
+});
+
+supportBtn.addEventListener('click', () => chrome.tabs.create({ url: ISSUES_URL }));
+repoBtn.addEventListener('click', () => chrome.tabs.create({ url: REPO_URL }));
+
+function saveSiteToggles() {
+  const enabledSites = Array.from(siteList.querySelectorAll('input[type="checkbox"]:checked'))
+    .map(input => input.value);
+  chrome.storage.local.set({ enabledSites }, () => {
+    sendRuntimeMessage({ action: 'setEnabledSites', enabledSites });
+  });
+}
+
 function normalizeTabId(value) {
   if (value === null || value === undefined || value === '') {
     return null;
@@ -310,6 +410,7 @@ function refreshUi() {
   renderLogs();
 }
 
+renderSiteToggles();
 refreshUi();
 setInterval(refreshUi, 2000);
 
@@ -322,6 +423,14 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 
   if (changes.mode) {
     updateMode(changes.mode.newValue || 'auto');
+  }
+
+  if (changes.autoPickMode) {
+    updateAutoPickMode(changes.autoPickMode.newValue || 'smart');
+  }
+
+  if (changes.enabledSites) {
+    renderSiteToggles();
   }
 
   refreshUi();

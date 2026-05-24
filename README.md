@@ -17,6 +17,8 @@
 </p>
 
 <p align="center">
+  <a href="#install-in-3-steps">Install in 3 Steps</a>
+  |
   <a href="#overview">Overview</a>
   |
   <a href="#features">Features</a>
@@ -31,6 +33,14 @@
   |
   <a href="#roadmap">Roadmap</a>
 </p>
+
+## Install In 3 Steps
+
+1. Install the Chrome extension: [Discord Status on the Chrome Web Store](https://chromewebstore.google.com/detail/ekobpekegflobmheipgceigkldggkakd).
+2. Install the companion app: [download Activity Status Companion for your platform](https://github.com/GSUS2K/discord-status/releases/latest).
+3. Open the Discord desktop app and keep the companion running from your menu bar/system tray.
+
+That is the whole user setup. The extension detects supported browser activity, and the companion bridges it into Discord Rich Presence locally.
 
 ## Overview
 
@@ -72,11 +82,12 @@ YouTube, Netflix, Spotify, GitHub, ChatGPT, Google Meet, Twitch, and a few other
 | Area | What it does |
 | --- | --- |
 | Auto detect | Picks up activity from supported browser tabs |
-| Current-tab priority | Auto mode prefers the tab you are actually viewing instead of randomly swapping between background tabs |
+| Auto pick modes | Smart Auto prefers the tab you are viewing, while Active Tab Only ignores background tabs completely |
+| Site toggles | Turn supported sites on or off directly from the popup |
 | Manual mode | Lets you set a custom title and message for Discord |
 | Media timestamps | Shows play progress for supported video/audio pages |
 | Discord assets | Includes 512x512 logo assets ready for Discord Developer Portal upload |
-| Status controls | Enable, clear, refresh, reconnect, and select a specific tab from the popup |
+| Status controls | Enable, clear, refresh, reconnect, select a specific tab, and jump to support from the popup |
 | Diagnostics | Backend health, Discord RPC health, and recent extension logs |
 | Tray companion | Runs the local backend from the macOS menu bar, Windows tray, or Linux system tray |
 | Release packaging | Builds extension and companion artifacts for GitHub Releases |
@@ -112,21 +123,20 @@ YouTube, Netflix, Spotify, GitHub, ChatGPT, Google Meet, Twitch, and a few other
 
 ## Install
 
-Get the latest release from the [GitHub Releases page](https://github.com/GSUS2K/discord-status/releases/latest).
+Most users should install the published extension and the latest companion:
 
-Download:
+1. Install [Discord Status from the Chrome Web Store](https://chromewebstore.google.com/detail/ekobpekegflobmheipgceigkldggkakd).
+2. Download [Activity Status Companion from GitHub Releases](https://github.com/GSUS2K/discord-status/releases/latest).
+3. Open Discord desktop.
+4. Keep the companion app running while using Discord Status.
 
-- Chrome Web Store listing is coming soon. Until then, install manually from the release zip.
-- the Activity Status Companion app for your platform
+The companion runs as a background tray/menu-bar app. Click its icon to open the compact control popover. Use **Settings** from that popover for launch-at-login, backend startup, and diagnostics.
 
-Then:
+Developers and testers can also install the extension manually from the release zip:
 
-1. Install/open **Activity Status Companion**.
-2. Make sure Discord desktop is open.
-3. Install **Discord Status** from the Chrome Web Store.
-4. Keep the companion app running while using Discord status.
-
-Until the Chrome Web Store listing is live, download the manual extension zip from GitHub Releases, extract it, open chrome://extensions, enable Developer mode, click Load unpacked, and select the extracted extension folder.
+1. Download `activity-status-extension.zip` from [GitHub Releases](https://github.com/GSUS2K/discord-status/releases/latest).
+2. Extract it.
+3. Open `chrome://extensions`, enable Developer mode, click **Load unpacked**, and select the extracted extension folder.
 
 Installation note: current companion builds are unsigned.
 Windows SmartScreen/macOS Gatekeeper may warn because the app is not code-signed yet.
@@ -142,9 +152,6 @@ or go to Privacy & Security settings and press on Allow in the Security section 
 ```bash
 npm install
 ```
-
-
-Companion note: the companion runs as a background tray/menu-bar app. Click the tray icon to open the compact control popover. Use **Settings** from that popover for launch-at-login, backend startup, and diagnostics.
 
 ## Build Releases
 
