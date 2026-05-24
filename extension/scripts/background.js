@@ -13,17 +13,61 @@ const DEFAULT_STALE_THRESHOLD_MS = 30000;
 const DEFAULT_AUTO_PICK_MODE = 'smart';
 const DEFAULT_ENABLED_SITES = [
   'youtube',
+  'youtubemusic',
   'netflix',
+  'primevideo',
+  'hulu',
+  'disneyplus',
+  'appletv',
   'hotstar',
   'crunchyroll',
   'spotify',
+  'soundcloud',
+  'applemusic',
+  'bandcamp',
   'twitch',
   'discord',
   'meet',
   'github',
+  'vscode',
+  'linear',
+  'jira',
+  'notion',
+  'googledocs',
+  'figma',
+  'canva',
   'chatgpt',
+  'coursera',
+  'udemy',
+  'khanacademy',
+  'leetcode',
+  'reddit',
+  'twitter',
+  'instagram',
+  'linkedin',
+  'steam',
+  'chess',
+  'lichess',
+  'skribbl',
+  'geoguessr',
   'google',
   'wikipedia'
+];
+const DEFAULT_REQUIRE_PLAYING_SITES = [
+  'youtube',
+  'youtubemusic',
+  'netflix',
+  'primevideo',
+  'hulu',
+  'disneyplus',
+  'appletv',
+  'hotstar',
+  'crunchyroll',
+  'spotify',
+  'soundcloud',
+  'applemusic',
+  'bandcamp',
+  'twitch'
 ];
 const LOG_LEVELS = { debug: 10, info: 20, warn: 30, error: 40 };
 const MAX_LOG_ENTRIES = 80;
@@ -45,7 +89,12 @@ let settings = {
   updateInterval: DEFAULT_UPDATE_INTERVAL_SECONDS,
   enabledSites: DEFAULT_ENABLED_SITES,
   staleThresholdMs: DEFAULT_STALE_THRESHOLD_MS,
-  logLevel: 'info'
+  logLevel: 'info',
+  privacyMode: 'normal',
+  incognitoNever: true,
+  requirePlayingSites: DEFAULT_REQUIRE_PLAYING_SITES,
+  blockedDomains: [],
+  pauseDuringMeetings: false
 };
 
 log('info', 'Service worker started');
@@ -61,7 +110,12 @@ chrome.storage.local.get([
   'updateInterval',
   'enabledSites',
   'staleThresholdMs',
-  'logLevel'
+  'logLevel',
+  'privacyMode',
+  'incognitoNever',
+  'requirePlayingSites',
+  'blockedDomains',
+  'pauseDuringMeetings'
 ], (result) => {
   isEnabled = result.enabled !== false;
   mode = normalizeMode(result.mode);
@@ -127,6 +181,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (mode === 'auto' && isEnabled) {
       applyBestActivity();
     }
+  } else if (request.action === 'setPrivacyMode') {
+    const privacyMode = normalizePrivacyMode(request.privacyMode);
+    settings = { ...settings, privacyMode };
+    chrome.storage.local.set({ privacyMode });
+    log('info', 'Privacy mode changed', { privacyMode });
+    applyBestActivity();
+  } else if (request.action === 'setRequirePlayingSites') {
+    const requirePlayingSites = Array.isArray(request.requirePlayingSites)
+      ? normalizeStringList(request.requirePlayingSites)
+      : DEFAULT_REQUIRE_PLAYING_SITES;
+    settings = { ...settings, requirePlayingSites };
+    chrome.storage.local.set({ requirePlayingSites });
+    log('info', 'Playing-only rules changed', { requirePlayingSites });
+    applyBestActivity();
   } else if (request.action === 'setManualActivity') {
     if (!isEnabled) {
       log('warn', 'Manual activity ignored while disabled');
@@ -190,11 +258,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       isActiveTab: tabId === activeTabId
     };
 
+    if (settings.incognitoNever && sender.tab?.incognito) {
+      delete activityRegistry[tabId];
+      persistActivityRegistry();
+      log('debug', 'Activity ignored because tab is incognito', { tabId });
+      sendResponse({ ok: false, reason: 'incognito-disabled' });
+      return;
+    }
+
     if (!isSiteEnabled(enrichedActivity, sender.tab?.url)) {
       delete activityRegistry[tabId];
       persistActivityRegistry();
       log('debug', 'Activity ignored because site is disabled', { tabId, platform: enrichedActivity.platform });
       sendResponse({ ok: false, reason: 'site-disabled' });
+      return;
+    }
+
+    const ruleReason = getRuleBlockReason(enrichedActivity);
+    if (ruleReason) {
+      delete activityRegistry[tabId];
+      persistActivityRegistry();
+      log('debug', 'Activity ignored by rule', { tabId, reason: ruleReason, platform: enrichedActivity.platform });
+      if (currentActivity?.tabId === tabId) {
+        applyBestActivity();
+      }
+      sendResponse({ ok: false, reason: ruleReason });
       return;
     }
 
@@ -228,7 +316,12 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     'updateInterval',
     'enabledSites',
     'staleThresholdMs',
-    'logLevel'
+    'logLevel',
+    'privacyMode',
+    'incognitoNever',
+    'requirePlayingSites',
+    'blockedDomains',
+    'pauseDuringMeetings'
   ].some(key => changes[key]);
 
   if (settingsChanged) {
@@ -237,7 +330,12 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
       'updateInterval',
       'enabledSites',
       'staleThresholdMs',
-      'logLevel'
+      'logLevel',
+      'privacyMode',
+      'incognitoNever',
+      'requirePlayingSites',
+      'blockedDomains',
+      'pauseDuringMeetings'
     ], (result) => {
       settings = normalizeSettings(result);
       log('info', 'Settings reloaded', { settings });
@@ -302,6 +400,10 @@ function normalizeAutoPickMode(value) {
   return value === 'active' ? 'active' : DEFAULT_AUTO_PICK_MODE;
 }
 
+function normalizePrivacyMode(value) {
+  return ['normal', 'platform', 'private'].includes(value) ? value : 'normal';
+}
+
 function normalizeTabId(value) {
   if (value === null || value === undefined || value === '') {
     return null;
@@ -324,14 +426,32 @@ function normalizeSettings(values = {}) {
     Math.max(10000, Number.parseInt(values.staleThresholdMs, 10) || DEFAULT_STALE_THRESHOLD_MS)
   );
   const logLevel = LOG_LEVELS[values.logLevel] ? values.logLevel : 'info';
+  const privacyMode = normalizePrivacyMode(values.privacyMode);
+  const incognitoNever = values.incognitoNever !== false;
+  const requirePlayingSites = Array.isArray(values.requirePlayingSites)
+    ? normalizeStringList(values.requirePlayingSites)
+    : DEFAULT_REQUIRE_PLAYING_SITES;
+  const blockedDomains = Array.isArray(values.blockedDomains)
+    ? normalizeStringList(values.blockedDomains)
+    : String(values.blockedDomains || '').split(',').map(value => value.trim().toLowerCase()).filter(Boolean);
+  const pauseDuringMeetings = values.pauseDuringMeetings === true;
 
   return {
     serverUrl: normalizeServerUrl(values.serverUrl || DEFAULT_SERVER_URL),
     updateInterval,
     enabledSites: enabledSites.map(site => site.trim().toLowerCase()).filter(Boolean),
     staleThresholdMs,
-    logLevel
+    logLevel,
+    privacyMode,
+    incognitoNever,
+    requirePlayingSites,
+    blockedDomains,
+    pauseDuringMeetings
   };
+}
+
+function normalizeStringList(values = []) {
+  return values.map(value => String(value).trim().toLowerCase()).filter(Boolean);
 }
 
 function normalizeServerUrl(url) {
@@ -562,14 +682,107 @@ function syncActiveTab() {
 
 function isUrlSupported(url = '') {
   if (!/^https?:\/\//i.test(url)) return false;
-  return settings.enabledSites.some(site => url.toLowerCase().includes(site));
+  if (isBlockedDomain(url)) return false;
+  return settings.enabledSites.some(site => siteMatchesUrl(site, url));
 }
 
 function isSiteEnabled(activity, url = '') {
   if (settings.enabledSites.length === 0) return false;
   const platform = String(activity?.platform || '').toLowerCase().replace(/\s+/g, '');
   const haystack = `${platform} ${url}`.toLowerCase();
-  return settings.enabledSites.some(site => haystack.includes(site));
+  return settings.enabledSites.some(site => haystack.includes(site) || siteMatchesUrl(site, url));
+}
+
+function siteMatchesUrl(site, url = '') {
+  const key = String(site || '').toLowerCase();
+  const lowerUrl = String(url || '').toLowerCase();
+  const aliases = {
+    youtubemusic: ['music.youtube.com'],
+    primevideo: ['primevideo.com', 'amazon.com/gp/video'],
+    disneyplus: ['disneyplus.com'],
+    appletv: ['tv.apple.com'],
+    applemusic: ['music.apple.com'],
+    googledocs: ['docs.google.com'],
+    vscode: ['vscode.dev', 'github.dev'],
+    jira: ['atlassian.net'],
+    twitter: ['x.com', 'twitter.com'],
+    chess: ['chess.com']
+  };
+  return lowerUrl.includes(key) || (aliases[key] || []).some(alias => lowerUrl.includes(alias));
+}
+
+function siteKeyForActivity(activity = {}) {
+  const platform = String(activity.platform || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const source = String(activity.sourceUrl || activity.url || '').toLowerCase();
+  const aliases = {
+    googlemeet: 'meet',
+    ytmusic: 'youtubemusic',
+    youtube: source.includes('music.youtube.com') ? 'youtubemusic' : 'youtube',
+    appletv: 'appletv',
+    applemusic: 'applemusic',
+    googledocs: 'googledocs',
+    visualstudiocode: 'vscode',
+    x: 'twitter'
+  };
+  return aliases[platform] || platform || '';
+}
+
+function isBlockedDomain(url = '') {
+  if (!settings.blockedDomains?.length) return false;
+  let hostname = '';
+  try {
+    hostname = new URL(url).hostname.toLowerCase();
+  } catch {
+    hostname = String(url).toLowerCase();
+  }
+  return settings.blockedDomains.some(domain => hostname.includes(domain));
+}
+
+function getRuleBlockReason(activity) {
+  if (settings.privacyMode === 'private') {
+    return 'private-mode';
+  }
+
+  if (isBlockedDomain(activity.sourceUrl || activity.url || '')) {
+    return 'blocked-domain';
+  }
+
+  const siteKey = siteKeyForActivity(activity);
+  if (settings.requirePlayingSites.includes(siteKey) && activity.isPlaying === false) {
+    return 'not-playing';
+  }
+
+  if (settings.pauseDuringMeetings && ['meet', 'googlemeet'].includes(siteKey)) {
+    return 'meeting-paused';
+  }
+
+  return '';
+}
+
+function privacyTransformActivity(activity) {
+  if (!activity || settings.privacyMode === 'private') return null;
+
+  if (settings.privacyMode !== 'platform') {
+    return activity;
+  }
+
+  const platform = activity.platform || 'Browser';
+  const action = activity.isPlaying === false ? 'Paused on' : actionForPlatform(platform);
+  return {
+    ...activity,
+    details: `${action} ${platform}`,
+    state: 'Private mode',
+    tabTitle: platform
+  };
+}
+
+function actionForPlatform(platform = '') {
+  const key = platform.toLowerCase();
+  if (/spotify|soundcloud|music|bandcamp/.test(key)) return 'Listening on';
+  if (/youtube|netflix|prime|hulu|disney|apple tv|hotstar|crunchyroll|twitch/.test(key)) return 'Watching';
+  if (/github|vscode|linear|jira/.test(key)) return 'Working in';
+  if (/wikipedia|coursera|udemy|khan|leetcode|docs|notion/.test(key)) return 'Reading';
+  return 'Using';
 }
 
 // Update Discord status
@@ -578,26 +791,33 @@ async function updateDiscordStatus(activity) {
     return;
   }
 
+  const displayActivity = privacyTransformActivity(activity);
+  if (!displayActivity) {
+    currentActivity = null;
+    await clearDiscordStatus();
+    return;
+  }
+
   try {
     let serverUrl = settings.serverUrl;
-    const activityChanged = JSON.stringify(activity) !== JSON.stringify(lastActivity);
+    const activityChanged = JSON.stringify(displayActivity) !== JSON.stringify(lastActivity);
     log('info', 'Updating Discord status', {
-      platform: activity.platform,
-      details: activity.details,
-      state: activity.state,
+      platform: displayActivity.platform,
+      details: displayActivity.details,
+      state: displayActivity.state,
       serverUrl
     });
     
     // Store activity for popup to display
-    chrome.storage.local.set({ currentActivity: activity });
+    chrome.storage.local.set({ currentActivity: displayActivity });
     
-    let response = await reportActivitiesToBackend(serverUrl, activity);
+    let response = await reportActivitiesToBackend(serverUrl, displayActivity);
 
     if (!response.ok) {
       const discovered = await discoverBackendServer();
       if (discovered && discovered.serverUrl !== serverUrl) {
         serverUrl = discovered.serverUrl;
-        response = await reportActivitiesToBackend(serverUrl, activity);
+        response = await reportActivitiesToBackend(serverUrl, displayActivity);
       }
     }
 
@@ -611,7 +831,7 @@ async function updateDiscordStatus(activity) {
     }
 
     if (activityChanged) {
-      lastActivity = activity;
+      lastActivity = displayActivity;
     }
     chrome.storage.local.set({ backendStatus: 'connected', discordRpcStatus: 'connected' });
     log('info', 'Activity sent successfully', { serverUrl });
@@ -630,7 +850,10 @@ function sendActivityToBackend(serverUrl, activity) {
 }
 
 async function reportActivitiesToBackend(serverUrl, fallbackActivity) {
-  const activities = registryToArray().map(normalizeActivityForBackend);
+  const activities = registryToArray()
+    .map(privacyTransformActivity)
+    .filter(Boolean)
+    .map(normalizeActivityForBackend);
   if (fallbackActivity && !activities.some(activity => activity.id === (fallbackActivity.id || `tab:${fallbackActivity.tabId}`))) {
     activities.unshift(normalizeActivityForBackend(fallbackActivity));
   }

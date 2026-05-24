@@ -450,6 +450,7 @@
         <button id="stop" class="btn danger">Stop</button>
         <button id="restart" class="btn wide">Restart Backend</button>
         <button id="reconnect" class="btn wide">Reconnect Discord RPC</button>
+        <button id="fix" class="btn wide">Fix Connection</button>
       </section>
 
       <section class="card menu">
@@ -492,6 +493,7 @@
       startBackend: () => invoke('start_backend'),
       stopBackend: () => invoke('stop_backend'),
       restartBackend: () => invoke('restart_backend'),
+      fixConnection: () => invoke('fix_connection'),
       reconnectRpc: () => invoke('reconnect_rpc'),
       selectActivity: activityId => invoke('select_activity_id', { activityId }),
       checkForUpdates: () => invoke('check_for_updates'),
@@ -516,9 +518,12 @@
     const toasts = document.getElementById('toasts');
     const SITE_ICON_ALIASES = {
       googlemeet: 'meet',
-      manualactivity: 'manual'
+      manualactivity: 'manual',
+      youtubemusic: 'youtube',
+      googledocs: 'google',
+      visualstudiocode: 'github'
     };
-    const actionButtons = ['start', 'stop', 'restart', 'reconnect'].map(id => document.getElementById(id));
+    const actionButtons = ['start', 'stop', 'restart', 'reconnect', 'fix'].map(id => document.getElementById(id));
     let busy = false;
     let lastToast = { message: '', time: 0 };
 
@@ -618,9 +623,23 @@
       img.alt = `${platform || 'Activity'} logo`;
       img.src = `site-icons/${key}.png`;
       img.addEventListener('error', () => {
-        img.src = 'site-icons/manual.png';
+        img.src = makeFallbackIcon(platform);
       }, { once: true });
       return img;
+    }
+
+    function makeFallbackIcon(platform = 'Activity') {
+      const label = String(platform || 'Activity').trim();
+      const letters = label
+        .replace(/[^a-z0-9\s+]/gi, ' ')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(part => part[0].toUpperCase())
+        .join('') || 'A';
+      const hue = Math.abs([...label].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % 360;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="hsl(${hue} 58% 24%)"/><circle cx="50" cy="14" r="7" fill="hsl(${(hue + 120) % 360} 80% 58%)"/><text x="32" y="39" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="800" fill="#fff">${letters}</text></svg>`;
+      return `data:image/svg+xml,${encodeURIComponent(svg)}`;
     }
 
     function siteIconKey(platform = '') {
@@ -659,6 +678,7 @@
     document.getElementById('stop').addEventListener('click', () => runAction(activityStatus.stopBackend, 'Backend stopped.'));
     document.getElementById('restart').addEventListener('click', () => runAction(activityStatus.restartBackend, 'Backend restarted.'));
     document.getElementById('reconnect').addEventListener('click', () => runAction(activityStatus.reconnectRpc, 'Discord RPC reconnected.'));
+    document.getElementById('fix').addEventListener('click', () => runAction(activityStatus.fixConnection, 'Connection repair finished.'));
 
     document.getElementById('settings').addEventListener('click', async () => {
       try {

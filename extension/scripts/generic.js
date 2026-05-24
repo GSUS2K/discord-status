@@ -27,6 +27,70 @@ const PLATFORMS = {
       };
     }
   },
+  'music.youtube.com': {
+    name: 'YouTube Music',
+    detect: () => createMediaActivity({
+      platform: 'YouTube Music',
+      selectors: ['ytmusic-player-bar .title', 'ytmusic-player-bar [class*="title"]'],
+      fallbackSuffixes: ['YouTube Music'],
+      mediaSelector: 'audio, video',
+      largeImageKey: 'youtubemusic',
+      largeImageText: 'Listening on YouTube Music'
+    })
+  },
+  'primevideo.com': {
+    name: 'Prime Video',
+    detect: () => createVideoActivity({
+      platform: 'Prime Video',
+      titleSelectors: ['[data-automation-id*="title"]', '[class*="Title"]', 'h1'],
+      titleFallbacks: ['Prime Video'],
+      largeImageKey: 'primevideo',
+      largeImageText: 'Watching on Prime Video'
+    })
+  },
+  'amazon.com': {
+    name: 'Prime Video',
+    detect: () => {
+      if (!window.location.pathname.includes('/video')) return null;
+      return createVideoActivity({
+        platform: 'Prime Video',
+        titleSelectors: ['[data-automation-id*="title"]', '[class*="Title"]', 'h1'],
+        titleFallbacks: ['Prime Video', 'Amazon'],
+        largeImageKey: 'primevideo',
+        largeImageText: 'Watching on Prime Video'
+      });
+    }
+  },
+  'hulu.com': {
+    name: 'Hulu',
+    detect: () => createVideoActivity({
+      platform: 'Hulu',
+      titleSelectors: ['[data-testid*="title"]', '[class*="Title"]', 'h1'],
+      titleFallbacks: ['Hulu'],
+      largeImageKey: 'hulu',
+      largeImageText: 'Watching on Hulu'
+    })
+  },
+  'disneyplus.com': {
+    name: 'Disney+',
+    detect: () => createVideoActivity({
+      platform: 'Disney+',
+      titleSelectors: ['[data-testid*="title"]', '[class*="title"]', 'h1'],
+      titleFallbacks: ['Disney+', 'Disney Plus'],
+      largeImageKey: 'disneyplus',
+      largeImageText: 'Watching on Disney+'
+    })
+  },
+  'tv.apple.com': {
+    name: 'Apple TV',
+    detect: () => createVideoActivity({
+      platform: 'Apple TV',
+      titleSelectors: ['[data-testid*="title"]', '[class*="title"]', 'h1'],
+      titleFallbacks: ['Apple TV+'],
+      largeImageKey: 'appletv',
+      largeImageText: 'Watching on Apple TV'
+    })
+  },
   'discord.com': {
     name: 'Discord',
     detect: () => {
@@ -63,6 +127,86 @@ const PLATFORMS = {
       };
     }
   },
+  'github.dev': {
+    name: 'VS Code Web',
+    detect: () => createPageActivity({
+      platform: 'VS Code Web',
+      state: 'Coding in browser',
+      largeImageKey: 'vscode',
+      largeImageText: 'Coding in VS Code Web',
+      titleFallbacks: ['Visual Studio Code', 'GitHub']
+    })
+  },
+  'vscode.dev': {
+    name: 'VS Code Web',
+    detect: () => createPageActivity({
+      platform: 'VS Code Web',
+      state: 'Coding in browser',
+      largeImageKey: 'vscode',
+      largeImageText: 'Coding in VS Code Web',
+      titleFallbacks: ['Visual Studio Code']
+    })
+  },
+  'linear.app': {
+    name: 'Linear',
+    detect: () => createPageActivity({
+      platform: 'Linear',
+      state: 'Managing issues',
+      largeImageKey: 'linear',
+      largeImageText: 'Working in Linear',
+      titleFallbacks: ['Linear']
+    })
+  },
+  'atlassian.net': {
+    name: 'Jira',
+    detect: () => createPageActivity({
+      platform: 'Jira',
+      state: 'Managing project work',
+      largeImageKey: 'jira',
+      largeImageText: 'Working in Jira',
+      titleFallbacks: ['Jira']
+    })
+  },
+  'notion.so': {
+    name: 'Notion',
+    detect: () => createPageActivity({
+      platform: 'Notion',
+      state: 'Writing notes',
+      largeImageKey: 'notion',
+      largeImageText: 'Working in Notion',
+      titleFallbacks: ['Notion']
+    })
+  },
+  'docs.google.com': {
+    name: 'Google Docs',
+    detect: () => createPageActivity({
+      platform: 'Google Docs',
+      state: 'Editing document',
+      largeImageKey: 'googledocs',
+      largeImageText: 'Working in Google Docs',
+      titleFallbacks: ['Google Docs', 'Google Sheets', 'Google Slides']
+    })
+  },
+  'figma.com': {
+    name: 'Figma',
+    detect: () => createPageActivity({
+      platform: 'Figma',
+      state: 'Designing',
+      largeImageKey: 'figma',
+      largeImageText: 'Designing in Figma',
+      titleFallbacks: ['Figma']
+    })
+  },
+  'canva.com': {
+    name: 'Canva',
+    detect: () => createPageActivity({
+      platform: 'Canva',
+      state: 'Designing',
+      largeImageKey: 'canva',
+      largeImageText: 'Designing in Canva',
+      titleFallbacks: ['Canva']
+    })
+  },
   'chatgpt.com': {
     name: 'ChatGPT',
     detect: () => {
@@ -79,6 +223,39 @@ const PLATFORMS = {
         url: window.location.href
       };
     }
+  },
+  'soundcloud.com': {
+    name: 'SoundCloud',
+    detect: () => createMediaActivity({
+      platform: 'SoundCloud',
+      selectors: ['[data-testid="playbackSoundTitle"]', '.playbackSoundBadge__titleLink', 'h1'],
+      fallbackSuffixes: ['SoundCloud'],
+      mediaSelector: 'audio',
+      largeImageKey: 'soundcloud',
+      largeImageText: 'Listening on SoundCloud'
+    })
+  },
+  'music.apple.com': {
+    name: 'Apple Music',
+    detect: () => createMediaActivity({
+      platform: 'Apple Music',
+      selectors: ['[data-testid*="song-title"]', '[class*="song-name"]', 'h1'],
+      fallbackSuffixes: ['Apple Music'],
+      mediaSelector: 'audio, video',
+      largeImageKey: 'applemusic',
+      largeImageText: 'Listening on Apple Music'
+    })
+  },
+  'bandcamp.com': {
+    name: 'Bandcamp',
+    detect: () => createMediaActivity({
+      platform: 'Bandcamp',
+      selectors: ['.trackTitle', 'h2.trackTitle', 'h1'],
+      fallbackSuffixes: ['Bandcamp'],
+      mediaSelector: 'audio',
+      largeImageKey: 'bandcamp',
+      largeImageText: 'Listening on Bandcamp'
+    })
   },
   'hotstar.com': {
     name: 'Hotstar',
@@ -106,6 +283,156 @@ const PLATFORMS = {
       titleFallbacks: ['Crunchyroll'],
       largeImageKey: 'crunchyroll',
       largeImageText: 'Watching on Crunchyroll'
+    })
+  },
+  'coursera.org': {
+    name: 'Coursera',
+    detect: () => createPageActivity({
+      platform: 'Coursera',
+      state: 'Learning',
+      largeImageKey: 'coursera',
+      largeImageText: 'Learning on Coursera',
+      titleFallbacks: ['Coursera']
+    })
+  },
+  'udemy.com': {
+    name: 'Udemy',
+    detect: () => createPageActivity({
+      platform: 'Udemy',
+      state: 'Learning',
+      largeImageKey: 'udemy',
+      largeImageText: 'Learning on Udemy',
+      titleFallbacks: ['Udemy']
+    })
+  },
+  'khanacademy.org': {
+    name: 'Khan Academy',
+    detect: () => createPageActivity({
+      platform: 'Khan Academy',
+      state: 'Learning',
+      largeImageKey: 'khanacademy',
+      largeImageText: 'Learning on Khan Academy',
+      titleFallbacks: ['Khan Academy']
+    })
+  },
+  'leetcode.com': {
+    name: 'LeetCode',
+    detect: () => createPageActivity({
+      platform: 'LeetCode',
+      state: 'Practicing code',
+      largeImageKey: 'leetcode',
+      largeImageText: 'Solving on LeetCode',
+      titleFallbacks: ['LeetCode']
+    })
+  },
+  'reddit.com': {
+    name: 'Reddit',
+    detect: () => createPageActivity({
+      platform: 'Reddit',
+      state: 'Browsing Reddit',
+      largeImageKey: 'reddit',
+      largeImageText: 'Browsing Reddit',
+      titleFallbacks: ['Reddit']
+    })
+  },
+  'x.com': {
+    name: 'X',
+    detect: () => createPageActivity({
+      platform: 'X',
+      state: 'Browsing X',
+      largeImageKey: 'twitter',
+      largeImageText: 'Browsing X',
+      titleFallbacks: ['X']
+    })
+  },
+  'twitter.com': {
+    name: 'X',
+    detect: () => createPageActivity({
+      platform: 'X',
+      state: 'Browsing X',
+      largeImageKey: 'twitter',
+      largeImageText: 'Browsing X',
+      titleFallbacks: ['X', 'Twitter']
+    })
+  },
+  'instagram.com': {
+    name: 'Instagram',
+    detect: () => createPageActivity({
+      platform: 'Instagram',
+      state: 'Browsing Instagram',
+      largeImageKey: 'instagram',
+      largeImageText: 'Browsing Instagram',
+      titleFallbacks: ['Instagram']
+    })
+  },
+  'linkedin.com': {
+    name: 'LinkedIn',
+    detect: () => createPageActivity({
+      platform: 'LinkedIn',
+      state: 'Browsing LinkedIn',
+      largeImageKey: 'linkedin',
+      largeImageText: 'Browsing LinkedIn',
+      titleFallbacks: ['LinkedIn']
+    })
+  },
+  'store.steampowered.com': {
+    name: 'Steam',
+    detect: () => createPageActivity({
+      platform: 'Steam',
+      state: 'Browsing games',
+      largeImageKey: 'steam',
+      largeImageText: 'Browsing Steam',
+      titleFallbacks: ['Steam']
+    })
+  },
+  'steamcommunity.com': {
+    name: 'Steam',
+    detect: () => createPageActivity({
+      platform: 'Steam',
+      state: 'Browsing community',
+      largeImageKey: 'steam',
+      largeImageText: 'Browsing Steam Community',
+      titleFallbacks: ['Steam Community']
+    })
+  },
+  'chess.com': {
+    name: 'Chess.com',
+    detect: () => createPageActivity({
+      platform: 'Chess.com',
+      state: 'Playing chess',
+      largeImageKey: 'chess',
+      largeImageText: 'Playing Chess.com',
+      titleFallbacks: ['Chess.com']
+    })
+  },
+  'lichess.org': {
+    name: 'Lichess',
+    detect: () => createPageActivity({
+      platform: 'Lichess',
+      state: 'Playing chess',
+      largeImageKey: 'lichess',
+      largeImageText: 'Playing Lichess',
+      titleFallbacks: ['lichess.org', 'lichess']
+    })
+  },
+  'skribbl.io': {
+    name: 'Skribbl.io',
+    detect: () => createPageActivity({
+      platform: 'Skribbl.io',
+      state: 'Playing drawing game',
+      largeImageKey: 'skribbl',
+      largeImageText: 'Playing Skribbl.io',
+      titleFallbacks: ['skribbl.io']
+    })
+  },
+  'geoguessr.com': {
+    name: 'GeoGuessr',
+    detect: () => createPageActivity({
+      platform: 'GeoGuessr',
+      state: 'Playing geography game',
+      largeImageKey: 'geoguessr',
+      largeImageText: 'Playing GeoGuessr',
+      titleFallbacks: ['GeoGuessr']
     })
   },
   'wikipedia.org': {
@@ -142,6 +469,46 @@ const PLATFORMS = {
     }
   }
 };
+
+function createPageActivity({ platform, state, largeImageKey, largeImageText, titleFallbacks = [] }) {
+  const title = getMetaTitle()
+    || getText('h1')
+    || cleanTitle(document.title, titleFallbacks);
+
+  if (!title || title.toLowerCase() === platform.toLowerCase()) return null;
+
+  return {
+    platform,
+    details: truncate(title),
+    state,
+    largeImageKey,
+    largeImageText,
+    thumbnailUrl: getThumbnailUrl(),
+    url: window.location.href
+  };
+}
+
+function createMediaActivity({ platform, selectors, fallbackSuffixes, mediaSelector, largeImageKey, largeImageText }) {
+  const title = getFirstText(selectors)
+    || getMetaTitle()
+    || cleanTitle(document.title, fallbackSuffixes);
+  const media = getMediaInfo(mediaSelector);
+
+  if (!title) return null;
+
+  return {
+    platform,
+    details: truncate(title),
+    state: truncate(media.label),
+    largeImageKey,
+    largeImageText,
+    thumbnailUrl: getThumbnailUrl(),
+    url: window.location.href,
+    isPlaying: media.isPlaying,
+    mediaCurrentTime: media.currentTime,
+    mediaDuration: media.duration
+  };
+}
 
 function createVideoActivity({ platform, titleSelectors, titleFallbacks, largeImageKey, largeImageText }) {
   const title = getFirstText(titleSelectors)

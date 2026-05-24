@@ -423,6 +423,23 @@
               <input id="port" class="field" type="number" min="1024" max="65535" step="1" value="17654">
             </div>
           </div>
+          <div class="row">
+            <div>
+              <div class="title">System app detection</div>
+              <div class="desc">Optional. Only apps listed below can become Discord status, and browser activity still wins when present.</div>
+            </div>
+            <label class="toggle">
+              <input id="systemActivityEnabled" type="checkbox">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="row">
+            <div style="width: 100%;">
+              <div class="title">Allowed system apps</div>
+              <div class="desc">Comma-separated app names, for example: Visual Studio Code, Terminal, Spotify. Leave empty to only detect but not publish.</div>
+              <input id="systemActivityAllowedApps" class="field" type="text" placeholder="Visual Studio Code, Terminal">
+            </div>
+          </div>
         </section>
       </section>
 
@@ -450,6 +467,7 @@
           <button id="stop" class="command danger">Stop Backend</button>
           <button id="restart" class="command">Restart Backend</button>
           <button id="reconnect" class="command">Reconnect Discord RPC</button>
+          <button id="fix" class="command primary">Fix Connection</button>
           <button id="extensions" class="command">Open Chrome Extensions</button>
           <button id="copyUrl" class="command">Copy Backend URL</button>
         </div>
@@ -470,6 +488,18 @@
             <div>
               <div class="title">Last RPC error</div>
               <div id="rpcError" class="desc">None</div>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <div class="title">Extension connection</div>
+              <div id="extensionStatus" class="desc">Waiting for extension</div>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <div class="title">System activity</div>
+              <div id="systemActivity" class="desc">Disabled</div>
             </div>
           </div>
           <div class="row">
@@ -520,6 +550,7 @@
       startBackend: () => invoke('start_backend'),
       stopBackend: () => invoke('stop_backend'),
       restartBackend: () => invoke('restart_backend'),
+      fixConnection: () => invoke('fix_connection'),
       reconnectRpc: () => invoke('reconnect_rpc'),
       checkForUpdates: () => invoke('check_for_updates'),
       installUpdate: () => invoke('install_update'),
@@ -535,9 +566,10 @@
       updates: document.getElementById('updates-view'),
       diagnostics: document.getElementById('diagnostics')
     };
-    const settingInputs = ['launchAtLogin', 'autoStartBackend', 'hidePopoverOnBlur'].map(id => document.getElementById(id));
+    const settingInputs = ['launchAtLogin', 'autoStartBackend', 'hidePopoverOnBlur', 'systemActivityEnabled'].map(id => document.getElementById(id));
     const portInput = document.getElementById('port');
-    const actionButtons = ['start', 'stop', 'restart', 'reconnect', 'checkUpdates'].map(id => document.getElementById(id));
+    const systemAppsInput = document.getElementById('systemActivityAllowedApps');
+    const actionButtons = ['start', 'stop', 'restart', 'reconnect', 'fix', 'checkUpdates'].map(id => document.getElementById(id));
     const toasts = document.getElementById('toasts');
     let busy = false;
     let lastToast = { message: '', time: 0 };
@@ -593,6 +625,12 @@
       setStatusLine(document.getElementById('discord'), status.discord, 'discord');
       document.getElementById('activity').textContent = status.lastActivity || 'None';
       document.getElementById('rpcError').textContent = status.lastRpcError || 'None';
+      document.getElementById('extensionStatus').textContent = status.extensionConnected
+        ? `Connected${status.lastExtensionSeen ? ` • ${new Date(status.lastExtensionSeen).toLocaleTimeString()}` : ''}`
+        : 'Waiting for extension activity';
+      document.getElementById('systemActivity').textContent = status.systemActivity
+        ? `${status.systemActivity.appName} • ${new Date(status.systemActivity.updatedAt).toLocaleTimeString()}`
+        : 'No allowed system app detected';
       document.getElementById('log').textContent = status.log || '';
       document.getElementById('backendUrl').value = status.url || 'http://localhost:17654';
       const update = status.update || {};
@@ -607,12 +645,19 @@
         input.checked = Boolean(settings[input.id]);
       }
       portInput.value = settings.port || 17654;
+      systemAppsInput.value = Array.isArray(settings.systemActivityAllowedApps)
+        ? settings.systemActivityAllowedApps.join(', ')
+        : '';
     }
 
     async function saveSettings() {
       try {
         await activityStatus.setSettings(Object.fromEntries(
-          [...settingInputs.map(input => [input.id, input.checked]), ['port', Number(portInput.value)]]
+          [
+            ...settingInputs.map(input => [input.id, input.checked]),
+            ['port', Number(portInput.value)],
+            ['systemActivityAllowedApps', systemAppsInput.value.split(',').map(value => value.trim()).filter(Boolean)]
+          ]
         ));
         await loadSettings();
         toast('Settings saved.');
@@ -649,11 +694,13 @@
       input.addEventListener('change', saveSettings);
     }
     portInput.addEventListener('change', saveSettings);
+    systemAppsInput.addEventListener('change', saveSettings);
 
     document.getElementById('start').addEventListener('click', () => runAction(activityStatus.startBackend, 'Backend started.'));
     document.getElementById('stop').addEventListener('click', () => runAction(activityStatus.stopBackend, 'Backend stopped.'));
     document.getElementById('restart').addEventListener('click', () => runAction(activityStatus.restartBackend, 'Backend restarted.'));
     document.getElementById('reconnect').addEventListener('click', () => runAction(activityStatus.reconnectRpc, 'Discord RPC reconnected.'));
+    document.getElementById('fix').addEventListener('click', () => runAction(activityStatus.fixConnection, 'Connection repair finished.'));
     document.getElementById('checkUpdates').addEventListener('click', () => runAction(activityStatus.checkForUpdates, 'Latest release opened.'));
     document.getElementById('installUpdates').addEventListener('click', async () => {
       try {
