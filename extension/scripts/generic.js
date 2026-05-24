@@ -19,6 +19,7 @@ const PLATFORMS = {
         state: truncate(`${media.label} • ${channel}`),
         largeImageKey: 'twitch',
         largeImageText: 'Watching on Twitch',
+        thumbnailUrl: getThumbnailUrl(),
         url: window.location.href,
         isPlaying: media.isPlaying,
         mediaCurrentTime: media.currentTime,
@@ -158,6 +159,7 @@ function createVideoActivity({ platform, titleSelectors, titleFallbacks, largeIm
     state: truncate(media.label),
     largeImageKey,
     largeImageText,
+    thumbnailUrl: getThumbnailUrl(),
     url: window.location.href,
     isPlaying: media.isPlaying,
     mediaCurrentTime: media.currentTime,
@@ -204,6 +206,13 @@ function getMetaTitle() {
   return document.querySelector('meta[property="og:title"]')?.content?.trim()
     || document.querySelector('meta[name="twitter:title"]')?.content?.trim()
     || document.querySelector('meta[name="title"]')?.content?.trim()
+    || '';
+}
+
+function getThumbnailUrl() {
+  return document.querySelector('meta[property="og:image"]')?.content?.trim()
+    || document.querySelector('meta[name="twitter:image"]')?.content?.trim()
+    || document.querySelector('link[rel="image_src"]')?.href?.trim()
     || '';
 }
 

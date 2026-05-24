@@ -182,6 +182,55 @@
       min-height: 16px;
     }
 
+    .inbox {
+      margin-top: 12px;
+      padding: 12px;
+    }
+
+    .inbox-list {
+      display: grid;
+      gap: 7px;
+      margin-top: 9px;
+      max-height: 132px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .activity-choice {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.045);
+      color: var(--text);
+      cursor: pointer;
+      padding: 9px 10px;
+      text-align: left;
+    }
+
+    .activity-choice:hover,
+    .activity-choice.active {
+      background: rgba(111, 246, 189, 0.12);
+      border-color: rgba(111, 246, 189, 0.42);
+    }
+
+    .choice-title,
+    .choice-meta {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .choice-title {
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .choice-meta {
+      color: var(--muted);
+      font-size: 10px;
+      margin-top: 3px;
+    }
+
     .controls {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -367,6 +416,13 @@
         <div id="rpcError" class="subtle error"></div>
       </section>
 
+      <section class="card inbox">
+        <div class="label">Activity Inbox</div>
+        <div id="activityInbox" class="inbox-list">
+          <div class="subtle">Waiting for browser activity.</div>
+        </div>
+      </section>
+
       <section class="controls">
         <button id="start" class="btn primary">Start</button>
         <button id="stop" class="btn danger">Stop</button>
@@ -415,6 +471,7 @@
       stopBackend: () => invoke('stop_backend'),
       restartBackend: () => invoke('restart_backend'),
       reconnectRpc: () => invoke('reconnect_rpc'),
+      selectActivity: activityId => invoke('select_activity_id', { activityId }),
       checkForUpdates: () => invoke('check_for_updates'),
       installUpdate: () => invoke('install_update'),
       openExtensions: () => invoke('open_chrome_extensions'),
@@ -429,6 +486,7 @@
     const discord = document.getElementById('discord');
     const activity = document.getElementById('activity');
     const rpcError = document.getElementById('rpcError');
+    const activityInbox = document.getElementById('activityInbox');
     const log = document.getElementById('log');
     const urlPill = document.getElementById('urlPill');
     const updatePill = document.getElementById('updatePill');
@@ -480,10 +538,40 @@
       const update = status.update || {};
       updatePill.textContent = update.availableVersion || update.version || 'check';
       installUpdate.disabled = false;
+      renderActivityInbox(status.activities || [], status.selectedActivityId || status.currentActivityId || null);
       try {
         urlPill.textContent = new URL(status.url || 'http://localhost:17654').host;
       } catch {
         urlPill.textContent = 'localhost';
+      }
+    }
+
+    function renderActivityInbox(activities, selectedId) {
+      activityInbox.textContent = '';
+      if (!activities.length) {
+        const empty = document.createElement('div');
+        empty.className = 'subtle';
+        empty.textContent = 'Waiting for browser activity.';
+        activityInbox.append(empty);
+        return;
+      }
+
+      for (const item of activities.slice(0, 6)) {
+        const button = document.createElement('button');
+        button.className = `activity-choice${item.id === selectedId ? ' active' : ''}`;
+        button.type = 'button';
+
+        const title = document.createElement('div');
+        title.className = 'choice-title';
+        title.textContent = `${item.isActiveTab ? 'Current - ' : ''}${item.platform || 'Browser'} - ${item.details || 'Activity'}`;
+
+        const meta = document.createElement('div');
+        meta.className = 'choice-meta';
+        meta.textContent = item.state || item.tabTitle || 'Active';
+
+        button.append(title, meta);
+        button.addEventListener('click', () => runAction(() => activityStatus.selectActivity(item.id), 'Activity selected.'));
+        activityInbox.append(button);
       }
     }
 

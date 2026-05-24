@@ -184,6 +184,7 @@ function detectNetflixActivity() {
       state: state,
       largeImageKey: 'netflix',
       largeImageText: 'Watching Netflix',
+      thumbnailUrl: document.querySelector('meta[property="og:image"]')?.content?.trim() || '',
       url: window.location.href,
       isPlaying,
       mediaCurrentTime: currentTime,
