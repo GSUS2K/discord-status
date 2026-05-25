@@ -458,6 +458,10 @@
           <strong>Settings</strong>
           <span class="pill">Preferences</span>
         </button>
+        <button id="selector" class="row">
+          <strong>Select Discord Status</strong>
+          <span class="pill">⌘/Ctrl ⇧ Y</span>
+        </button>
         <button id="extensions" class="row">
           <strong>Open Chrome Extensions</strong>
           <span class="pill">Chrome</span>
@@ -500,6 +504,7 @@
       installUpdate: () => invoke('install_update'),
       openExtensions: () => invoke('open_chrome_extensions'),
       openSettings: () => invoke('show_settings'),
+      openSelector: () => invoke('show_selector'),
       hideIfConfigured: () => invoke('hide_main_if_configured'),
       copyText: text => invoke('copy_text', { text }),
       quit: () => invoke('quit_app'),
@@ -684,6 +689,14 @@
       try {
         await activityStatus.openSettings();
         toast('Settings opened.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
+    });
+    document.getElementById('selector').addEventListener('click', async () => {
+      try {
+        await activityStatus.openSelector();
+        toast('Selector opened.');
       } catch (error) {
         toast(errorMessage(error), 'bad');
       }

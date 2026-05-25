@@ -1,0 +1,391 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Select Discord Status</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --glass: rgba(7, 10, 14, 0.78);
+      --panel: rgba(255, 255, 255, 0.06);
+      --panel-strong: rgba(111, 246, 189, 0.12);
+      --line: rgba(126, 255, 199, 0.18);
+      --text: #f5f7fb;
+      --muted: #aeb6c7;
+      --green: #6ff6bd;
+      --red: #ff6573;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background: transparent;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .selector {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 26px;
+      background:
+        linear-gradient(145deg, rgba(91, 111, 255, 0.18), rgba(0, 0, 0, 0) 38%),
+        radial-gradient(circle at 94% 14%, rgba(111, 246, 189, 0.18), transparent 32%),
+        var(--glass);
+      box-shadow: 0 32px 90px rgba(0, 0, 0, 0.56);
+      overflow: hidden;
+      backdrop-filter: blur(30px) saturate(1.35);
+    }
+
+    .search {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .search-icon {
+      width: 24px;
+      height: 24px;
+      color: var(--muted);
+      flex: 0 0 auto;
+    }
+
+    input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      font-size: 20px;
+      font-weight: 750;
+      letter-spacing: 0;
+    }
+
+    input::placeholder {
+      color: rgba(174, 182, 199, 0.72);
+    }
+
+    .list {
+      display: grid;
+      align-content: start;
+      gap: 10px;
+      padding: 14px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+
+    .list::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+    }
+
+    .item {
+      width: 100%;
+      min-height: 84px;
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+      padding: 12px;
+      text-align: left;
+    }
+
+    .item:hover,
+    .item.active {
+      background: var(--panel-strong);
+      border-color: rgba(111, 246, 189, 0.46);
+    }
+
+    .item.selected {
+      box-shadow: inset 0 0 0 1px rgba(111, 246, 189, 0.34);
+    }
+
+    .icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      object-fit: contain;
+      background: rgba(255, 255, 255, 0.92);
+      padding: 5px;
+    }
+
+    .copy {
+      min-width: 0;
+    }
+
+    .title {
+      font-size: 15px;
+      font-weight: 900;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      margin-top: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .badge {
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+      padding: 5px 9px;
+    }
+
+    .badge.current {
+      background: rgba(111, 246, 189, 0.16);
+      color: var(--green);
+    }
+
+    .empty {
+      margin: 44px auto 0;
+      max-width: 380px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 750;
+      padding: 11px 16px;
+    }
+
+    kbd {
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      font: inherit;
+      font-size: 10px;
+      padding: 2px 6px;
+    }
+  </style>
+</head>
+<body>
+  <main class="selector">
+    <section class="search">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input id="query" autocomplete="off" spellcheck="false" placeholder="Search activity to show in Discord">
+    </section>
+
+    <section id="list" class="list"></section>
+
+    <section class="footer">
+      <span><kbd>↑</kbd> <kbd>↓</kbd> move · <kbd>Enter</kbd> select · <kbd>Esc</kbd> close</span>
+      <span id="shortcut">CommandOrControl+Shift+Y</span>
+    </section>
+  </main>
+
+  <script>
+    const { invoke } = window.__TAURI__.core;
+    const { listen } = window.__TAURI__.event;
+
+    const api = {
+      getStatus: () => invoke('get_status'),
+      getSettings: () => invoke('get_settings'),
+      selectActivity: activityId => invoke('select_activity_id', { activityId }),
+      hide: () => invoke('hide_selector'),
+      onStatusUpdate: callback => listen('status:update', event => callback(event.payload))
+    };
+
+    const query = document.getElementById('query');
+    const list = document.getElementById('list');
+    const shortcut = document.getElementById('shortcut');
+    const SITE_ICON_ALIASES = {
+      googlemeet: 'meet',
+      manualactivity: 'manual',
+      youtubemusic: 'youtube',
+      googledocs: 'google',
+      visualstudiocode: 'github'
+    };
+    let status = null;
+    let filtered = [];
+    let activeIndex = 0;
+
+    function searchableText(item) {
+      return [
+        item.platform,
+        item.details,
+        item.state,
+        item.tabTitle,
+        item.url
+      ].filter(Boolean).join(' ').toLowerCase();
+    }
+
+    function refreshFilter() {
+      const needle = query.value.trim().toLowerCase();
+      const activities = status?.activities || [];
+      filtered = needle
+        ? activities.filter(item => searchableText(item).includes(needle))
+        : activities;
+      activeIndex = Math.min(activeIndex, Math.max(filtered.length - 1, 0));
+      render();
+    }
+
+    function render() {
+      list.textContent = '';
+      if (!filtered.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = status?.activities?.length
+          ? 'No matching activity. Try another search.'
+          : 'No activities yet. Open a supported Chrome tab, play media, or use manual mode in the extension.';
+        list.append(empty);
+        return;
+      }
+
+      filtered.slice(0, 12).forEach((item, index) => {
+        const button = document.createElement('button');
+        button.className = [
+          'item',
+          index === activeIndex ? 'active' : '',
+          item.id === status?.selectedActivityId || item.id === status?.currentActivityId ? 'selected' : ''
+        ].filter(Boolean).join(' ');
+        button.type = 'button';
+
+        const icon = createSiteIcon(item.platform);
+        const copy = document.createElement('div');
+        copy.className = 'copy';
+
+        const title = document.createElement('div');
+        title.className = 'title';
+        title.textContent = `${item.platform || 'Activity'} · ${item.details || item.tabTitle || 'Untitled'}`;
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = item.state || item.tabTitle || item.url || 'Ready';
+
+        const badge = document.createElement('span');
+        badge.className = `badge${item.isActiveTab ? ' current' : ''}`;
+        badge.textContent = item.isActiveTab ? 'current tab' : 'saved';
+
+        copy.append(title, meta);
+        button.append(icon, copy, badge);
+        button.addEventListener('mouseenter', () => {
+          activeIndex = index;
+          render();
+        });
+        button.addEventListener('click', () => selectActive(index));
+        list.append(button);
+      });
+    }
+
+    function createSiteIcon(platform) {
+      const key = siteIconKey(platform);
+      const img = document.createElement('img');
+      img.className = 'icon';
+      img.alt = `${platform || 'Activity'} logo`;
+      img.src = `site-icons/${key}.png`;
+      img.addEventListener('error', () => {
+        img.src = makeFallbackIcon(platform);
+      }, { once: true });
+      return img;
+    }
+
+    function makeFallbackIcon(platform = 'Activity') {
+      const label = String(platform || 'Activity').trim();
+      const letters = label
+        .replace(/[^a-z0-9\s+]/gi, ' ')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(part => part[0].toUpperCase())
+        .join('') || 'A';
+      const hue = Math.abs([...label].reduce((sum, char) => sum + char.charCodeAt(0), 0)) % 360;
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="hsl(${hue} 58% 24%)"/><circle cx="50" cy="14" r="7" fill="hsl(${(hue + 120) % 360} 80% 58%)"/><text x="32" y="39" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="800" fill="#fff">${letters}</text></svg>`;
+      return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+    }
+
+    function siteIconKey(platform = '') {
+      const normalized = String(platform)
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+      return SITE_ICON_ALIASES[normalized] || normalized || 'manual';
+    }
+
+    async function selectActive(index = activeIndex) {
+      const item = filtered[index];
+      if (!item) return;
+      await api.selectActivity(item.id);
+      await api.hide();
+    }
+
+    async function load() {
+      status = await api.getStatus();
+      const settings = await api.getSettings().catch(() => null);
+      if (settings?.selectorShortcut) shortcut.textContent = settings.selectorShortcut;
+      refreshFilter();
+      query.focus();
+    }
+
+    query.addEventListener('input', refreshFilter);
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        api.hide();
+      } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        activeIndex = Math.min(activeIndex + 1, Math.max(filtered.length - 1, 0));
+        render();
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        activeIndex = Math.max(activeIndex - 1, 0);
+        render();
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        selectActive();
+      }
+    });
+
+    api.onStatusUpdate(nextStatus => {
+      status = nextStatus;
+      refreshFilter();
+    });
+    window.addEventListener('focus', () => {
+      query.select();
+      load().catch(() => {});
+    });
+    load().catch(() => {});
+  </script>
+</body>
+</html>
