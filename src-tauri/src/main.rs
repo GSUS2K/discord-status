@@ -1332,9 +1332,8 @@ async fn report_activities(
         .expect("state poisoned")
         .selected_activity_id
         .clone();
-    let selected_id = report
-        .selected_activity_id
-        .or(previous_selected_id)
+    let selected_id = previous_selected_id
+        .or(report.selected_activity_id)
         .filter(|id| {
             if activities
                 .iter()

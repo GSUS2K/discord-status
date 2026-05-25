@@ -311,11 +311,18 @@
 
         copy.append(title, meta);
         button.append(icon, copy, badge);
-        button.addEventListener('mouseenter', () => {
+        button.addEventListener('pointerenter', () => {
           activeIndex = index;
-          render();
+          for (const child of list.querySelectorAll('.item')) {
+            child.classList.remove('active');
+          }
+          button.classList.add('active');
         });
-        button.addEventListener('click', () => selectActive(index));
+        button.addEventListener('pointerdown', event => {
+          event.preventDefault();
+          activeIndex = index;
+          selectActive(index);
+        });
         list.append(button);
       });
     }
@@ -361,6 +368,8 @@
         status = await api.selectActivity(item.id);
         activeIndex = Math.max(filtered.findIndex(activity => activity.id === item.id), 0);
         refreshFilter();
+      } catch (error) {
+        console.warn('Selection failed', error);
       } finally {
         isSelecting = false;
       }
