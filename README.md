@@ -25,6 +25,7 @@ The extension detects activity. The companion runs on `localhost`, chooses the a
 | Activity inbox | Sends all detected browser activities to the companion so one can be selected for Discord. |
 | Quick selector | Press `CommandOrControl+Shift+Y` to open a Spotlight-style picker. Change it in Companion Settings. |
 | Active Tab Only | Prevents background tabs from taking over your status. |
+| System app picker | Detects running desktop apps in the companion and lets you allow/select apps for Discord status. |
 | Privacy controls | Private mode, platform-only mode, incognito blocking, blocked domains, and per-site toggles. |
 | Companion diagnostics | Shows backend, Discord RPC, extension connection, active port, logs, and copyable diagnostics. |
 | System tray app | Native Tauri companion for macOS, Windows, and Linux. |
@@ -49,7 +50,7 @@ Default companion URL:
 http://localhost:17654
 ```
 
-Dynamic thumbnails are captured as metadata, but Discord Rich Presence works most reliably with uploaded asset keys. Upload assets from `discord-assets-real/` and keep keys in sync with `discord-assets-real/UPLOAD_KEYS.txt`.
+Dynamic thumbnails are captured as metadata, but Discord Rich Presence works most reliably with uploaded asset keys. Upload assets from `discord-assets-real/` and keep keys in sync with `discord-assets-real/UPLOAD_KEYS.txt`. Local system app icons can be shown inside the companion, but Discord needs matching uploaded or hosted assets to show them in Rich Presence.
 
 ## Local Development
 
@@ -75,9 +76,9 @@ dist/discord-status-webstore.zip
 ## Release
 
 ```bash
-git tag v1.0.21
+git tag v1.0.22
 git push origin main
-git push origin v1.0.21
+git push origin v1.0.22
 ```
 
 GitHub Actions builds the companion installers and attaches them to the release.
