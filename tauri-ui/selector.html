@@ -242,6 +242,8 @@
     let status = null;
     let filtered = [];
     let activeIndex = 0;
+    let pollTimer = null;
+    let isSelecting = false;
 
     function searchableText(item) {
       return [
@@ -254,12 +256,18 @@
     }
 
     function refreshFilter() {
+      const previousActiveId = filtered[activeIndex]?.id;
       const needle = query.value.trim().toLowerCase();
       const activities = status?.activities || [];
       filtered = needle
         ? activities.filter(item => searchableText(item).includes(needle))
         : activities;
-      activeIndex = Math.min(activeIndex, Math.max(filtered.length - 1, 0));
+      const previousIndex = previousActiveId
+        ? filtered.findIndex(item => item.id === previousActiveId)
+        : -1;
+      activeIndex = previousIndex >= 0
+        ? previousIndex
+        : Math.min(activeIndex, Math.max(filtered.length - 1, 0));
       render();
     }
 
@@ -298,7 +306,8 @@
 
         const badge = document.createElement('span');
         badge.className = `badge${item.isActiveTab ? ' current' : ''}`;
-        badge.textContent = item.isActiveTab ? 'current tab' : 'saved';
+        const isSelected = item.id === status?.selectedActivityId || item.id === status?.currentActivityId;
+        badge.textContent = isSelected ? 'selected' : (item.isActiveTab ? 'current tab' : 'saved');
 
         copy.append(title, meta);
         button.append(icon, copy, badge);
@@ -346,16 +355,26 @@
 
     async function selectActive(index = activeIndex) {
       const item = filtered[index];
-      if (!item) return;
-      await api.selectActivity(item.id);
-      await api.hide();
+      if (!item || isSelecting) return;
+      isSelecting = true;
+      try {
+        status = await api.selectActivity(item.id);
+        activeIndex = Math.max(filtered.findIndex(activity => activity.id === item.id), 0);
+        refreshFilter();
+      } finally {
+        isSelecting = false;
+      }
+    }
+
+    async function syncStatus() {
+      status = await api.getStatus();
+      refreshFilter();
     }
 
     async function load() {
-      status = await api.getStatus();
+      await syncStatus();
       const settings = await api.getSettings().catch(() => null);
       if (settings?.selectorShortcut) shortcut.textContent = settings.selectorShortcut;
-      refreshFilter();
       query.focus();
     }
 
@@ -383,8 +402,26 @@
     });
     window.addEventListener('focus', () => {
       query.select();
+      if (!pollTimer) {
+        pollTimer = setInterval(() => syncStatus().catch(() => {}), 1200);
+      }
       load().catch(() => {});
     });
+    window.addEventListener('blur', () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      } else if (!document.hidden && !pollTimer) {
+        pollTimer = setInterval(() => syncStatus().catch(() => {}), 1200);
+      }
+    });
+    pollTimer = setInterval(() => syncStatus().catch(() => {}), 1200);
     load().catch(() => {});
   </script>
 </body>

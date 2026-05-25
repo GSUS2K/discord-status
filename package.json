@@ -1,6 +1,6 @@
 {
   "name": "activity-status",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "private": true,
   "description": "Chrome extension plus local Discord RPC backend for browser activity status.",
   "author": {
