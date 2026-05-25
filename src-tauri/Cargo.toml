@@ -1,6 +1,6 @@
 [package]
 name = "activity-status-companion"
-version = "1.0.20"
+version = "1.0.21"
 description = "Small cross-platform companion for Discord Status"
 authors = ["GSUS2K <ganesh21112000@gmail.com>"]
 edition = "2021"
@@ -23,3 +23,4 @@ tauri-plugin-autostart = "2.5.1"
 tauri-plugin-shell = "2.3.1"
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "signal", "sync"] }
 tower-http = { version = "0.6.6", features = ["cors"] }
+tauri-plugin-global-shortcut = "2.3.1"

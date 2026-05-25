@@ -424,6 +424,13 @@
             </div>
           </div>
           <div class="row">
+            <div style="width: 100%;">
+              <div class="title">Status selector shortcut</div>
+              <div class="desc">Opens the quick selector from anywhere. Default is CommandOrControl+Shift+Y because Cmd+Shift+D is used by Chrome.</div>
+              <input id="selectorShortcut" class="field" type="text" spellcheck="false" placeholder="CommandOrControl+Shift+Y">
+            </div>
+          </div>
+          <div class="row">
             <div>
               <div class="title">System app detection</div>
               <div class="desc">Optional. Only apps listed below can become Discord status, and browser activity still wins when present.</div>
@@ -468,6 +475,7 @@
           <button id="restart" class="command">Restart Backend</button>
           <button id="reconnect" class="command">Reconnect Discord RPC</button>
           <button id="fix" class="command primary">Fix Connection</button>
+          <button id="selector" class="command">Open Status Selector</button>
           <button id="extensions" class="command">Open Chrome Extensions</button>
           <button id="copyUrl" class="command">Copy Backend URL</button>
         </div>
@@ -554,6 +562,7 @@
       reconnectRpc: () => invoke('reconnect_rpc'),
       checkForUpdates: () => invoke('check_for_updates'),
       installUpdate: () => invoke('install_update'),
+      openSelector: () => invoke('show_selector'),
       openExtensions: () => invoke('open_chrome_extensions'),
       copyText: text => invoke('copy_text', { text }),
       onStatusUpdate: callback => listen('status:update', event => callback(event.payload))
@@ -568,6 +577,7 @@
     };
     const settingInputs = ['launchAtLogin', 'autoStartBackend', 'hidePopoverOnBlur', 'systemActivityEnabled'].map(id => document.getElementById(id));
     const portInput = document.getElementById('port');
+    const selectorShortcutInput = document.getElementById('selectorShortcut');
     const systemAppsInput = document.getElementById('systemActivityAllowedApps');
     const actionButtons = ['start', 'stop', 'restart', 'reconnect', 'fix', 'checkUpdates'].map(id => document.getElementById(id));
     const toasts = document.getElementById('toasts');
@@ -645,6 +655,7 @@
         input.checked = Boolean(settings[input.id]);
       }
       portInput.value = settings.port || 17654;
+      selectorShortcutInput.value = settings.selectorShortcut || 'CommandOrControl+Shift+Y';
       systemAppsInput.value = Array.isArray(settings.systemActivityAllowedApps)
         ? settings.systemActivityAllowedApps.join(', ')
         : '';
@@ -656,6 +667,7 @@
           [
             ...settingInputs.map(input => [input.id, input.checked]),
             ['port', Number(portInput.value)],
+            ['selectorShortcut', selectorShortcutInput.value.trim()],
             ['systemActivityAllowedApps', systemAppsInput.value.split(',').map(value => value.trim()).filter(Boolean)]
           ]
         ));
@@ -694,6 +706,7 @@
       input.addEventListener('change', saveSettings);
     }
     portInput.addEventListener('change', saveSettings);
+    selectorShortcutInput.addEventListener('change', saveSettings);
     systemAppsInput.addEventListener('change', saveSettings);
 
     document.getElementById('start').addEventListener('click', () => runAction(activityStatus.startBackend, 'Backend started.'));
@@ -701,6 +714,14 @@
     document.getElementById('restart').addEventListener('click', () => runAction(activityStatus.restartBackend, 'Backend restarted.'));
     document.getElementById('reconnect').addEventListener('click', () => runAction(activityStatus.reconnectRpc, 'Discord RPC reconnected.'));
     document.getElementById('fix').addEventListener('click', () => runAction(activityStatus.fixConnection, 'Connection repair finished.'));
+    document.getElementById('selector').addEventListener('click', async () => {
+      try {
+        await activityStatus.openSelector();
+        toast('Status selector opened.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
+    });
     document.getElementById('checkUpdates').addEventListener('click', () => runAction(activityStatus.checkForUpdates, 'Latest release opened.'));
     document.getElementById('installUpdates').addEventListener('click', async () => {
       try {

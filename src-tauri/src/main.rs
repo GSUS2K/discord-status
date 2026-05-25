@@ -29,6 +29,7 @@ use tauri::{
     AppHandle, Emitter, Manager, PhysicalPosition, Runtime, State as TauriState, WebviewWindow,
 };
 use tauri_plugin_autostart::ManagerExt;
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 use tokio::sync::oneshot;
 use tower_http::cors::CorsLayer;
 
@@ -37,6 +38,7 @@ const DEFAULT_PORT: u16 = 17654;
 const LEGACY_PORT: u16 = 3000;
 const RPC_CONNECT_TIMEOUT: Duration = Duration::from_secs(4);
 const RELEASES_URL: &str = "https://github.com/GSUS2K/discord-status/releases/latest";
+const DEFAULT_SELECTOR_SHORTCUT: &str = "CommandOrControl+Shift+Y";
 
 #[derive(Clone)]
 struct AppState {
@@ -74,6 +76,8 @@ struct Settings {
     system_activity_enabled: bool,
     #[serde(default)]
     system_activity_allowed_apps: Vec<String>,
+    #[serde(default = "default_selector_shortcut")]
+    selector_shortcut: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -235,6 +239,7 @@ async fn main() {
                 .app_name("Activity Status Companion")
                 .build(),
         )
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .manage(state.clone())
         .invoke_handler(tauri::generate_handler![
@@ -247,6 +252,8 @@ async fn main() {
             fix_connection,
             reconnect_rpc,
             select_activity_id,
+            show_selector,
+            hide_selector,
             open_chrome_extensions,
             copy_text,
             check_for_updates,
@@ -260,6 +267,9 @@ async fn main() {
             app.set_activation_policy(ActivationPolicy::Accessory);
 
             setup_tray(app.handle())?;
+            if let Err(error) = register_selector_shortcut(app.handle(), &settings.selector_shortcut) {
+                set_log(&state, format!("Status selector shortcut failed: {error}"));
+            }
             if let Err(error) = apply_launch_at_login(app.handle(), settings.launch_at_login) {
                 set_log(&state, format!("Launch at login setup failed: {error}"));
             }
@@ -322,6 +332,23 @@ fn show_window<R: Runtime>(app: &AppHandle<R>, label: &str) {
     }
 }
 
+fn toggle_selector_window<R: Runtime>(app: &AppHandle<R>) {
+    if let Some(window) = app.get_webview_window("selector") {
+        if window.is_visible().unwrap_or(false) {
+            let _ = window.hide();
+        } else {
+            show_selector_window(app);
+        }
+    }
+}
+
+fn show_selector_window<R: Runtime>(app: &AppHandle<R>) {
+    if let Some(window) = app.get_webview_window("selector") {
+        let _ = window.center();
+        show_existing_window(&window);
+    }
+}
+
 fn show_existing_window<R: Runtime>(window: &WebviewWindow<R>) {
     let _ = window.show();
     let _ = window.set_focus();
@@ -362,6 +389,7 @@ async fn set_settings(
     state: TauriState<'_, AppState>,
 ) -> Result<Settings, String> {
     let settings = normalize_settings(settings);
+    register_selector_shortcut(&app, &settings.selector_shortcut)?;
     apply_launch_at_login(&app, settings.launch_at_login)?;
     {
         let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
@@ -454,6 +482,20 @@ async fn select_activity_id(
     }
     emit_status(&app, &state);
     Ok(companion_status(&state))
+}
+
+#[tauri::command]
+async fn show_selector(app: AppHandle) -> Result<(), String> {
+    show_selector_window(&app);
+    Ok(())
+}
+
+#[tauri::command]
+async fn hide_selector(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("selector") {
+        window.hide().map_err(|error| error.to_string())?;
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -1437,6 +1479,27 @@ fn emit_status<R: Runtime>(app: &AppHandle<R>, state: &AppState) {
     let _ = app.emit("status:update", companion_status(state));
 }
 
+fn register_selector_shortcut<R: Runtime>(
+    app: &AppHandle<R>,
+    shortcut: &str,
+) -> Result<(), String> {
+    let shortcut = normalize_shortcut(shortcut);
+    app.global_shortcut()
+        .unregister_all()
+        .map_err(|error| error.to_string())?;
+    app.global_shortcut()
+        .on_shortcut(shortcut.as_str(), |app, _shortcut, event| {
+            if event.state == ShortcutState::Pressed {
+                toggle_selector_window(app);
+            }
+        })
+        .map_err(|error| {
+            format!(
+                "Could not register shortcut `{shortcut}`. Another app may already use it. ({error})"
+            )
+        })
+}
+
 fn set_log(state: &AppState, log: String) {
     if let Ok(mut inner) = state.inner.lock() {
         inner.last_log = log;
@@ -1499,6 +1562,16 @@ fn normalize_settings(settings: Settings) -> Settings {
             .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty())
             .collect(),
+        selector_shortcut: normalize_shortcut(&settings.selector_shortcut),
+    }
+}
+
+fn normalize_shortcut(value: &str) -> String {
+    let shortcut = value.trim();
+    if shortcut.is_empty() {
+        DEFAULT_SELECTOR_SHORTCUT.to_string()
+    } else {
+        shortcut.to_string()
     }
 }
 
@@ -1514,6 +1587,7 @@ fn read_settings() -> Settings {
             port: DEFAULT_PORT,
             system_activity_enabled: false,
             system_activity_allowed_apps: Vec::new(),
+            selector_shortcut: default_selector_shortcut(),
         })
 }
 
@@ -1536,4 +1610,8 @@ fn default_true() -> bool {
 
 fn default_port() -> u16 {
     DEFAULT_PORT
+}
+
+fn default_selector_shortcut() -> String {
+    DEFAULT_SELECTOR_SHORTCUT.to_string()
 }
