@@ -313,6 +313,70 @@
       padding: 12px 13px;
     }
 
+    .app-picker {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .app-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 10px;
+    }
+
+    .app-chip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 50px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: rgba(0, 0, 0, 0.18);
+      color: var(--text);
+      cursor: pointer;
+      padding: 9px 11px;
+      text-align: left;
+    }
+
+    .app-chip.allowed {
+      background: rgba(111, 246, 189, 0.13);
+      border-color: rgba(111, 246, 189, 0.44);
+    }
+
+    .app-chip.foreground {
+      box-shadow: inset 3px 0 0 var(--green);
+    }
+
+    .app-icon {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .app-name {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .app-state {
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      margin-top: 2px;
+    }
+
     .log {
       min-height: 160px;
       white-space: pre-wrap;
@@ -433,7 +497,7 @@
           <div class="row">
             <div>
               <div class="title">System app detection</div>
-              <div class="desc">Optional. Only apps listed below can become Discord status, and browser activity still wins when present.</div>
+              <div class="desc">Optional. Pick detected apps below; browser activity still wins when present.</div>
             </div>
             <label class="toggle">
               <input id="systemActivityEnabled" type="checkbox">
@@ -442,9 +506,14 @@
           </div>
           <div class="row">
             <div style="width: 100%;">
-              <div class="title">Allowed system apps</div>
-              <div class="desc">Comma-separated app names, for example: Visual Studio Code, Terminal, Spotify. Leave empty to only detect but not publish.</div>
-              <input id="systemActivityAllowedApps" class="field" type="text" placeholder="Visual Studio Code, Terminal">
+              <div class="title">Detected apps</div>
+              <div class="desc">Click an app to allow or remove it from Discord status. Empty means apps are detected for diagnostics only.</div>
+              <div class="app-picker">
+                <div class="actions">
+                  <button id="refreshApps" class="command" type="button">Refresh Apps</button>
+                </div>
+                <div id="systemAppsList" class="app-list"></div>
+              </div>
             </div>
           </div>
         </section>
@@ -564,6 +633,8 @@
       installUpdate: () => invoke('install_update'),
       openSelector: () => invoke('show_selector'),
       openExtensions: () => invoke('open_chrome_extensions'),
+      refreshSystemApps: () => invoke('refresh_system_apps'),
+      setSystemAppAllowed: (appName, allowed) => invoke('set_system_app_allowed', { appName, allowed }),
       copyText: text => invoke('copy_text', { text }),
       onStatusUpdate: callback => listen('status:update', event => callback(event.payload))
     };
@@ -578,11 +649,13 @@
     const settingInputs = ['launchAtLogin', 'autoStartBackend', 'hidePopoverOnBlur', 'systemActivityEnabled'].map(id => document.getElementById(id));
     const portInput = document.getElementById('port');
     const selectorShortcutInput = document.getElementById('selectorShortcut');
-    const systemAppsInput = document.getElementById('systemActivityAllowedApps');
+    const systemAppsList = document.getElementById('systemAppsList');
     const actionButtons = ['start', 'stop', 'restart', 'reconnect', 'fix', 'checkUpdates'].map(id => document.getElementById(id));
     const toasts = document.getElementById('toasts');
     let busy = false;
     let lastToast = { message: '', time: 0 };
+    let currentSettings = null;
+    let currentStatus = null;
 
     function toast(message, kind = 'ok') {
       const now = Date.now();
@@ -640,25 +713,85 @@
         : 'Waiting for extension activity';
       document.getElementById('systemActivity').textContent = status.systemActivity
         ? `${status.systemActivity.appName} • ${new Date(status.systemActivity.updatedAt).toLocaleTimeString()}`
-        : 'No allowed system app detected';
+        : 'No foreground system app detected';
       document.getElementById('log').textContent = status.log || '';
       document.getElementById('backendUrl').value = status.url || 'http://localhost:17654';
       const update = status.update || {};
       document.getElementById('currentVersion').textContent = update.version ? `v${update.version}` : 'Unknown';
       document.getElementById('updateStatus').textContent = update.message || 'Ready';
       document.getElementById('installUpdates').disabled = false;
+      currentStatus = status;
+      renderSystemApps();
     }
 
     async function loadSettings() {
       const settings = await activityStatus.getSettings();
+      currentSettings = settings;
       for (const input of settingInputs) {
         input.checked = Boolean(settings[input.id]);
       }
       portInput.value = settings.port || 17654;
       selectorShortcutInput.value = settings.selectorShortcut || 'CommandOrControl+Shift+Y';
-      systemAppsInput.value = Array.isArray(settings.systemActivityAllowedApps)
-        ? settings.systemActivityAllowedApps.join(', ')
-        : '';
+      renderSystemApps();
+    }
+
+    function initials(value = 'App') {
+      return String(value)
+        .replace(/[^a-z0-9\s]/gi, ' ')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(part => part[0].toUpperCase())
+        .join('') || 'A';
+    }
+
+    function renderSystemApps() {
+      if (!systemAppsList || !currentSettings) return;
+      const allowedApps = new Set((currentSettings.systemActivityAllowedApps || []).map(value => value.toLowerCase()));
+      const detected = currentStatus?.systemApps || [];
+      const missingAllowed = [...allowedApps]
+        .filter(name => !detected.some(app => app.appName.toLowerCase() === name))
+        .map(name => ({ appName: name, isForeground: false }));
+      const apps = [...detected, ...missingAllowed].slice(0, 24);
+      systemAppsList.textContent = '';
+      if (!apps.length) {
+        const empty = document.createElement('div');
+        empty.className = 'desc';
+        empty.textContent = 'No apps detected yet. Click Refresh Apps, then switch to the app you want to allow.';
+        systemAppsList.append(empty);
+        return;
+      }
+      for (const app of apps) {
+        const allowed = allowedApps.has(app.appName.toLowerCase());
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = ['app-chip', allowed ? 'allowed' : '', app.isForeground ? 'foreground' : ''].filter(Boolean).join(' ');
+
+        const icon = document.createElement('div');
+        icon.className = 'app-icon';
+        icon.textContent = initials(app.appName);
+
+        const copy = document.createElement('div');
+        copy.style.minWidth = '0';
+        const name = document.createElement('div');
+        name.className = 'app-name';
+        name.textContent = app.appName;
+        const state = document.createElement('div');
+        state.className = 'app-state';
+        state.textContent = `${app.isForeground ? 'Foreground' : 'Detected'} • ${allowed ? 'Allowed' : 'Click to allow'}`;
+        copy.append(name, state);
+        button.append(icon, copy);
+        button.addEventListener('click', async () => {
+          try {
+            currentSettings = await activityStatus.setSystemAppAllowed(app.appName, !allowed);
+            toast(!allowed ? `${app.appName} allowed.` : `${app.appName} removed.`);
+            await refresh();
+          } catch (error) {
+            toast(errorMessage(error), 'bad');
+          }
+        });
+        systemAppsList.append(button);
+      }
     }
 
     async function saveSettings() {
@@ -668,7 +801,7 @@
             ...settingInputs.map(input => [input.id, input.checked]),
             ['port', Number(portInput.value)],
             ['selectorShortcut', selectorShortcutInput.value.trim()],
-            ['systemActivityAllowedApps', systemAppsInput.value.split(',').map(value => value.trim()).filter(Boolean)]
+            ['systemActivityAllowedApps', currentSettings?.systemActivityAllowedApps || []]
           ]
         ));
         await loadSettings();
@@ -707,7 +840,15 @@
     }
     portInput.addEventListener('change', saveSettings);
     selectorShortcutInput.addEventListener('change', saveSettings);
-    systemAppsInput.addEventListener('change', saveSettings);
+    document.getElementById('refreshApps').addEventListener('click', async () => {
+      try {
+        await activityStatus.refreshSystemApps();
+        await refresh();
+        toast('Detected apps refreshed.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
+    });
 
     document.getElementById('start').addEventListener('click', () => runAction(activityStatus.startBackend, 'Backend started.'));
     document.getElementById('stop').addEventListener('click', () => runAction(activityStatus.stopBackend, 'Backend stopped.'));

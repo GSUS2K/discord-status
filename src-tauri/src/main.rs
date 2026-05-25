@@ -25,6 +25,7 @@ use std::{
 use tauri::ActivationPolicy;
 use tauri::{
     image::Image,
+    menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, PhysicalPosition, Runtime, State as TauriState, WebviewWindow,
 };
@@ -56,6 +57,7 @@ struct InnerState {
     selected_activity_id: Option<String>,
     last_extension_seen: Option<String>,
     system_activity: Option<SystemActivity>,
+    system_apps: Vec<SystemActivity>,
     last_log: String,
     started_at: Instant,
     shutdown: Option<oneshot::Sender<()>>,
@@ -133,14 +135,18 @@ struct CompanionStatus {
     extension_connected: bool,
     last_extension_seen: Option<String>,
     system_activity: Option<SystemActivity>,
+    system_apps: Vec<SystemActivity>,
     update: UpdateStatus,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SystemActivity {
+    id: String,
     app_name: String,
     details: String,
+    icon_key: String,
+    is_foreground: bool,
     updated_at: String,
 }
 
@@ -164,6 +170,7 @@ struct ApiStatus {
     extension_connected: bool,
     last_extension_seen: Option<String>,
     system_activity: Option<SystemActivity>,
+    system_apps: Vec<SystemActivity>,
     uptime_seconds: u64,
     timestamp: String,
 }
@@ -227,6 +234,7 @@ async fn main() {
             selected_activity_id: None,
             last_extension_seen: None,
             system_activity: None,
+            system_apps: Vec::new(),
             last_log: "Companion ready.".to_string(),
             started_at: Instant::now(),
             shutdown: None,
@@ -260,14 +268,18 @@ async fn main() {
             install_update,
             show_settings,
             hide_main_if_configured,
-            quit_app
+            quit_app,
+            refresh_system_apps,
+            set_system_app_allowed
         ])
         .setup(move |app| {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(ActivationPolicy::Accessory);
 
             setup_tray(app.handle())?;
-            if let Err(error) = register_selector_shortcut(app.handle(), &settings.selector_shortcut) {
+            if let Err(error) =
+                register_selector_shortcut(app.handle(), &settings.selector_shortcut)
+            {
                 set_log(&state, format!("Status selector shortcut failed: {error}"));
             }
             if let Err(error) = apply_launch_at_login(app.handle(), settings.launch_at_login) {
@@ -292,10 +304,83 @@ async fn main() {
 
 fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let icon = Image::from_bytes(include_bytes!("../icons/icon.png"))?;
+    let open = MenuItem::with_id(app, "open", "Open Activity Status", true, None::<&str>)?;
+    let selector = MenuItem::with_id(app, "selector", "Select Discord Status", true, None::<&str>)?;
+    let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
+    let chrome = MenuItem::with_id(app, "chrome", "Open Chrome Extensions", true, None::<&str>)?;
+    let start = MenuItem::with_id(app, "start", "Start Backend", true, None::<&str>)?;
+    let stop = MenuItem::with_id(app, "stop", "Stop Backend", true, None::<&str>)?;
+    let reconnect = MenuItem::with_id(
+        app,
+        "reconnect",
+        "Reconnect Discord RPC",
+        true,
+        None::<&str>,
+    )?;
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let separator_one = PredefinedMenuItem::separator(app)?;
+    let separator_two = PredefinedMenuItem::separator(app)?;
+    let menu = Menu::with_items(
+        app,
+        &[
+            &open,
+            &selector,
+            &settings,
+            &chrome,
+            &separator_one,
+            &start,
+            &stop,
+            &reconnect,
+            &separator_two,
+            &quit,
+        ],
+    )?;
 
     TrayIconBuilder::with_id("activity-status")
         .tooltip("Activity Status Companion")
         .icon(icon)
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "open" => show_window(app, "main"),
+            "selector" => show_selector_window(app),
+            "settings" => show_window(app, "settings"),
+            "chrome" => {
+                let _ = open_chrome_url("chrome://extensions/");
+            }
+            "start" => {
+                let app = app.clone();
+                let state = app.state::<AppState>().inner().clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Err(error) = start_server(state.clone()).await {
+                        set_log(&state, format!("Backend start failed: {error}"));
+                    }
+                    emit_status(&app, &state);
+                });
+            }
+            "stop" => {
+                let app = app.clone();
+                let state = app.state::<AppState>().inner().clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Err(error) = stop_server(state.clone()).await {
+                        set_log(&state, format!("Backend stop failed: {error}"));
+                    }
+                    emit_status(&app, &state);
+                });
+            }
+            "reconnect" => {
+                let app = app.clone();
+                let state = app.state::<AppState>().inner().clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Err(error) = reconnect_discord(state.clone()).await {
+                        set_log(&state, format!("Discord RPC reconnect failed: {error}"));
+                    }
+                    emit_status(&app, &state);
+                });
+            }
+            "quit" => app.exit(0),
+            _ => {}
+        })
         .on_tray_icon_event(move |tray, event| {
             if let TrayIconEvent::Click {
                 position,
@@ -436,7 +521,10 @@ async fn fix_connection(
     state: TauriState<'_, AppState>,
 ) -> Result<CompanionStatus, String> {
     let state_clone = state.inner().clone();
-    set_log(&state_clone, "Fixing connection: restarting backend and Discord RPC...".to_string());
+    set_log(
+        &state_clone,
+        "Fixing connection: restarting backend and Discord RPC...".to_string(),
+    );
     let _ = stop_server(state_clone.clone()).await;
     start_server(state_clone.clone()).await?;
     if let Err(error) = reconnect_discord(state_clone.clone()).await {
@@ -445,7 +533,10 @@ async fn fix_connection(
             format!("Backend fixed, but Discord RPC still needs attention: {error}"),
         );
     } else {
-        set_log(&state_clone, "Connection fixed. Backend and Discord RPC are online.".to_string());
+        set_log(
+            &state_clone,
+            "Connection fixed. Backend and Discord RPC are online.".to_string(),
+        );
     }
     emit_status(&app, &state);
     Ok(companion_status(&state))
@@ -557,6 +648,80 @@ async fn hide_main_if_configured(
 #[tauri::command]
 async fn quit_app(app: AppHandle) {
     app.exit(0);
+}
+
+#[tauri::command]
+async fn refresh_system_apps(
+    app: AppHandle,
+    state: TauriState<'_, AppState>,
+) -> Result<Vec<SystemActivity>, String> {
+    let apps = detect_running_apps();
+    let now = Utc::now().to_rfc3339();
+    let foreground = detect_foreground_app();
+    let snapshots = apps
+        .into_iter()
+        .map(|app_name| system_activity_snapshot(&app_name, foreground.as_deref(), &now))
+        .collect::<Vec<_>>();
+    {
+        let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
+        for snapshot in snapshots {
+            remember_system_app(&mut inner, snapshot);
+        }
+    }
+    emit_status(&app, &state);
+    Ok(state
+        .inner
+        .lock()
+        .map_err(|error| error.to_string())?
+        .system_apps
+        .clone())
+}
+
+#[tauri::command]
+async fn set_system_app_allowed(
+    app: AppHandle,
+    app_name: String,
+    allowed: bool,
+    state: TauriState<'_, AppState>,
+) -> Result<Settings, String> {
+    let app_name = app_name.trim().to_string();
+    if app_name.is_empty() {
+        return Err("Choose an app first.".to_string());
+    }
+    let settings = {
+        let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
+        if allowed {
+            if !inner
+                .settings
+                .system_activity_allowed_apps
+                .iter()
+                .any(|value| value.eq_ignore_ascii_case(&app_name))
+            {
+                inner
+                    .settings
+                    .system_activity_allowed_apps
+                    .push(app_name.clone());
+            }
+            inner.settings.system_activity_enabled = true;
+        } else {
+            inner
+                .settings
+                .system_activity_allowed_apps
+                .retain(|value| !value.eq_ignore_ascii_case(&app_name));
+        }
+        inner.settings.clone()
+    };
+    write_settings(&settings)?;
+    set_log(
+        &state,
+        if allowed {
+            format!("{app_name} can now become Discord status.")
+        } else {
+            format!("{app_name} will no longer become Discord status.")
+        },
+    );
+    emit_status(&app, &state);
+    Ok(settings)
 }
 
 async fn start_server(state: AppState) -> Result<(), String> {
@@ -856,31 +1021,26 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
             let Some(app_name) = detect_foreground_app() else {
                 continue;
             };
+            let now = Utc::now().to_rfc3339();
             let allowed = settings
                 .system_activity_allowed_apps
                 .iter()
                 .map(|value| value.to_lowercase())
                 .collect::<Vec<_>>();
-            if allowed.is_empty()
-                || !allowed
+            let is_allowed = !allowed.is_empty()
+                && allowed
                     .iter()
-                    .any(|value| app_name.to_lowercase().contains(value))
-            {
-                continue;
-            }
+                    .any(|value| app_name.to_lowercase().contains(value));
 
-            let snapshot = SystemActivity {
-                app_name: app_name.clone(),
-                details: format!("Using {app_name}"),
-                updated_at: Utc::now().to_rfc3339(),
-            };
+            let snapshot = system_activity_snapshot(&app_name, Some(&app_name), &now);
             let should_apply = {
                 let mut inner = match state.inner.lock() {
                     Ok(inner) => inner,
                     Err(_) => continue,
                 };
                 inner.system_activity = Some(snapshot.clone());
-                inner.activity_inbox.is_empty() && inner.rpc_connected
+                remember_system_app(&mut inner, snapshot.clone());
+                is_allowed && inner.activity_inbox.is_empty() && inner.rpc_connected
             };
 
             if should_apply {
@@ -890,9 +1050,9 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
                     tab_title: None,
                     details: Some(snapshot.details.clone()),
                     state: Some("System app".to_string()),
-                    platform: Some("System".to_string()),
-                    large_image_key: Some("manual".to_string()),
-                    large_image_text: Some("Local system app".to_string()),
+                    platform: Some(snapshot.app_name.clone()),
+                    large_image_key: Some(snapshot.icon_key.clone()),
+                    large_image_text: Some(format!("Using {}", snapshot.app_name)),
                     thumbnail_url: None,
                     small_image_key: None,
                     small_image_text: None,
@@ -909,6 +1069,55 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
             emit_status(&app, &state);
         }
     });
+}
+
+fn system_activity_snapshot(app_name: &str, foreground: Option<&str>, now: &str) -> SystemActivity {
+    let app_name = app_name.trim();
+    SystemActivity {
+        id: format!("system:{}", normalize_app_key(app_name)),
+        app_name: app_name.to_string(),
+        details: format!("Using {app_name}"),
+        icon_key: system_icon_key(app_name).to_string(),
+        is_foreground: foreground
+            .map(|value| value.eq_ignore_ascii_case(app_name))
+            .unwrap_or(false),
+        updated_at: now.to_string(),
+    }
+}
+
+fn remember_system_app(inner: &mut InnerState, snapshot: SystemActivity) {
+    inner
+        .system_apps
+        .retain(|item| !item.app_name.eq_ignore_ascii_case(&snapshot.app_name));
+    inner.system_apps.insert(0, snapshot);
+    inner.system_apps.truncate(20);
+}
+
+fn normalize_app_key(value: &str) -> String {
+    value
+        .chars()
+        .filter(|char| char.is_ascii_alphanumeric())
+        .flat_map(|char| char.to_lowercase())
+        .collect::<String>()
+}
+
+fn system_icon_key(app_name: &str) -> &'static str {
+    let key = normalize_app_key(app_name);
+    match key.as_str() {
+        "discord" => "discord",
+        "googlechrome" | "chrome" => "google",
+        "safari" => "google",
+        "spotify" => "spotify",
+        "visualstudiocode" | "code" | "vscode" => "vscode",
+        "githubdesktop" => "github",
+        "steam" => "steam",
+        "notion" => "notion",
+        "figma" => "figma",
+        "slack" => "discord",
+        "terminal" | "iterm2" | "windowsterminal" | "powershell" | "cmd" => "terminal",
+        "finder" | "explorer" => "files",
+        _ => "manual",
+    }
 }
 
 fn detect_foreground_app() -> Option<String> {
@@ -947,8 +1156,64 @@ fn detect_foreground_app() -> Option<String> {
     }
 }
 
+fn detect_running_apps() -> Vec<String> {
+    #[cfg(target_os = "macos")]
+    {
+        return run_command_text(
+            "osascript",
+            &[
+                "-e",
+                "tell application \"System Events\" to get name of every application process whose background only is false",
+            ],
+        )
+        .map(|value| split_app_names(&value))
+        .unwrap_or_default();
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        return run_command_text(
+            "powershell",
+            &[
+                "-NoProfile",
+                "-Command",
+                "Get-Process | Where-Object {$_.MainWindowTitle} | Select-Object -ExpandProperty ProcessName -Unique | Sort-Object",
+            ],
+        )
+        .map(|value| split_app_names(&value))
+        .unwrap_or_default();
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        run_command_text(
+            "sh",
+            &[
+                "-lc",
+                "if command -v wmctrl >/dev/null 2>&1; then wmctrl -lx | awk '{print $3}' | sed 's/.*\\.//' | sort -u; else ps -e -o comm= | sort -u | head -80; fi",
+            ],
+        )
+        .map(|value| split_app_names(&value))
+        .unwrap_or_default()
+    }
+}
+
+fn split_app_names(value: &str) -> Vec<String> {
+    let mut apps = value
+        .split(|char| char == '\n' || char == '\r' || char == ',')
+        .map(|item| item.trim().trim_matches('"').to_string())
+        .filter(|item| item.len() > 1)
+        .collect::<Vec<_>>();
+    apps.sort_by_key(|item| item.to_lowercase());
+    apps.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+    apps
+}
+
 fn run_command_text(command: &str, args: &[&str]) -> Option<String> {
-    let output = Command::new(command).args(args).output().ok()?;
+    let mut command = Command::new(command);
+    command.args(args);
+    configure_background_command(&mut command);
+    let output = command.output().ok()?;
     if !output.status.success() {
         return None;
     }
@@ -959,6 +1224,16 @@ fn run_command_text(command: &str, args: &[&str]) -> Option<String> {
         Some(text)
     }
 }
+
+#[cfg(target_os = "windows")]
+fn configure_background_command(command: &mut Command) {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+    command.creation_flags(CREATE_NO_WINDOW);
+}
+
+#[cfg(not(target_os = "windows"))]
+fn configure_background_command(_command: &mut Command) {}
 
 fn status_result(status: std::process::ExitStatus) -> Result<(), String> {
     if status.success() {
@@ -1061,9 +1336,17 @@ async fn report_activities(
         .selected_activity_id
         .or(previous_selected_id)
         .filter(|id| {
-            activities
+            if activities
                 .iter()
                 .any(|activity| activity_id(activity).as_str() == id.as_str())
+            {
+                return true;
+            }
+            state
+                .inner
+                .lock()
+                .map(|inner| inner.system_apps.iter().any(|app| app.id == *id))
+                .unwrap_or(false)
         });
     let auto_pick_mode = report.auto_pick_mode.unwrap_or_else(|| "smart".to_string());
     let chosen = choose_report_activity(&activities, selected_id.as_deref(), &auto_pick_mode);
@@ -1072,6 +1355,23 @@ async fn report_activities(
         let mut inner = state.inner.lock().expect("state poisoned");
         inner.activity_inbox = activities.iter().map(activity_entry_from_payload).collect();
         inner.selected_activity_id = selected_id.clone();
+    }
+
+    if let Some(system_id) = selected_id
+        .as_deref()
+        .filter(|id| id.starts_with("system:"))
+    {
+        let selected = state
+            .inner
+            .lock()
+            .expect("state poisoned")
+            .system_apps
+            .iter()
+            .find(|app| app.id == system_id)
+            .map(system_activity_entry);
+        if let Some(activity) = selected {
+            return apply_activity_payload(&state, payload_from_activity_entry(&activity));
+        }
     }
 
     if let Some(activity) = chosen {
@@ -1102,15 +1402,12 @@ fn select_activity_from_inbox(
     activity_id: Option<String>,
 ) -> Option<ActivityEntry> {
     let mut inner = state.inner.lock().expect("state poisoned");
-    let selected = activity_id
-        .as_ref()
-        .and_then(|id| {
-            inner
-                .activity_inbox
-                .iter()
-                .find(|activity| &activity.id == id)
-        })
-        .cloned();
+    let selected = activity_id.as_ref().and_then(|id| {
+        combined_activities(&inner)
+            .iter()
+            .find(|activity| &activity.id == id)
+            .cloned()
+    });
     inner.selected_activity_id = selected.as_ref().map(|activity| activity.id.clone());
     selected
 }
@@ -1412,11 +1709,12 @@ fn api_status_payload(state: &AppState) -> ApiStatus {
         .to_string(),
         last_rpc_error: inner.last_rpc_error.clone(),
         last_activity: inner.last_activity.clone(),
-        activities: inner.activity_inbox.clone(),
+        activities: combined_activities(&inner),
         selected_activity_id: inner.selected_activity_id.clone(),
         extension_connected: extension_seen_recent(inner.last_extension_seen.as_deref()),
         last_extension_seen: inner.last_extension_seen.clone(),
         system_activity: inner.system_activity.clone(),
+        system_apps: inner.system_apps.clone(),
         uptime_seconds: inner.started_at.elapsed().as_secs(),
         timestamp: Utc::now().to_rfc3339(),
     }
@@ -1447,7 +1745,7 @@ fn companion_status(state: &AppState) -> CompanionStatus {
         last_rpc_error: inner.last_rpc_error.clone(),
         log: inner.last_log.clone(),
         url: format!("http://localhost:{}", inner.settings.port),
-        activities: inner.activity_inbox.clone(),
+        activities: combined_activities(&inner),
         selected_activity_id: inner.selected_activity_id.clone(),
         current_activity_id: inner
             .last_activity
@@ -1456,6 +1754,7 @@ fn companion_status(state: &AppState) -> CompanionStatus {
         extension_connected: extension_seen_recent(inner.last_extension_seen.as_deref()),
         last_extension_seen: inner.last_extension_seen.clone(),
         system_activity: inner.system_activity.clone(),
+        system_apps: inner.system_apps.clone(),
         update: UpdateStatus {
             state: "manual".to_string(),
             message: "Tauri builds update through GitHub releases for now.".to_string(),
@@ -1466,12 +1765,56 @@ fn companion_status(state: &AppState) -> CompanionStatus {
     }
 }
 
+fn combined_activities(inner: &InnerState) -> Vec<ActivityEntry> {
+    let mut activities = inner.activity_inbox.clone();
+    for system in &inner.system_apps {
+        if activities.iter().any(|item| item.id == system.id) {
+            continue;
+        }
+        activities.push(system_activity_entry(system));
+    }
+    activities
+}
+
+fn system_activity_entry(system: &SystemActivity) -> ActivityEntry {
+    ActivityEntry {
+        id: system.id.clone(),
+        tab_id: None,
+        tab_title: Some("System app".to_string()),
+        platform: system.app_name.clone(),
+        details: system.details.clone(),
+        state: if system.is_foreground {
+            "Foreground app".to_string()
+        } else {
+            "Running app".to_string()
+        },
+        url: None,
+        large_image_key: Some(system.icon_key.clone()),
+        large_image_text: Some(format!("Using {}", system.app_name)),
+        thumbnail_url: None,
+        small_image_key: None,
+        small_image_text: None,
+        is_playing: None,
+        media_current_time: None,
+        media_duration: None,
+        is_active_tab: false,
+        last_seen: chrono::DateTime::parse_from_rfc3339(&system.updated_at)
+            .map(|value| value.timestamp_millis())
+            .unwrap_or_else(|_| now_millis()),
+    }
+}
+
 fn extension_seen_recent(value: Option<&str>) -> bool {
     let Some(value) = value else {
         return false;
     };
     chrono::DateTime::parse_from_rfc3339(value)
-        .map(|seen| Utc::now().signed_duration_since(seen.with_timezone(&Utc)).num_seconds() < 45)
+        .map(|seen| {
+            Utc::now()
+                .signed_duration_since(seen.with_timezone(&Utc))
+                .num_seconds()
+                < 45
+        })
         .unwrap_or(false)
 }
 
