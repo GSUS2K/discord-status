@@ -145,6 +145,7 @@ struct SystemActivity {
     id: String,
     app_name: String,
     details: String,
+    window_title: Option<String>,
     icon_key: String,
     is_foreground: bool,
     updated_at: String,
@@ -212,6 +213,13 @@ struct SelectActivityRequest {
     selected_activity_id: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CustomActivityRequest {
+    title: String,
+    message: String,
+}
+
 #[derive(Debug, Serialize)]
 struct ApiMessage {
     success: bool,
@@ -260,6 +268,7 @@ async fn main() {
             fix_connection,
             reconnect_rpc,
             select_activity_id,
+            set_custom_activity,
             show_selector,
             hide_selector,
             open_chrome_extensions,
@@ -576,6 +585,56 @@ async fn select_activity_id(
 }
 
 #[tauri::command]
+async fn set_custom_activity(
+    app: AppHandle,
+    request: CustomActivityRequest,
+    state: TauriState<'_, AppState>,
+) -> Result<CompanionStatus, String> {
+    let title = request.title.trim();
+    let message = request.message.trim();
+    if title.is_empty() {
+        return Err("Add a title first.".to_string());
+    }
+    let activity = IncomingActivity {
+        id: Some("manual:companion".to_string()),
+        tab_id: None,
+        tab_title: None,
+        details: Some(title.to_string()),
+        state: Some(if message.is_empty() {
+            "Custom status".to_string()
+        } else {
+            message.to_string()
+        }),
+        platform: Some("Custom".to_string()),
+        large_image_key: Some("manual".to_string()),
+        large_image_text: Some("Custom Discord status".to_string()),
+        thumbnail_url: None,
+        small_image_key: None,
+        small_image_text: None,
+        is_playing: None,
+        media_current_time: None,
+        media_duration: None,
+        url: None,
+        source_url: None,
+        is_active_tab: Some(false),
+        last_seen: Some(now_millis()),
+    };
+    {
+        let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
+        let entry = activity_entry_from_payload(&activity);
+        inner.activity_inbox.retain(|item| item.id != entry.id);
+        inner.activity_inbox.insert(0, entry);
+        inner.selected_activity_id = Some("manual:companion".to_string());
+    }
+    let (status, message) = apply_activity_payload(&state, activity);
+    if !status.is_success() {
+        return Err(message.0.message);
+    }
+    emit_status(&app, &state);
+    Ok(companion_status(&state))
+}
+
+#[tauri::command]
 async fn show_selector(app: AppHandle) -> Result<(), String> {
     show_selector_window(&app);
     Ok(())
@@ -655,13 +714,7 @@ async fn refresh_system_apps(
     app: AppHandle,
     state: TauriState<'_, AppState>,
 ) -> Result<Vec<SystemActivity>, String> {
-    let apps = detect_running_apps();
-    let now = Utc::now().to_rfc3339();
-    let foreground = detect_foreground_app();
-    let snapshots = apps
-        .into_iter()
-        .map(|app_name| system_activity_snapshot(&app_name, foreground.as_deref(), &now))
-        .collect::<Vec<_>>();
+    let snapshots = detect_running_apps();
     {
         let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
         for snapshot in snapshots {
@@ -1018,9 +1071,10 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
                 continue;
             }
 
-            let Some(app_name) = detect_foreground_app() else {
+            let Some(foreground) = detect_foreground_app() else {
                 continue;
             };
+            let app_name = foreground.app_name.clone();
             let now = Utc::now().to_rfc3339();
             let allowed = settings
                 .system_activity_allowed_apps
@@ -1032,7 +1086,8 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
                     .iter()
                     .any(|value| app_name.to_lowercase().contains(value));
 
-            let snapshot = system_activity_snapshot(&app_name, Some(&app_name), &now);
+            let mut snapshot = foreground;
+            snapshot.updated_at = now.clone();
             let should_apply = {
                 let mut inner = match state.inner.lock() {
                     Ok(inner) => inner,
@@ -1047,9 +1102,9 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
                 let payload = IncomingActivity {
                     id: Some(format!("system:{}", app_name.to_lowercase())),
                     tab_id: None,
-                    tab_title: None,
+                    tab_title: snapshot.window_title.clone(),
                     details: Some(snapshot.details.clone()),
-                    state: Some("System app".to_string()),
+                    state: Some(system_activity_state(&snapshot)),
                     platform: Some(snapshot.app_name.clone()),
                     large_image_key: Some(snapshot.icon_key.clone()),
                     large_image_text: Some(format!("Using {}", snapshot.app_name)),
@@ -1071,12 +1126,28 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
     });
 }
 
-fn system_activity_snapshot(app_name: &str, foreground: Option<&str>, now: &str) -> SystemActivity {
+fn system_activity_snapshot(
+    app_name: &str,
+    window_title: Option<String>,
+    foreground: Option<&str>,
+    now: &str,
+) -> SystemActivity {
     let app_name = app_name.trim();
+    let window_title = window_title.and_then(|value| {
+        let value = value.trim().to_string();
+        if value.is_empty() || value.eq_ignore_ascii_case(app_name) {
+            None
+        } else {
+            Some(value)
+        }
+    });
     SystemActivity {
         id: format!("system:{}", normalize_app_key(app_name)),
         app_name: app_name.to_string(),
-        details: format!("Using {app_name}"),
+        details: window_title
+            .clone()
+            .unwrap_or_else(|| format!("Using {app_name}")),
+        window_title,
         icon_key: system_icon_key(app_name).to_string(),
         is_foreground: foreground
             .map(|value| value.eq_ignore_ascii_case(app_name))
@@ -1091,6 +1162,20 @@ fn remember_system_app(inner: &mut InnerState, snapshot: SystemActivity) {
         .retain(|item| !item.app_name.eq_ignore_ascii_case(&snapshot.app_name));
     inner.system_apps.insert(0, snapshot);
     inner.system_apps.truncate(20);
+}
+
+fn system_activity_state(system: &SystemActivity) -> String {
+    if system.window_title.is_some() {
+        if system.is_foreground {
+            "Current window".to_string()
+        } else {
+            "Open window".to_string()
+        }
+    } else if system.is_foreground {
+        "Foreground app".to_string()
+    } else {
+        "Running app".to_string()
+    }
 }
 
 fn normalize_app_key(value: &str) -> String {
@@ -1120,28 +1205,45 @@ fn system_icon_key(app_name: &str) -> &'static str {
     }
 }
 
-fn detect_foreground_app() -> Option<String> {
+fn detect_foreground_app() -> Option<SystemActivity> {
+    let now = Utc::now().to_rfc3339();
     #[cfg(target_os = "macos")]
     {
-        run_command_text(
+        return run_command_text(
             "osascript",
             &[
                 "-e",
-                "tell application \"System Events\" to get name of first application process whose frontmost is true",
+                "tell application \"System Events\"",
+                "-e",
+                "set frontApp to first application process whose frontmost is true",
+                "-e",
+                "set appName to name of frontApp",
+                "-e",
+                "set windowName to \"\"",
+                "-e",
+                "if (count of windows of frontApp) > 0 then set windowName to name of front window of frontApp",
+                "-e",
+                "return appName & tab & windowName",
+                "-e",
+                "end tell",
             ],
         )
+        .and_then(|value| parse_app_title_line(&value))
+        .map(|(app_name, title)| system_activity_snapshot(&app_name, title, Some(&app_name), &now));
     }
 
     #[cfg(target_os = "windows")]
     {
-        run_command_text(
+        return run_command_text(
             "powershell",
             &[
                 "-NoProfile",
                 "-Command",
-                "Add-Type @'\nusing System;\nusing System.Runtime.InteropServices;\npublic class W { [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId); }\n'@; $hwnd=[W]::GetForegroundWindow(); [uint32]$pid=0; [void][W]::GetWindowThreadProcessId($hwnd,[ref]$pid); (Get-Process -Id $pid).ProcessName",
+                "Add-Type @'\nusing System;\nusing System.Runtime.InteropServices;\npublic class W { [DllImport(\"user32.dll\")] public static extern IntPtr GetForegroundWindow(); [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId); }\n'@; $hwnd=[W]::GetForegroundWindow(); [uint32]$pid=0; [void][W]::GetWindowThreadProcessId($hwnd,[ref]$pid); $p=Get-Process -Id $pid; \"$($p.ProcessName)`t$($p.MainWindowTitle)\"",
             ],
         )
+        .and_then(|value| parse_app_title_line(&value))
+        .map(|(app_name, title)| system_activity_snapshot(&app_name, title, Some(&app_name), &now));
     }
 
     #[cfg(target_os = "linux")]
@@ -1150,13 +1252,17 @@ fn detect_foreground_app() -> Option<String> {
             "sh",
             &[
                 "-lc",
-                "pid=$(xdotool getactivewindow getwindowpid 2>/dev/null) && ps -p \"$pid\" -o comm= 2>/dev/null",
+                "pid=$(xdotool getactivewindow getwindowpid 2>/dev/null) && app=$(ps -p \"$pid\" -o comm= 2>/dev/null) && title=$(xdotool getactivewindow getwindowname 2>/dev/null) && printf '%s\\t%s' \"$app\" \"$title\"",
             ],
         )
+        .and_then(|value| parse_app_title_line(&value))
+        .map(|(app_name, title)| system_activity_snapshot(&app_name, title, Some(&app_name), &now))
     }
 }
 
-fn detect_running_apps() -> Vec<String> {
+fn detect_running_apps() -> Vec<SystemActivity> {
+    let now = Utc::now().to_rfc3339();
+    let foreground_name = detect_foreground_app().map(|activity| activity.app_name);
     #[cfg(target_os = "macos")]
     {
         return run_command_text(
@@ -1166,7 +1272,14 @@ fn detect_running_apps() -> Vec<String> {
                 "tell application \"System Events\" to get name of every application process whose background only is false",
             ],
         )
-        .map(|value| split_app_names(&value))
+        .map(|value| {
+            split_app_names(&value)
+                .into_iter()
+                .map(|app_name| {
+                    system_activity_snapshot(&app_name, None, foreground_name.as_deref(), &now)
+                })
+                .collect()
+        })
         .unwrap_or_default();
     }
 
@@ -1177,10 +1290,10 @@ fn detect_running_apps() -> Vec<String> {
             &[
                 "-NoProfile",
                 "-Command",
-                "Get-Process | Where-Object {$_.MainWindowTitle} | Select-Object -ExpandProperty ProcessName -Unique | Sort-Object",
+                "Get-Process | Where-Object {$_.MainWindowTitle} | Sort-Object ProcessName -Unique | ForEach-Object { \"$($_.ProcessName)`t$($_.MainWindowTitle)\" }",
             ],
         )
-        .map(|value| split_app_names(&value))
+        .map(|value| parse_app_title_lines(&value, foreground_name.as_deref(), &now))
         .unwrap_or_default();
     }
 
@@ -1190,12 +1303,37 @@ fn detect_running_apps() -> Vec<String> {
             "sh",
             &[
                 "-lc",
-                "if command -v wmctrl >/dev/null 2>&1; then wmctrl -lx | awk '{print $3}' | sed 's/.*\\.//' | sort -u; else ps -e -o comm= | sort -u | head -80; fi",
+                "if command -v wmctrl >/dev/null 2>&1; then wmctrl -lx | awk '{$1=$2=\"\"; cls=$3; sub(/.*\\./,\"\",cls); $3=\"\"; sub(/^ +/,\"\"); print cls \"\\t\" $0}' | sort -u; else ps -e -o comm= | sort -u | head -80; fi",
             ],
         )
-        .map(|value| split_app_names(&value))
+        .map(|value| parse_app_title_lines(&value, foreground_name.as_deref(), &now))
         .unwrap_or_default()
     }
+}
+
+#[allow(dead_code)]
+fn parse_app_title_lines(value: &str, foreground: Option<&str>, now: &str) -> Vec<SystemActivity> {
+    let mut apps = value
+        .lines()
+        .filter_map(parse_app_title_line)
+        .map(|(app_name, title)| system_activity_snapshot(&app_name, title, foreground, now))
+        .filter(|item| item.app_name.len() > 1)
+        .collect::<Vec<_>>();
+    apps.sort_by_key(|item| item.app_name.to_lowercase());
+    apps.dedup_by(|a, b| a.app_name.eq_ignore_ascii_case(&b.app_name));
+    apps
+}
+
+fn parse_app_title_line(value: &str) -> Option<(String, Option<String>)> {
+    let mut parts = value.trim().splitn(2, '\t');
+    let app_name = parts.next()?.trim().trim_matches('"').to_string();
+    if app_name.is_empty() {
+        return None;
+    }
+    let title = parts
+        .next()
+        .map(|value| value.trim().trim_matches('"').to_string());
+    Some((app_name, title.filter(|value| !value.is_empty())))
 }
 
 fn split_app_names(value: &str) -> Vec<String> {
@@ -1213,7 +1351,24 @@ fn run_command_text(command: &str, args: &[&str]) -> Option<String> {
     let mut command = Command::new(command);
     command.args(args);
     configure_background_command(&mut command);
-    let output = command.output().ok()?;
+    let mut child = command
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .ok()?;
+    let started = Instant::now();
+    loop {
+        if child.try_wait().ok()?.is_some() {
+            break;
+        }
+        if started.elapsed() > Duration::from_secs(2) {
+            let _ = child.kill();
+            let _ = child.wait();
+            return None;
+        }
+        std::thread::sleep(Duration::from_millis(40));
+    }
+    let output = child.wait_with_output().ok()?;
     if !output.status.success() {
         return None;
     }
@@ -1779,14 +1934,13 @@ fn system_activity_entry(system: &SystemActivity) -> ActivityEntry {
     ActivityEntry {
         id: system.id.clone(),
         tab_id: None,
-        tab_title: Some("System app".to_string()),
+        tab_title: system
+            .window_title
+            .clone()
+            .or_else(|| Some("System app".to_string())),
         platform: system.app_name.clone(),
         details: system.details.clone(),
-        state: if system.is_foreground {
-            "Foreground app".to_string()
-        } else {
-            "Running app".to_string()
-        },
+        state: system_activity_state(system),
         url: None,
         large_image_key: Some(system.icon_key.clone()),
         large_image_text: Some(format!("Using {}", system.app_name)),

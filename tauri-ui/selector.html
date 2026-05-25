@@ -98,6 +98,41 @@
       border-radius: 999px;
     }
 
+    .custom {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      padding: 12px 14px 0;
+    }
+
+    .custom input {
+      min-height: 42px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 800;
+      padding: 0 12px;
+    }
+
+    .custom button {
+      min-height: 42px;
+      border: 1px solid rgba(111, 246, 189, 0.42);
+      border-radius: 14px;
+      background: rgba(111, 246, 189, 0.14);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 900;
+      padding: 0 14px;
+    }
+
+    .custom button:disabled {
+      cursor: default;
+      opacity: 0.48;
+    }
+
     .item {
       width: 100%;
       min-height: 84px;
@@ -209,6 +244,12 @@
       <input id="query" autocomplete="off" spellcheck="false" placeholder="Search activity to show in Discord">
     </section>
 
+    <section class="custom" aria-label="Custom status">
+      <input id="customTitle" autocomplete="off" spellcheck="false" maxlength="128" placeholder="Custom title">
+      <input id="customMessage" autocomplete="off" spellcheck="false" maxlength="128" placeholder="Message">
+      <button id="customSet" type="button">Set</button>
+    </section>
+
     <section id="list" class="list"></section>
 
     <section class="footer">
@@ -225,11 +266,15 @@
       getStatus: () => invoke('get_status'),
       getSettings: () => invoke('get_settings'),
       selectActivity: activityId => invoke('select_activity_id', { activityId }),
+      setCustomActivity: request => invoke('set_custom_activity', { request }),
       hide: () => invoke('hide_selector'),
       onStatusUpdate: callback => listen('status:update', event => callback(event.payload))
     };
 
     const query = document.getElementById('query');
+    const customTitle = document.getElementById('customTitle');
+    const customMessage = document.getElementById('customMessage');
+    const customSet = document.getElementById('customSet');
     const list = document.getElementById('list');
     const shortcut = document.getElementById('shortcut');
     const SITE_ICON_ALIASES = {
@@ -388,7 +433,39 @@
     }
 
     query.addEventListener('input', refreshFilter);
+    customSet.addEventListener('pointerdown', async event => {
+      event.preventDefault();
+      setCustomStatus();
+    });
+
+    async function setCustomStatus() {
+      const title = customTitle.value.trim();
+      const message = customMessage.value.trim();
+      if (!title || isSelecting) return;
+      isSelecting = true;
+      customSet.disabled = true;
+      try {
+        status = await api.setCustomActivity({ title, message });
+        query.value = '';
+        refreshFilter();
+      } catch (error) {
+        console.warn('Custom status failed', error);
+      } finally {
+        customSet.disabled = false;
+        isSelecting = false;
+      }
+    }
+
+    for (const input of [customTitle, customMessage]) {
+      input.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          setCustomStatus();
+        }
+      });
+    }
     document.addEventListener('keydown', event => {
+      if (event.target === customTitle || event.target === customMessage) return;
       if (event.key === 'Escape') {
         api.hide();
       } else if (event.key === 'ArrowDown') {
