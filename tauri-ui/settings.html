@@ -490,8 +490,15 @@
           <div class="row">
             <div style="width: 100%;">
               <div class="title">Status selector shortcut</div>
-              <div class="desc">Opens the quick selector from anywhere. Default is CommandOrControl+Shift+Y because Cmd+Shift+D is used by Chrome.</div>
+              <div class="desc">Opens the quick selector from anywhere. Use one normal key with modifiers, for example CommandOrControl+Shift+Y. Avoid browser/system shortcuts like Cmd+Shift+D, Cmd+Space, Cmd+Tab, Esc, Q, or W.</div>
               <input id="selectorShortcut" class="field" type="text" spellcheck="false" placeholder="CommandOrControl+Shift+Y">
+            </div>
+          </div>
+          <div class="row">
+            <div style="width: 100%;">
+              <div class="title">Settings shortcut</div>
+              <div class="desc">Opens this settings window. Default is CommandOrControl+Shift+Comma. Keep it different from the selector shortcut.</div>
+              <input id="settingsShortcut" class="field" type="text" spellcheck="false" placeholder="CommandOrControl+Shift+Comma">
             </div>
           </div>
           <div class="row">
@@ -649,6 +656,7 @@
     const settingInputs = ['launchAtLogin', 'autoStartBackend', 'hidePopoverOnBlur', 'systemActivityEnabled'].map(id => document.getElementById(id));
     const portInput = document.getElementById('port');
     const selectorShortcutInput = document.getElementById('selectorShortcut');
+    const settingsShortcutInput = document.getElementById('settingsShortcut');
     const systemAppsList = document.getElementById('systemAppsList');
     const actionButtons = ['start', 'stop', 'restart', 'reconnect', 'fix', 'checkUpdates'].map(id => document.getElementById(id));
     const toasts = document.getElementById('toasts');
@@ -732,6 +740,7 @@
       }
       portInput.value = settings.port || 17654;
       selectorShortcutInput.value = settings.selectorShortcut || 'CommandOrControl+Shift+Y';
+      settingsShortcutInput.value = settings.settingsShortcut || 'CommandOrControl+Shift+Comma';
       renderSystemApps();
     }
 
@@ -801,6 +810,7 @@
             ...settingInputs.map(input => [input.id, input.checked]),
             ['port', Number(portInput.value)],
             ['selectorShortcut', selectorShortcutInput.value.trim()],
+            ['settingsShortcut', settingsShortcutInput.value.trim()],
             ['systemActivityAllowedApps', currentSettings?.systemActivityAllowedApps || []]
           ]
         ));
@@ -840,6 +850,7 @@
     }
     portInput.addEventListener('change', saveSettings);
     selectorShortcutInput.addEventListener('change', saveSettings);
+    settingsShortcutInput.addEventListener('change', saveSettings);
     document.getElementById('refreshApps').addEventListener('click', async () => {
       try {
         await activityStatus.refreshSystemApps();

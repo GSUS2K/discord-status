@@ -317,6 +317,17 @@
     let pollTimer = null;
     let isSelecting = false;
 
+    function focusSearch() {
+      requestAnimationFrame(() => {
+        query.focus({ preventScroll: true });
+        query.select();
+      });
+      setTimeout(() => {
+        query.focus({ preventScroll: true });
+        query.select();
+      }, 80);
+    }
+
     function searchableText(item) {
       return [
         item.platform,
@@ -472,7 +483,7 @@
       await syncStatus();
       const settings = await api.getSettings().catch(() => null);
       if (settings?.selectorShortcut) shortcut.textContent = settings.selectorShortcut;
-      query.focus();
+      focusSearch();
     }
 
     query.addEventListener('input', refreshFilter);
@@ -533,8 +544,12 @@
       status = nextStatus;
       refreshFilter();
     });
+    listen('selector:opened', () => {
+      load().catch(() => {});
+      focusSearch();
+    });
     window.addEventListener('focus', () => {
-      query.select();
+      focusSearch();
       if (!pollTimer) {
         pollTimer = setInterval(() => syncStatus().catch(() => {}), 1200);
       }
