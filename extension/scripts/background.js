@@ -72,6 +72,14 @@ const DEFAULT_REQUIRE_PLAYING_SITES = [
 const LOG_LEVELS = { debug: 10, info: 20, warn: 30, error: 40 };
 const MAX_LOG_ENTRIES = 80;
 const ACTIVE_TAB_GRACE_MS = 45000;
+const EXTENSION_VERSION = chrome.runtime.getManifest().version;
+const CONTENT_SCRIPT_FILES = {
+  youtube: ['scripts/youtube.js'],
+  netflix: ['scripts/netflix.js'],
+  spotify: ['scripts/spotify.js'],
+  meet: ['scripts/googlemeet.js'],
+  generic: ['scripts/generic.js']
+};
 
 let isEnabled = true;
 let mode = 'auto';
@@ -80,6 +88,7 @@ let currentActivity = null;
 let lastActivity = null;
 let selectedTabId = null;
 let activeTabId = null;
+let companionManualModeActive = false;
 let activityRegistry = {};
 let pruneTimer = null;
 let healthTimer = null;
@@ -150,6 +159,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       currentActivity = null;
       clearDiscordStatus();
     } else if (mode === 'auto') {
+      refreshOpenTabs();
       applyBestActivity();
     }
   } else if (request.action === 'changeMode') {
@@ -158,6 +168,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     log('info', 'Mode changed', { mode });
 
     if (mode === 'auto') {
+      companionManualModeActive = false;
+      selectedTabId = null;
+      chrome.storage.local.set({ selectedTabId: null, companionSelectedActivityId: null });
+      clearCompanionSelection();
       applyBestActivity();
     }
   } else if (request.action === 'changeAutoPickMode') {
@@ -206,7 +220,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     const state = String(request.message || 'Manual Activity').trim();
 
     currentActivity = {
-      id: 'manual',
+      id: 'manual:extension',
       details,
       state,
       largeImageKey: 'manual',
@@ -214,6 +228,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       platform: 'Manual',
       lastSeen: Date.now()
     };
+    mode = 'manual';
+    companionManualModeActive = true;
+    selectedTabId = null;
+    chrome.storage.local.set({ mode, selectedTabId: null, companionSelectedActivityId: currentActivity.id });
     log('info', 'Manual activity set', { details: currentActivity.details });
     updateDiscordStatus(currentActivity);
   } else if (request.action === 'clearActivity') {
@@ -227,6 +245,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.storage.local.set({ selectedTabId });
 
     if (selectedTabId === null) {
+      companionManualModeActive = false;
+      clearCompanionSelection();
       applyBestActivity();
       sendResponse({ ok: true });
       return;
@@ -234,6 +254,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     const selectedActivity = activityRegistry[selectedTabId];
     if (selectedActivity) {
+      mode = 'manual';
+      companionManualModeActive = true;
+      chrome.storage.local.set({ mode, companionSelectedActivityId: selectedActivity.id || `tab:${selectedTabId}` });
       currentActivity = selectedActivity;
       updateDiscordStatus(currentActivity);
     } else {
@@ -300,7 +323,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
   } else if (request.action === 'refreshSelectedActivity') {
     refreshOpenTabs();
-    applyBestActivity();
+    if (mode === 'auto') {
+      applyBestActivity();
+    }
   } else if (request.action === 'refreshBackendHealth') {
     refreshBackendHealth();
   }
@@ -347,6 +372,10 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 
   if (changes.autoPickMode) {
     autoPickMode = normalizeAutoPickMode(changes.autoPickMode.newValue);
+  }
+
+  if (changes.mode) {
+    mode = normalizeMode(changes.mode.newValue);
   }
 });
 
@@ -506,6 +535,21 @@ async function discoverBackendServer() {
   return null;
 }
 
+async function clearCompanionSelection() {
+  const discovered = await discoverBackendServer();
+  if (!discovered) return;
+
+  try {
+    await fetch(`${discovered.serverUrl}/api/select-activity`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ selectedActivityId: null })
+    });
+  } catch (error) {
+    log('debug', 'Could not clear companion selection', { error: error.message });
+  }
+}
+
 function startTimers() {
   if (pruneTimer) clearInterval(pruneTimer);
   if (healthTimer) clearInterval(healthTimer);
@@ -655,9 +699,53 @@ function refreshOpenTabs() {
   chrome.tabs.query({}, (tabs) => {
     for (const tab of tabs) {
       if (!tab.id || !isUrlSupported(tab.url)) continue;
-      requestTabActivity(tab.id);
+      ensureTabDetector(tab);
     }
   });
+}
+
+function ensureTabDetector(tab) {
+  if (!tab?.id) return;
+  chrome.tabs.sendMessage(tab.id, { action: 'detectActivity' }, () => {
+    const error = chrome.runtime.lastError;
+    if (!error) return;
+
+    if (!/Receiving end does not exist/i.test(error.message || '')) {
+      log('debug', 'Tab refresh failed', { tabId: tab.id, error: error.message });
+      return;
+    }
+
+    injectTabDetector(tab);
+  });
+}
+
+function injectTabDetector(tab) {
+  if (!chrome.scripting?.executeScript || !tab?.id) {
+    return;
+  }
+
+  const files = contentScriptsForUrl(tab.url);
+  if (!files.length) return;
+
+  chrome.scripting.executeScript({ target: { tabId: tab.id }, files }, () => {
+    const error = chrome.runtime.lastError;
+    if (error) {
+      if (!/Cannot access|No tab with id|The extensions gallery/i.test(error.message || '')) {
+        log('debug', 'Content script injection skipped', { tabId: tab.id, error: error.message });
+      }
+      return;
+    }
+    requestTabActivity(tab.id);
+  });
+}
+
+function contentScriptsForUrl(url = '') {
+  const lowerUrl = String(url || '').toLowerCase();
+  if (lowerUrl.includes('netflix.com')) return CONTENT_SCRIPT_FILES.netflix;
+  if (lowerUrl.includes('youtube.com') && !lowerUrl.includes('music.youtube.com')) return CONTENT_SCRIPT_FILES.youtube;
+  if (lowerUrl.includes('spotify.com')) return CONTENT_SCRIPT_FILES.spotify;
+  if (lowerUrl.includes('meet.google.com')) return CONTENT_SCRIPT_FILES.meet;
+  return CONTENT_SCRIPT_FILES.generic;
 }
 
 function requestTabActivity(tabId) {
@@ -859,9 +947,14 @@ async function reportActivitiesToBackend(serverUrl, fallbackActivity) {
   }
 
   const selectedActivity = selectedTabId !== null ? activityRegistry[selectedTabId] : null;
+  const fallbackId = fallbackActivity
+    ? normalizeActivityForBackend(fallbackActivity).id
+    : null;
   const body = {
     activities,
-    selectedActivityId: selectedActivity?.id || (selectedTabId !== null ? `tab:${selectedTabId}` : null),
+    selectedActivityId: mode === 'manual'
+      ? (selectedActivity?.id || (selectedTabId !== null ? `tab:${selectedTabId}` : fallbackId))
+      : (selectedActivity?.id || (selectedTabId !== null ? `tab:${selectedTabId}` : null)),
     autoPickMode
   };
 
@@ -919,18 +1012,88 @@ async function refreshBackendHealth() {
       return;
     }
 
+    syncCompanionSelection(discovered.health);
+
     chrome.storage.local.set({
       backendStatus: 'connected',
-      discordRpcStatus: discovered.health.discord_rpc || 'disconnected'
+      discordRpcStatus: discovered.health.discord_rpc || 'disconnected',
+      companionVersion: discovered.health.companion_version || null,
+      companionExpectedExtensionVersion: discovered.health.expected_extension_version || null,
+      extensionVersion: EXTENSION_VERSION
     });
     log('debug', 'Health check passed', {
       serverUrl: discovered.serverUrl,
       discordRpcStatus: discovered.health.discord_rpc || 'disconnected'
     });
   } catch (error) {
-    chrome.storage.local.set({ backendStatus: 'unreachable', discordRpcStatus: 'disconnected' });
+    chrome.storage.local.set({
+      backendStatus: 'unreachable',
+      discordRpcStatus: 'disconnected',
+      companionVersion: null,
+      companionExpectedExtensionVersion: null,
+      extensionVersion: EXTENSION_VERSION
+    });
     log('debug', 'Health check could not reach backend', { error: error.message });
   }
+}
+
+function syncCompanionSelection(health = {}) {
+  const selectedId = typeof health.selected_activity_id === 'string' && health.selected_activity_id.trim()
+    ? health.selected_activity_id.trim()
+    : null;
+  const selectedTab = selectedId?.startsWith('tab:')
+    ? normalizeTabId(selectedId.slice(4))
+    : null;
+
+  if (selectedId) {
+    companionManualModeActive = true;
+    mode = 'manual';
+    selectedTabId = selectedTab;
+    const companionActivity = activityFromCompanionSnapshot(health.last_activity);
+    if (companionActivity) {
+      currentActivity = companionActivity;
+    }
+    chrome.storage.local.set({
+      mode,
+      selectedTabId,
+      companionSelectedActivityId: selectedId,
+      ...(companionActivity ? { currentActivity: companionActivity } : {})
+    });
+    return;
+  }
+
+  chrome.storage.local.set({ companionSelectedActivityId: null });
+
+  if (companionManualModeActive) {
+    companionManualModeActive = false;
+    mode = 'auto';
+    selectedTabId = null;
+    chrome.storage.local.set({ mode, selectedTabId });
+    if (isEnabled) {
+      applyBestActivity();
+    }
+  }
+}
+
+function activityFromCompanionSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') {
+    return null;
+  }
+
+  return {
+    id: snapshot.id || null,
+    tabId: normalizeTabId(snapshot.tabId),
+    tabTitle: snapshot.tabTitle || snapshot.details || snapshot.platform || 'Activity',
+    platform: snapshot.platform || 'Activity',
+    details: snapshot.details || 'Activity',
+    state: snapshot.state || 'Active',
+    url: snapshot.url || '',
+    sourceUrl: snapshot.url || '',
+    largeImageKey: snapshot.largeImageKey || null,
+    smallImageKey: snapshot.smallImageKey || null,
+    isActiveTab: Boolean(snapshot.isActiveTab),
+    lastSeen: Date.now()
+  };
 }
 
 function log(level, message, details = {}) {

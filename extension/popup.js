@@ -189,10 +189,21 @@ function updateStatus() {
 }
 
 function updateSelectedTabLabel() {
-  chrome.storage.local.get(['selectedTabId', 'detectedActivities'], (result) => {
+  chrome.storage.local.get(['selectedTabId', 'detectedActivities', 'companionSelectedActivityId', 'currentActivity'], (result) => {
+    const companionSelectedActivityId = typeof result.companionSelectedActivityId === 'string'
+      ? result.companionSelectedActivityId
+      : null;
     const selectedTabId = normalizeTabId(result.selectedTabId);
     const activities = Array.isArray(result.detectedActivities) ? result.detectedActivities : [];
     const selectedActivity = activities.find(activity => normalizeTabId(activity.tabId) === selectedTabId);
+
+    if (companionSelectedActivityId && selectedTabId === null) {
+      const activity = result.currentActivity;
+      selectedTabLabel.textContent = activity
+        ? `Manual: ${activity.platform || 'Activity'} - ${activity.details || 'Selected in companion'}`
+        : 'Manual: selected in companion';
+      return;
+    }
 
     if (selectedTabId === null) {
       const activeActivity = activities.find(activity => activity.isActiveTab);
@@ -216,38 +227,59 @@ function updateSelectedTabLabel() {
 }
 
 function updateRpcHealthBadge() {
-  chrome.storage.local.get(['discordRpcStatus', 'backendStatus'], (result) => {
+  chrome.storage.local.get([
+    'discordRpcStatus',
+    'backendStatus',
+    'companionVersion',
+    'companionExpectedExtensionVersion',
+    'extensionVersion'
+  ], (result) => {
     const rpcStatus = result.discordRpcStatus || 'disconnected';
     const backendStatus = result.backendStatus || 'unreachable';
+    const versionInfo = {
+      extensionVersion: result.extensionVersion || chrome.runtime.getManifest().version,
+      companionVersion: result.companionVersion || null,
+      companionExpectedExtensionVersion: result.companionExpectedExtensionVersion || null
+    };
 
     rpcHealthBadge.classList.remove('connected', 'disconnected');
 
     if (backendStatus !== 'connected') {
       rpcHealthBadge.classList.add('disconnected');
       rpcHealthText.textContent = 'Backend offline';
-      renderSetupChecklist(backendStatus, rpcStatus);
+      renderSetupChecklist(backendStatus, rpcStatus, versionInfo);
       return;
     }
 
     if (rpcStatus === 'connected') {
       rpcHealthBadge.classList.add('connected');
       rpcHealthText.textContent = 'Discord connected';
-      renderSetupChecklist(backendStatus, rpcStatus);
+      renderSetupChecklist(backendStatus, rpcStatus, versionInfo);
       return;
     }
 
     rpcHealthBadge.classList.add('disconnected');
     rpcHealthText.textContent = 'Discord disconnected';
-    renderSetupChecklist(backendStatus, rpcStatus);
+    renderSetupChecklist(backendStatus, rpcStatus, versionInfo);
   });
 }
 
-function renderSetupChecklist(backendStatus, rpcStatus) {
+function renderSetupChecklist(backendStatus, rpcStatus, versionInfo = {}) {
   if (!setupChecklist) return;
+  const versionOk = backendStatus === 'connected'
+    && versionInfo.companionVersion
+    && versionInfo.companionExpectedExtensionVersion === versionInfo.extensionVersion;
   const rows = [
     ['Extension installed', true, 'Done'],
     ['Companion running', backendStatus === 'connected', backendStatus === 'connected' ? 'Online' : 'Install / start'],
-    ['Discord desktop connected', backendStatus === 'connected' && rpcStatus === 'connected', rpcStatus === 'connected' ? 'Connected' : 'Open Discord']
+    ['Discord desktop connected', backendStatus === 'connected' && rpcStatus === 'connected', rpcStatus === 'connected' ? 'Connected' : 'Open Discord'],
+    [
+      'Version match',
+      versionOk,
+      versionInfo.companionVersion
+        ? `Ext ${versionInfo.extensionVersion} / App ${versionInfo.companionVersion}`
+        : `Ext ${versionInfo.extensionVersion}`
+    ]
   ];
 
   setupChecklist.textContent = '';
@@ -264,6 +296,12 @@ function renderSetupChecklist(backendStatus, rpcStatus) {
     install.textContent = 'Install companion';
     install.addEventListener('click', () => chrome.tabs.create({ url: COMPANION_URL }));
     setupChecklist.appendChild(install);
+  } else if (!versionOk) {
+    const update = document.createElement('button');
+    update.className = 'setup-link';
+    update.textContent = 'Update companion / extension';
+    update.addEventListener('click', () => chrome.tabs.create({ url: COMPANION_URL }));
+    setupChecklist.appendChild(update);
   }
 }
 
@@ -588,8 +626,10 @@ function refreshUi() {
 }
 
 renderSiteToggles();
+sendRuntimeMessage({ action: 'refreshBackendHealth' });
 refreshUi();
 setInterval(refreshUi, 2000);
+setInterval(() => sendRuntimeMessage({ action: 'refreshBackendHealth' }), 5000);
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local') return;

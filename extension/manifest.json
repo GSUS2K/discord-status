@@ -2,11 +2,12 @@
   "manifest_version": 3,
   "name": "Discord Status",
   "short_name": "Discord Status",
-  "version": "1.0.27",
+  "version": "1.0.28",
   "description": "Show supported browser activity as Discord Rich Presence using the Activity Status Companion app.",
   "permissions": [
     "tabs",
-    "storage"
+    "storage",
+    "scripting"
   ],
   "host_permissions": [
     "https://youtube.com/*",
