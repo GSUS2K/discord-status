@@ -718,8 +718,18 @@ async fn refresh_system_apps(
     let snapshots = detect_running_apps();
     {
         let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
-        for snapshot in snapshots {
-            remember_system_app(&mut inner, snapshot);
+        inner.system_apps = snapshots;
+        inner.system_activity = inner
+            .system_apps
+            .iter()
+            .find(|app| app.is_foreground)
+            .cloned();
+        if let Some(selected) = inner.selected_activity_id.as_deref() {
+            if selected.starts_with("system:")
+                && !inner.system_apps.iter().any(|app| app.id == selected)
+            {
+                inner.selected_activity_id = None;
+            }
         }
     }
     emit_status(&app, &state);
@@ -1072,11 +1082,16 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
                 continue;
             }
 
-            let Some(foreground) = detect_foreground_app() else {
+            let snapshots = detect_running_apps();
+            let Some(foreground) = snapshots
+                .iter()
+                .find(|activity| activity.is_foreground)
+                .cloned()
+                .or_else(detect_foreground_app)
+            else {
                 continue;
             };
             let app_name = foreground.app_name.clone();
-            let now = Utc::now().to_rfc3339();
             let allowed = settings
                 .system_activity_allowed_apps
                 .iter()
@@ -1087,16 +1102,35 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
                     .iter()
                     .any(|value| app_name.to_lowercase().contains(value));
 
-            let mut snapshot = foreground;
-            snapshot.updated_at = now.clone();
-            let should_apply = {
+            let snapshot = foreground;
+            let (should_apply, should_clear_removed_selection) = {
                 let mut inner = match state.inner.lock() {
                     Ok(inner) => inner,
                     Err(_) => continue,
                 };
                 inner.system_activity = Some(snapshot.clone());
-                remember_system_app(&mut inner, snapshot.clone());
-                is_allowed && inner.activity_inbox.is_empty() && inner.rpc_connected
+                inner.system_apps = if snapshots.is_empty() {
+                    vec![snapshot.clone()]
+                } else {
+                    snapshots.clone()
+                };
+                let mut selected_removed = false;
+                if let Some(selected) = inner.selected_activity_id.as_deref() {
+                    if selected.starts_with("system:")
+                        && !inner.system_apps.iter().any(|app| app.id == selected)
+                    {
+                        selected_removed = inner
+                            .last_activity
+                            .as_ref()
+                            .and_then(|activity| activity.id.as_deref())
+                            == Some(selected);
+                        inner.selected_activity_id = None;
+                    }
+                }
+                (
+                    is_allowed && inner.activity_inbox.is_empty() && inner.rpc_connected,
+                    selected_removed && inner.activity_inbox.is_empty() && inner.rpc_connected,
+                )
             };
 
             if should_apply {
@@ -1121,6 +1155,8 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
                     last_seen: Some(now_millis()),
                 };
                 let _ = apply_activity_payload(&state, payload);
+            } else if should_clear_removed_selection {
+                let _ = clear_activity_response(&state);
             }
             emit_status(&app, &state);
         }
@@ -1157,23 +1193,15 @@ fn system_activity_snapshot(
     }
 }
 
-fn remember_system_app(inner: &mut InnerState, snapshot: SystemActivity) {
-    inner
-        .system_apps
-        .retain(|item| !item.app_name.eq_ignore_ascii_case(&snapshot.app_name));
-    inner.system_apps.insert(0, snapshot);
-    inner.system_apps.truncate(20);
-}
-
 fn system_activity_state(system: &SystemActivity) -> String {
     if system.window_title.is_some() {
         if system.is_foreground {
-            "Current window".to_string()
+            "Current app window".to_string()
         } else {
-            "Open window".to_string()
+            "Open app window".to_string()
         }
     } else if system.is_foreground {
-        "Foreground app".to_string()
+        "Current foreground app".to_string()
     } else {
         "Running app".to_string()
     }
@@ -1191,17 +1219,38 @@ fn system_icon_key(app_name: &str) -> &'static str {
     let key = normalize_app_key(app_name);
     match key.as_str() {
         "discord" => "discord",
-        "googlechrome" | "chrome" => "google",
-        "safari" => "google",
+        "googlechrome" | "chrome" => "chrome",
+        "safari" => "safari",
+        "firefox" => "firefox",
+        "microsoftedge" | "msedge" => "edge",
+        "arc" => "arc",
         "spotify" => "spotify",
         "visualstudiocode" | "code" | "vscode" => "vscode",
         "githubdesktop" => "github",
         "steam" => "steam",
+        "epicgameslauncher" | "epicgames" => "epicgames",
+        "riotclient" | "riotgames" => "riotgames",
+        "valorant" => "valorant",
+        "leagueclient" | "leagueoflegends" | "leagueclientux" => "leagueoflegends",
+        "roblox" | "robloxplayer" => "roblox",
+        "osu" => "osu",
+        "battlenet" | "battle.net" | "battle.netlauncher" => "battlenet",
         "notion" => "notion",
         "figma" => "figma",
-        "slack" => "discord",
-        "terminal" | "iterm2" | "windowsterminal" | "powershell" | "cmd" => "terminal",
-        "finder" | "explorer" => "files",
+        "slack" => "slack",
+        "microsoftteams" | "teams" => "teams",
+        "zoom" => "zoom",
+        "telegram" => "telegram",
+        "whatsapp" => "whatsapp",
+        "obs" | "obsstudio" => "obs",
+        "vlc" | "vlcmediaplayer" => "vlc",
+        "blender" => "blender",
+        "terminal" | "iterm2" => "terminal",
+        "windowsterminal" => "windowsterminal",
+        "powershell" => "powershell",
+        "cmd" | "commandprompt" => "cmd",
+        "finder" => "finder",
+        "explorer" | "fileexplorer" => "files",
         _ => "manual",
     }
 }
@@ -1788,12 +1837,17 @@ fn apply_activity_payload(
         .filter(|value| !value.is_empty())
         .map(ToString::to_string)
         .unwrap_or_else(|| asset_key_for_platform(&platform).to_string());
+    let preferred_large_image = payload
+        .thumbnail_url
+        .as_deref()
+        .and_then(discord_external_image_url)
+        .unwrap_or_else(|| stable_large_image.clone());
     let mut activity = Activity::new()
         .details(details.clone())
         .state(presence_state.clone());
 
     let mut assets = Assets::new().small_text(platform.clone());
-    assets = assets.large_image(stable_large_image.clone());
+    assets = assets.large_image(preferred_large_image);
     if let Some(text) = payload
         .large_image_text
         .as_deref()
@@ -1807,6 +1861,13 @@ fn apply_activity_payload(
         .filter(|value| !value.is_empty())
     {
         assets = assets.small_image(key.to_string());
+    } else if payload
+        .thumbnail_url
+        .as_deref()
+        .and_then(discord_external_image_url)
+        .is_some()
+    {
+        assets = assets.small_image(stable_large_image.clone());
     }
     if let Some(text) = payload
         .small_image_text
@@ -1887,6 +1948,15 @@ fn apply_activity_payload(
             StatusCode::SERVICE_UNAVAILABLE,
             Json(ApiMessage::error("Discord RPC not connected")),
         )
+    }
+}
+
+fn discord_external_image_url(value: &str) -> Option<String> {
+    let trimmed = value.trim();
+    if trimmed.starts_with("https://") && trimmed.len() <= 300 {
+        Some(trimmed.to_string())
+    } else {
+        None
     }
 }
 

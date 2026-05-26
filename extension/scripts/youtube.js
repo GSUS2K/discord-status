@@ -1,4 +1,11 @@
 // YouTube Content Script
+const YOUTUBE_DEBUG = false;
+
+function debugYouTube(...args) {
+  if (YOUTUBE_DEBUG) {
+    console.debug('[YouTube]', ...args);
+  }
+}
 
 function getYouTubeTitle() {
   const titleSelectors = [
@@ -33,13 +40,13 @@ function detectYouTubeActivity() {
   try {
     const title = getYouTubeTitle();
     if (!title) {
-      console.log('[YouTube] Title not ready yet');
+      debugYouTube('Title not ready yet');
       return null;
     }
 
     const video = document.querySelector('video');
     if (!video) {
-      console.log('[YouTube] No video element found');
+      debugYouTube('No video element found');
       return null;
     }
 
@@ -68,10 +75,10 @@ function detectYouTubeActivity() {
       mediaDuration: duration
     };
 
-    console.log('[YouTube] Detected:', activity);
+    debugYouTube('Detected:', activity);
     return activity;
   } catch (error) {
-    console.log('[YouTube] Error:', error.message);
+    debugYouTube('Error:', error.message);
     return null;
   }
 }
@@ -83,15 +90,15 @@ function getYouTubeThumbnailUrl() {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('[YouTube] Message received:', request.action);
+  debugYouTube('Message received:', request.action);
   if (request.action === 'detectActivity') {
     const activity = detectYouTubeActivity();
     if (activity) {
-      console.log('[YouTube] Sending activity detected');
+      debugYouTube('Sending activity detected');
       chrome.runtime.sendMessage({
         action: 'activityDetected',
         activity: activity
-      }).catch(err => console.log('[YouTube] Send error:', err.message));
+      }).catch(err => debugYouTube('Send error:', err.message));
     }
     sendResponse({ ok: true, found: Boolean(activity) });
     return;
@@ -106,7 +113,7 @@ function sendDetectedActivity() {
     chrome.runtime.sendMessage({
       action: 'activityDetected',
       activity: activity
-    }).catch(err => console.log('[YouTube] Send error:', err.message));
+    }).catch(err => debugYouTube('Send error:', err.message));
   }
 }
 
