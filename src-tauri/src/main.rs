@@ -40,6 +40,7 @@ const LEGACY_PORT: u16 = 3000;
 const RPC_CONNECT_TIMEOUT: Duration = Duration::from_secs(4);
 const RELEASES_URL: &str = "https://github.com/GSUS2K/discord-status/releases/latest";
 const DEFAULT_SELECTOR_SHORTCUT: &str = "CommandOrControl+Shift+Y";
+const DEFAULT_SETTINGS_SHORTCUT: &str = "CommandOrControl+Shift+Comma";
 const COMPANION_CUSTOM_ACTIVITY_ID: &str = "manual:companion";
 const EXPECTED_EXTENSION_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -82,6 +83,8 @@ struct Settings {
     system_activity_allowed_apps: Vec<String>,
     #[serde(default = "default_selector_shortcut")]
     selector_shortcut: String,
+    #[serde(default = "default_settings_shortcut")]
+    settings_shortcut: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -292,10 +295,8 @@ async fn main() {
             app.set_activation_policy(ActivationPolicy::Accessory);
 
             setup_tray(app.handle())?;
-            if let Err(error) =
-                register_selector_shortcut(app.handle(), &settings.selector_shortcut)
-            {
-                set_log(&state, format!("Status selector shortcut failed: {error}"));
+            if let Err(error) = register_global_shortcuts(app.handle(), &settings) {
+                set_log(&state, format!("Global shortcut setup failed: {error}"));
             }
             if let Err(error) = apply_launch_at_login(app.handle(), settings.launch_at_login) {
                 set_log(&state, format!("Launch at login setup failed: {error}"));
@@ -359,7 +360,7 @@ fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         .on_menu_event(|app, event| match event.id().as_ref() {
             "open" => show_window(app, "main"),
             "selector" => show_selector_window(app),
-            "settings" => show_window(app, "settings"),
+            "settings" => show_settings_window(app),
             "chrome" => {
                 let _ = open_chrome_url("chrome://extensions/");
             }
@@ -432,6 +433,20 @@ fn show_window<R: Runtime>(app: &AppHandle<R>, label: &str) {
     }
 }
 
+fn show_settings_window<R: Runtime>(app: &AppHandle<R>) {
+    if let Some(window) = app.get_webview_window("settings") {
+        let _ = window.unminimize();
+        let _ = window.center();
+        let _ = window.set_always_on_top(true);
+        show_existing_window(&window);
+        let settings_window = window.clone();
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(350)).await;
+            let _ = settings_window.set_always_on_top(false);
+        });
+    }
+}
+
 fn toggle_selector_window<R: Runtime>(app: &AppHandle<R>) {
     if let Some(window) = app.get_webview_window("selector") {
         if window.is_visible().unwrap_or(false) {
@@ -445,11 +460,14 @@ fn toggle_selector_window<R: Runtime>(app: &AppHandle<R>) {
 fn show_selector_window<R: Runtime>(app: &AppHandle<R>) {
     if let Some(window) = app.get_webview_window("selector") {
         let _ = window.center();
+        let _ = window.set_always_on_top(true);
         show_existing_window(&window);
+        let _ = app.emit("selector:opened", ());
     }
 }
 
 fn show_existing_window<R: Runtime>(window: &WebviewWindow<R>) {
+    let _ = window.unminimize();
     let _ = window.show();
     let _ = window.set_focus();
 }
@@ -489,7 +507,7 @@ async fn set_settings(
     state: TauriState<'_, AppState>,
 ) -> Result<Settings, String> {
     let settings = normalize_settings(settings);
-    register_selector_shortcut(&app, &settings.selector_shortcut)?;
+    register_global_shortcuts(&app, &settings)?;
     apply_launch_at_login(&app, settings.launch_at_login)?;
     {
         let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
@@ -687,7 +705,7 @@ async fn install_update() -> Result<bool, String> {
 
 #[tauri::command]
 async fn show_settings(app: AppHandle) -> Result<(), String> {
-    show_window(&app, "settings");
+    show_settings_window(&app);
     Ok(())
 }
 
@@ -2092,25 +2110,41 @@ fn emit_status<R: Runtime>(app: &AppHandle<R>, state: &AppState) {
     let _ = app.emit("status:update", companion_status(state));
 }
 
-fn register_selector_shortcut<R: Runtime>(
+fn register_global_shortcuts<R: Runtime>(
     app: &AppHandle<R>,
-    shortcut: &str,
+    settings: &Settings,
 ) -> Result<(), String> {
-    let shortcut = normalize_shortcut(shortcut);
+    let selector_shortcut = validate_shortcut(&settings.selector_shortcut, DEFAULT_SELECTOR_SHORTCUT)?;
+    let settings_shortcut = validate_shortcut(&settings.settings_shortcut, DEFAULT_SETTINGS_SHORTCUT)?;
+    if selector_shortcut.eq_ignore_ascii_case(&settings_shortcut) {
+        return Err("Status selector and settings shortcuts must be different.".to_string());
+    }
     app.global_shortcut()
         .unregister_all()
         .map_err(|error| error.to_string())?;
     app.global_shortcut()
-        .on_shortcut(shortcut.as_str(), |app, _shortcut, event| {
+        .on_shortcut(selector_shortcut.as_str(), |app, _shortcut, event| {
             if event.state == ShortcutState::Pressed {
                 toggle_selector_window(app);
             }
         })
         .map_err(|error| {
             format!(
-                "Could not register shortcut `{shortcut}`. Another app may already use it. ({error})"
+                "Could not register selector shortcut `{selector_shortcut}`. Another app may already use it. ({error})"
             )
+        })?;
+    app.global_shortcut()
+        .on_shortcut(settings_shortcut.as_str(), |app, _shortcut, event| {
+            if event.state == ShortcutState::Pressed {
+                show_settings_window(app);
+            }
         })
+        .map_err(|error| {
+            format!(
+                "Could not register settings shortcut `{settings_shortcut}`. Another app may already use it. ({error})"
+            )
+        })?;
+    Ok(())
 }
 
 fn set_log(state: &AppState, log: String) {
@@ -2175,17 +2209,68 @@ fn normalize_settings(settings: Settings) -> Settings {
             .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty())
             .collect(),
-        selector_shortcut: normalize_shortcut(&settings.selector_shortcut),
+        selector_shortcut: normalize_shortcut(&settings.selector_shortcut, DEFAULT_SELECTOR_SHORTCUT),
+        settings_shortcut: normalize_shortcut(&settings.settings_shortcut, DEFAULT_SETTINGS_SHORTCUT),
     }
 }
 
-fn normalize_shortcut(value: &str) -> String {
+fn normalize_shortcut(value: &str, default_value: &str) -> String {
     let shortcut = value.trim();
     if shortcut.is_empty() {
-        DEFAULT_SELECTOR_SHORTCUT.to_string()
+        default_value.to_string()
     } else {
         shortcut.to_string()
     }
+}
+
+fn validate_shortcut(value: &str, default_value: &str) -> Result<String, String> {
+    let shortcut = normalize_shortcut(value, default_value);
+    let parts = shortcut
+        .split('+')
+        .map(|part| part.trim())
+        .filter(|part| !part.is_empty())
+        .collect::<Vec<_>>();
+
+    if parts.len() < 2 {
+        return Err("Shortcut must include at least one modifier and one key, like CommandOrControl+Shift+Y.".to_string());
+    }
+
+    let key = parts.last().unwrap_or(&"").to_ascii_lowercase();
+    let modifiers = &parts[..parts.len() - 1];
+    let has_primary_modifier = modifiers.iter().any(|part| {
+        matches!(
+            part.to_ascii_lowercase().as_str(),
+            "commandorcontrol" | "cmdorctrl" | "command" | "cmd" | "control" | "ctrl" | "super" | "meta" | "alt" | "option"
+        )
+    });
+
+    if !has_primary_modifier {
+        return Err("Shortcut must include CommandOrControl, Command, Control, Alt, or Option.".to_string());
+    }
+
+    if matches!(
+        key.as_str(),
+        "tab" | "escape" | "esc" | "space" | "q" | "w" | "m" | "`" | "~"
+    ) {
+        return Err("That key is reserved or too easy to collide with system/app shortcuts. Use a letter like Y, K, or P with CommandOrControl+Shift.".to_string());
+    }
+
+    let lowered = shortcut.to_ascii_lowercase().replace(' ', "");
+    let blocked = [
+        "commandorcontrol+shift+d",
+        "command+shift+d",
+        "cmd+shift+d",
+        "control+shift+d",
+        "ctrl+shift+d",
+        "commandorcontrol+q",
+        "commandorcontrol+w",
+        "commandorcontrol+space",
+    ];
+    if blocked.iter().any(|blocked| lowered == *blocked) {
+        return Err("That shortcut commonly belongs to Chrome or the system. Pick something like CommandOrControl+Shift+Y.".to_string());
+    }
+
+    Ok(shortcut)
 }
 
 fn read_settings() -> Settings {
@@ -2201,6 +2286,7 @@ fn read_settings() -> Settings {
             system_activity_enabled: false,
             system_activity_allowed_apps: Vec::new(),
             selector_shortcut: default_selector_shortcut(),
+            settings_shortcut: default_settings_shortcut(),
         })
 }
 
@@ -2227,4 +2313,8 @@ fn default_port() -> u16 {
 
 fn default_selector_shortcut() -> String {
     DEFAULT_SELECTOR_SHORTCUT.to_string()
+}
+
+fn default_settings_shortcut() -> String {
+    DEFAULT_SETTINGS_SHORTCUT.to_string()
 }
