@@ -8,7 +8,8 @@ const DEFAULTS = {
   logLevel: 'info',
   privacyMode: 'normal',
   incognitoNever: true,
-  requirePlayingSites: ['youtube','youtubemusic','netflix','primevideo','hulu','disneyplus','appletv','hotstar','crunchyroll','spotify','soundcloud','applemusic','bandcamp','twitch'],
+  requirePlayingSites: [],
+  playingOnlyCapableSites: ['youtube','youtubemusic','netflix','primevideo','hulu','disneyplus','appletv','hotstar','crunchyroll','spotify','soundcloud','applemusic','bandcamp','twitch'],
   blockedDomains: [],
   pauseDuringMeetings: false
 };
@@ -141,17 +142,17 @@ function setFormValues(values) {
   privacyModeInput.value = values.privacyMode || DEFAULTS.privacyMode;
   incognitoNeverInput.checked = values.incognitoNever !== false;
   pauseDuringMeetingsInput.checked = values.pauseDuringMeetings === true;
-  const requirePlayingSites = Array.isArray(values.requirePlayingSites)
+  const requirePlayingSites = values.requirePlayingConfigured === true && Array.isArray(values.requirePlayingSites)
     ? values.requirePlayingSites
     : DEFAULTS.requirePlayingSites;
-  requirePlayingInput.checked = DEFAULTS.requirePlayingSites.every(site => requirePlayingSites.includes(site));
+  requirePlayingInput.checked = DEFAULTS.playingOnlyCapableSites.every(site => requirePlayingSites.includes(site));
   blockedDomainsInput.value = Array.isArray(values.blockedDomains)
     ? values.blockedDomains.join(', ')
     : String(values.blockedDomains || '');
 }
 
 function readSettingsFromForm() {
-  const requirePlayingSites = requirePlayingInput.checked ? DEFAULTS.requirePlayingSites : [];
+  const requirePlayingSites = requirePlayingInput.checked ? DEFAULTS.playingOnlyCapableSites : [];
   return {
     serverUrl: normalizeServerUrl(serverUrlInput.value),
     updateInterval: clampNumber(updateIntervalInput.value, 2, 60, DEFAULTS.updateInterval),
@@ -161,6 +162,7 @@ function readSettingsFromForm() {
     privacyMode: ['normal', 'platform', 'private'].includes(privacyModeInput.value) ? privacyModeInput.value : DEFAULTS.privacyMode,
     incognitoNever: incognitoNeverInput.checked,
     requirePlayingSites,
+    requirePlayingConfigured: true,
     blockedDomains: blockedDomainsInput.value.split(',').map(value => value.trim().toLowerCase()).filter(Boolean),
     pauseDuringMeetings: pauseDuringMeetingsInput.checked
   };
