@@ -40,6 +40,7 @@ const LEGACY_PORT: u16 = 3000;
 const RPC_CONNECT_TIMEOUT: Duration = Duration::from_secs(4);
 const RELEASES_URL: &str = "https://github.com/GSUS2K/discord-status/releases/latest";
 const DEFAULT_SELECTOR_SHORTCUT: &str = "CommandOrControl+Shift+Y";
+const COMPANION_CUSTOM_ACTIVITY_ID: &str = "manual:companion";
 
 #[derive(Clone)]
 struct AppState {
@@ -596,7 +597,7 @@ async fn set_custom_activity(
         return Err("Add a title first.".to_string());
     }
     let activity = IncomingActivity {
-        id: Some("manual:companion".to_string()),
+        id: Some(COMPANION_CUSTOM_ACTIVITY_ID.to_string()),
         tab_id: None,
         tab_title: None,
         details: Some(title.to_string()),
@@ -624,7 +625,7 @@ async fn set_custom_activity(
         let entry = activity_entry_from_payload(&activity);
         inner.activity_inbox.retain(|item| item.id != entry.id);
         inner.activity_inbox.insert(0, entry);
-        inner.selected_activity_id = Some("manual:companion".to_string());
+        inner.selected_activity_id = Some(COMPANION_CUSTOM_ACTIVITY_ID.to_string());
     }
     let (status, message) = apply_activity_payload(&state, activity);
     if !status.is_success() {
@@ -1490,6 +1491,18 @@ async fn report_activities(
     let selected_id = previous_selected_id
         .or(report.selected_activity_id)
         .filter(|id| {
+            if id == COMPANION_CUSTOM_ACTIVITY_ID {
+                return state
+                    .inner
+                    .lock()
+                    .map(|inner| {
+                        inner
+                            .activity_inbox
+                            .iter()
+                            .any(|activity| activity.id == COMPANION_CUSTOM_ACTIVITY_ID)
+                    })
+                    .unwrap_or(false);
+            }
             if activities
                 .iter()
                 .any(|activity| activity_id(activity).as_str() == id.as_str())
@@ -1507,8 +1520,33 @@ async fn report_activities(
 
     {
         let mut inner = state.inner.lock().expect("state poisoned");
+        let pinned_custom = inner
+            .activity_inbox
+            .iter()
+            .find(|activity| activity.id == COMPANION_CUSTOM_ACTIVITY_ID)
+            .cloned();
         inner.activity_inbox = activities.iter().map(activity_entry_from_payload).collect();
+        if let Some(custom) = pinned_custom {
+            inner
+                .activity_inbox
+                .retain(|activity| activity.id != custom.id);
+            inner.activity_inbox.insert(0, custom);
+        }
         inner.selected_activity_id = selected_id.clone();
+    }
+
+    if selected_id.as_deref() == Some(COMPANION_CUSTOM_ACTIVITY_ID) {
+        let selected = state
+            .inner
+            .lock()
+            .expect("state poisoned")
+            .activity_inbox
+            .iter()
+            .find(|activity| activity.id == COMPANION_CUSTOM_ACTIVITY_ID)
+            .cloned();
+        if let Some(activity) = selected {
+            return apply_activity_payload(&state, payload_from_activity_entry(&activity));
+        }
     }
 
     if let Some(system_id) = selected_id
