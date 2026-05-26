@@ -24,6 +24,8 @@ The extension detects activity. The companion runs on `localhost`, chooses the a
 | --- | --- |
 | Activity inbox | Sends all detected browser activities to the companion so one can be selected for Discord. |
 | Quick selector | Press `CommandOrControl+Shift+Y` to open a Spotlight-style picker, or click Auto mode to return control to the active tab. Change the shortcut in Companion Settings. |
+| Two-way mode sync | Selecting a status in the companion automatically puts the extension popup in Manual mode; Auto mode clears the companion override. |
+| Version check | The popup shows whether the installed extension and companion versions match. |
 | Active Tab Only | Prevents background tabs from taking over your status. |
 | System app picker | Detects running desktop apps in the companion and lets you allow/select apps for Discord status. |
 | Privacy controls | Private mode, platform-only mode, incognito blocking, blocked domains, and per-site toggles. |
@@ -52,6 +54,8 @@ http://localhost:17654
 
 Discord Rich Presence supports HTTPS image URLs for large artwork, so media thumbnails are used when the detected URL is public and short enough for Discord RPC. If that fails or a site does not expose artwork, Discord falls back to uploaded asset keys. Upload assets from `discord-assets-real/` and keep keys in sync with `discord-assets-real/UPLOAD_KEYS.txt` plus any packs in `discord-assets-real/more-discord-assets-*`.
 
+The extension uses Chrome's `scripting` permission only to wake detectors in already-open supported tabs. This avoids forcing users to refresh YouTube, Netflix, Spotify, and other sites after installing, updating, or toggling the extension.
+
 ## Local Development
 
 ```bash
@@ -76,9 +80,9 @@ dist/discord-status-webstore.zip
 ## Release
 
 ```bash
-git tag v1.0.22
+git tag v1.0.28
 git push origin main
-git push origin v1.0.22
+git push origin v1.0.28
 ```
 
 GitHub Actions builds the companion installers and attaches them to the release.

@@ -41,6 +41,7 @@ const RPC_CONNECT_TIMEOUT: Duration = Duration::from_secs(4);
 const RELEASES_URL: &str = "https://github.com/GSUS2K/discord-status/releases/latest";
 const DEFAULT_SELECTOR_SHORTCUT: &str = "CommandOrControl+Shift+Y";
 const COMPANION_CUSTOM_ACTIVITY_ID: &str = "manual:companion";
+const EXPECTED_EXTENSION_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Clone)]
 struct AppState {
@@ -124,6 +125,8 @@ struct ActivityEntry {
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct CompanionStatus {
+    companion_version: String,
+    expected_extension_version: String,
     backend: String,
     discord: String,
     last_activity: String,
@@ -164,6 +167,8 @@ struct UpdateStatus {
 
 #[derive(Debug, Serialize)]
 struct ApiStatus {
+    companion_version: String,
+    expected_extension_version: String,
     discord_rpc: String,
     last_rpc_error: Option<String>,
     last_activity: Option<ActivitySnapshot>,
@@ -1963,6 +1968,8 @@ fn discord_external_image_url(value: &str) -> Option<String> {
 fn api_status_payload(state: &AppState) -> ApiStatus {
     let inner = state.inner.lock().expect("state poisoned");
     ApiStatus {
+        companion_version: env!("CARGO_PKG_VERSION").to_string(),
+        expected_extension_version: EXPECTED_EXTENSION_VERSION.to_string(),
         discord_rpc: if inner.rpc_connected {
             "connected"
         } else {
@@ -1985,6 +1992,8 @@ fn api_status_payload(state: &AppState) -> ApiStatus {
 fn companion_status(state: &AppState) -> CompanionStatus {
     let inner = state.inner.lock().expect("state poisoned");
     CompanionStatus {
+        companion_version: env!("CARGO_PKG_VERSION").to_string(),
+        expected_extension_version: EXPECTED_EXTENSION_VERSION.to_string(),
         backend: if inner.shutdown.is_some() {
             "online"
         } else {

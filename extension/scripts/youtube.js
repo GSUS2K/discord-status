@@ -1,5 +1,6 @@
 // YouTube Content Script
 const YOUTUBE_DEBUG = false;
+let lastYouTubeSignature = '';
 
 function debugYouTube(...args) {
   if (YOUTUBE_DEBUG) {
@@ -84,9 +85,27 @@ function detectYouTubeActivity() {
 }
 
 function getYouTubeThumbnailUrl() {
+  const videoId = getYouTubeVideoId();
+  if (videoId) {
+    return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  }
+
   return document.querySelector('meta[property="og:image"]')?.content?.trim()
     || document.querySelector('link[itemprop="thumbnailUrl"]')?.href?.trim()
     || '';
+}
+
+function getYouTubeVideoId() {
+  try {
+    const url = new URL(window.location.href);
+    const watchId = url.searchParams.get('v');
+    if (watchId) return watchId;
+
+    const match = url.pathname.match(/\/(?:shorts|embed|live)\/([^/?#]+)/i);
+    return match?.[1] || '';
+  } catch {
+    return '';
+  }
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -110,6 +129,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 function sendDetectedActivity() {
   const activity = detectYouTubeActivity();
   if (activity) {
+    const signature = [
+      activity.details,
+      activity.state,
+      activity.thumbnailUrl,
+      Math.floor((activity.mediaCurrentTime || 0) / 5)
+    ].join('|');
+    if (signature === lastYouTubeSignature) {
+      return;
+    }
+    lastYouTubeSignature = signature;
     chrome.runtime.sendMessage({
       action: 'activityDetected',
       activity: activity
@@ -119,4 +148,14 @@ function sendDetectedActivity() {
 
 // Retry a few times because YouTube loads the title late
 setTimeout(sendDetectedActivity, 2000);
-setInterval(sendDetectedActivity, 5000);
+setTimeout(sendDetectedActivity, 4000);
+setInterval(sendDetectedActivity, 3000);
+document.addEventListener('yt-navigate-finish', () => {
+  lastYouTubeSignature = '';
+  setTimeout(sendDetectedActivity, 600);
+  setTimeout(sendDetectedActivity, 1600);
+});
+document.addEventListener('yt-page-data-updated', () => {
+  lastYouTubeSignature = '';
+  setTimeout(sendDetectedActivity, 500);
+});
