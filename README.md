@@ -24,7 +24,7 @@ The extension detects activity. The companion runs on `localhost`, chooses the a
 | --- | --- |
 | Activity inbox | Sends all detected browser activities to the companion so one can be selected for Discord. |
 | Quick selector | Press `CommandOrControl+Shift+Y` to open a Spotlight-style picker, or click Auto mode to return control to the active tab. |
-| Companion shortcuts | Change the selector shortcut and settings shortcut in Companion Settings. Defaults are `CommandOrControl+Shift+Y` and `CommandOrControl+Shift+Comma`. |
+| Companion shortcuts | Change the selector shortcut and settings shortcut in Companion Settings. Defaults are `CommandOrControl+Shift+Y` and `CommandOrControl+Alt+Shift+S`. |
 | Two-way mode sync | Selecting a status in the companion automatically puts the extension popup in Manual mode; Auto mode clears the companion override. |
 | Version check | The popup shows whether the installed extension and companion versions match. |
 | Active Tab Only | Prevents background tabs from taking over your status. |
@@ -81,9 +81,9 @@ dist/discord-status-webstore.zip
 ## Release
 
 ```bash
-git tag v1.0.29
+git tag v1.0.30
 git push origin main
-git push origin v1.0.29
+git push origin v1.0.30
 ```
 
 GitHub Actions builds the companion installers and attaches them to the release.

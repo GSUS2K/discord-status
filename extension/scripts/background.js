@@ -53,22 +53,7 @@ const DEFAULT_ENABLED_SITES = [
   'google',
   'wikipedia'
 ];
-const DEFAULT_REQUIRE_PLAYING_SITES = [
-  'youtube',
-  'youtubemusic',
-  'netflix',
-  'primevideo',
-  'hulu',
-  'disneyplus',
-  'appletv',
-  'hotstar',
-  'crunchyroll',
-  'spotify',
-  'soundcloud',
-  'applemusic',
-  'bandcamp',
-  'twitch'
-];
+const DEFAULT_REQUIRE_PLAYING_SITES = [];
 const LOG_LEVELS = { debug: 10, info: 20, warn: 30, error: 40 };
 const MAX_LOG_ENTRIES = 80;
 const ACTIVE_TAB_GRACE_MS = 45000;
@@ -123,6 +108,7 @@ chrome.storage.local.get([
   'privacyMode',
   'incognitoNever',
   'requirePlayingSites',
+  'requirePlayingConfigured',
   'blockedDomains',
   'pauseDuringMeetings'
 ], (result) => {
@@ -206,7 +192,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       ? normalizeStringList(request.requirePlayingSites)
       : DEFAULT_REQUIRE_PLAYING_SITES;
     settings = { ...settings, requirePlayingSites };
-    chrome.storage.local.set({ requirePlayingSites });
+    chrome.storage.local.set({ requirePlayingSites, requirePlayingConfigured: true });
     log('info', 'Playing-only rules changed', { requirePlayingSites });
     applyBestActivity();
   } else if (request.action === 'setManualActivity') {
@@ -345,6 +331,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     'privacyMode',
     'incognitoNever',
     'requirePlayingSites',
+    'requirePlayingConfigured',
     'blockedDomains',
     'pauseDuringMeetings'
   ].some(key => changes[key]);
@@ -359,6 +346,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
       'privacyMode',
       'incognitoNever',
       'requirePlayingSites',
+      'requirePlayingConfigured',
       'blockedDomains',
       'pauseDuringMeetings'
     ], (result) => {
@@ -457,7 +445,7 @@ function normalizeSettings(values = {}) {
   const logLevel = LOG_LEVELS[values.logLevel] ? values.logLevel : 'info';
   const privacyMode = normalizePrivacyMode(values.privacyMode);
   const incognitoNever = values.incognitoNever !== false;
-  const requirePlayingSites = Array.isArray(values.requirePlayingSites)
+  const requirePlayingSites = values.requirePlayingConfigured === true && Array.isArray(values.requirePlayingSites)
     ? normalizeStringList(values.requirePlayingSites)
     : DEFAULT_REQUIRE_PLAYING_SITES;
   const blockedDomains = Array.isArray(values.blockedDomains)

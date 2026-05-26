@@ -456,11 +456,11 @@
       <section class="card menu">
         <button id="settings" class="row">
           <strong>Settings</strong>
-          <span class="pill">Preferences</span>
+          <span id="settingsShortcutPill" class="pill">⌘/Ctrl ⌥ ⇧ S</span>
         </button>
         <button id="selector" class="row">
           <strong>Select Discord Status</strong>
-          <span class="pill">⌘/Ctrl ⇧ Y</span>
+          <span id="selectorShortcutPill" class="pill">⌘/Ctrl ⇧ Y</span>
         </button>
         <button id="extensions" class="row">
           <strong>Open Chrome Extensions</strong>
@@ -505,6 +505,7 @@
       openExtensions: () => invoke('open_chrome_extensions'),
       openSettings: () => invoke('show_settings'),
       openSelector: () => invoke('show_selector'),
+      getSettings: () => invoke('get_settings'),
       hideIfConfigured: () => invoke('hide_main_if_configured'),
       copyText: text => invoke('copy_text', { text }),
       quit: () => invoke('quit_app'),
@@ -519,6 +520,8 @@
     const log = document.getElementById('log');
     const urlPill = document.getElementById('urlPill');
     const updatePill = document.getElementById('updatePill');
+    const settingsShortcutPill = document.getElementById('settingsShortcutPill');
+    const selectorShortcutPill = document.getElementById('selectorShortcutPill');
     const installUpdate = document.getElementById('installUpdate');
     const toasts = document.getElementById('toasts');
     const SITE_ICON_ALIASES = {
@@ -658,6 +661,28 @@
       setStatus(await activityStatus.getStatus());
     }
 
+    function shortcutLabel(value, fallback) {
+      return String(value || fallback)
+        .replace(/CommandOrControl/g, '⌘/Ctrl')
+        .replace(/Command/g, '⌘')
+        .replace(/Control/g, 'Ctrl')
+        .replace(/Alt/g, '⌥')
+        .replace(/Option/g, '⌥')
+        .replace(/Shift/g, '⇧')
+        .replace(/\+/g, ' ');
+    }
+
+    async function refreshSettingsPills() {
+      try {
+        const settings = await activityStatus.getSettings();
+        selectorShortcutPill.textContent = shortcutLabel(settings.selectorShortcut, 'CommandOrControl+Shift+Y');
+        settingsShortcutPill.textContent = shortcutLabel(settings.settingsShortcut, 'CommandOrControl+Alt+Shift+S');
+      } catch {
+        selectorShortcutPill.textContent = '⌘/Ctrl ⇧ Y';
+        settingsShortcutPill.textContent = '⌘/Ctrl ⌥ ⇧ S';
+      }
+    }
+
     async function runAction(action, successMessage) {
       if (busy) return;
       busy = true;
@@ -736,7 +761,9 @@
     activityStatus.onStatusUpdate(setStatus);
     window.addEventListener('blur', () => activityStatus.hideIfConfigured().catch(() => {}));
     refresh();
+    refreshSettingsPills();
     setInterval(refresh, 2500);
+    setInterval(refreshSettingsPills, 10000);
   </script>
 </body>
 </html>

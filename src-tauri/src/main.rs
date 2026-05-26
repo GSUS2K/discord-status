@@ -40,7 +40,8 @@ const LEGACY_PORT: u16 = 3000;
 const RPC_CONNECT_TIMEOUT: Duration = Duration::from_secs(4);
 const RELEASES_URL: &str = "https://github.com/GSUS2K/discord-status/releases/latest";
 const DEFAULT_SELECTOR_SHORTCUT: &str = "CommandOrControl+Shift+Y";
-const DEFAULT_SETTINGS_SHORTCUT: &str = "CommandOrControl+Shift+Comma";
+const DEFAULT_SETTINGS_SHORTCUT: &str = "CommandOrControl+Alt+Shift+S";
+const OLD_SETTINGS_SHORTCUT: &str = "CommandOrControl+Shift+Comma";
 const COMPANION_CUSTOM_ACTIVITY_ID: &str = "manual:companion";
 const EXPECTED_EXTENSION_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -2218,6 +2219,8 @@ fn normalize_shortcut(value: &str, default_value: &str) -> String {
     let shortcut = value.trim();
     if shortcut.is_empty() {
         default_value.to_string()
+    } else if shortcut.eq_ignore_ascii_case(OLD_SETTINGS_SHORTCUT) {
+        DEFAULT_SETTINGS_SHORTCUT.to_string()
     } else {
         shortcut.to_string()
     }
