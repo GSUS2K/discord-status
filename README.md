@@ -23,7 +23,7 @@ The extension detects activity. The companion runs on `localhost`, chooses the a
 | Feature | What it does |
 | --- | --- |
 | Activity inbox | Sends all detected browser activities to the companion so one can be selected for Discord. |
-| Quick selector | Press `CommandOrControl+Shift+Y` to open a Spotlight-style picker. Change it in Companion Settings. |
+| Quick selector | Press `CommandOrControl+Shift+Y` to open a Spotlight-style picker, or click Auto mode to return control to the active tab. Change the shortcut in Companion Settings. |
 | Active Tab Only | Prevents background tabs from taking over your status. |
 | System app picker | Detects running desktop apps in the companion and lets you allow/select apps for Discord status. |
 | Privacy controls | Private mode, platform-only mode, incognito blocking, blocked domains, and per-site toggles. |
@@ -50,7 +50,7 @@ Default companion URL:
 http://localhost:17654
 ```
 
-Dynamic thumbnails are captured as metadata, but Discord Rich Presence works most reliably with uploaded asset keys. Upload assets from `discord-assets-real/` and keep keys in sync with `discord-assets-real/UPLOAD_KEYS.txt`. Local system app icons can be shown inside the companion, but Discord needs matching uploaded or hosted assets to show them in Rich Presence.
+Discord Rich Presence supports HTTPS image URLs for large artwork, so media thumbnails are used when the detected URL is public and short enough for Discord RPC. If that fails or a site does not expose artwork, Discord falls back to uploaded asset keys. Upload assets from `discord-assets-real/` and keep keys in sync with `discord-assets-real/UPLOAD_KEYS.txt` plus any packs in `discord-assets-real/more-discord-assets-*`.
 
 ## Local Development
 

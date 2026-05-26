@@ -1,0 +1,142 @@
+[
+  {
+    "key": "chrome",
+    "file": "chrome.png",
+    "label": "Google Chrome"
+  },
+  {
+    "key": "safari",
+    "file": "safari.png",
+    "label": "Safari"
+  },
+  {
+    "key": "firefox",
+    "file": "firefox.png",
+    "label": "Firefox"
+  },
+  {
+    "key": "edge",
+    "file": "edge.png",
+    "label": "Microsoft Edge"
+  },
+  {
+    "key": "arc",
+    "file": "arc.png",
+    "label": "Arc"
+  },
+  {
+    "key": "finder",
+    "file": "finder.png",
+    "label": "Finder"
+  },
+  {
+    "key": "files",
+    "file": "files.png",
+    "label": "Files"
+  },
+  {
+    "key": "windowsterminal",
+    "file": "windowsterminal.png",
+    "label": "Windows Terminal"
+  },
+  {
+    "key": "powershell",
+    "file": "powershell.png",
+    "label": "PowerShell"
+  },
+  {
+    "key": "cmd",
+    "file": "cmd.png",
+    "label": "Command Prompt"
+  },
+  {
+    "key": "slack",
+    "file": "slack.png",
+    "label": "Slack"
+  },
+  {
+    "key": "teams",
+    "file": "teams.png",
+    "label": "Microsoft Teams"
+  },
+  {
+    "key": "zoom",
+    "file": "zoom.png",
+    "label": "Zoom"
+  },
+  {
+    "key": "telegram",
+    "file": "telegram.png",
+    "label": "Telegram"
+  },
+  {
+    "key": "whatsapp",
+    "file": "whatsapp.png",
+    "label": "WhatsApp"
+  },
+  {
+    "key": "obs",
+    "file": "obs.png",
+    "label": "OBS Studio"
+  },
+  {
+    "key": "vlc",
+    "file": "vlc.png",
+    "label": "VLC"
+  },
+  {
+    "key": "blender",
+    "file": "blender.png",
+    "label": "Blender"
+  },
+  {
+    "key": "epicgames",
+    "file": "epicgames.png",
+    "label": "Epic Games"
+  },
+  {
+    "key": "riotgames",
+    "file": "riotgames.png",
+    "label": "Riot Games"
+  },
+  {
+    "key": "valorant",
+    "file": "valorant.png",
+    "label": "Valorant"
+  },
+  {
+    "key": "leagueoflegends",
+    "file": "leagueoflegends.png",
+    "label": "League of Legends"
+  },
+  {
+    "key": "roblox",
+    "file": "roblox.png",
+    "label": "Roblox"
+  },
+  {
+    "key": "osu",
+    "file": "osu.png",
+    "label": "osu!"
+  },
+  {
+    "key": "battlenet",
+    "file": "battlenet.png",
+    "label": "Battle.net"
+  },
+  {
+    "key": "minecraft",
+    "file": "minecraft.png",
+    "label": "Minecraft"
+  },
+  {
+    "key": "games",
+    "file": "games.png",
+    "label": "Games"
+  },
+  {
+    "key": "browser",
+    "file": "browser.png",
+    "label": "Browser"
+  }
+]

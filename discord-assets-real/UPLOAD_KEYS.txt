@@ -44,3 +44,36 @@ chess.png -> chess
 lichess.png -> lichess
 skribbl.png -> skribbl
 geoguessr.png -> geoguessr
+
+Extra system/app pack:
+
+Upload PNGs from discord-assets-real/more-discord-assets-v1.0.27 with these exact keys:
+
+arc.png -> arc
+battlenet.png -> battlenet
+blender.png -> blender
+browser.png -> browser
+chrome.png -> chrome
+cmd.png -> cmd
+edge.png -> edge
+epicgames.png -> epicgames
+files.png -> files
+finder.png -> finder
+firefox.png -> firefox
+games.png -> games
+leagueoflegends.png -> leagueoflegends
+minecraft.png -> minecraft
+obs.png -> obs
+osu.png -> osu
+powershell.png -> powershell
+riotgames.png -> riotgames
+roblox.png -> roblox
+safari.png -> safari
+slack.png -> slack
+teams.png -> teams
+telegram.png -> telegram
+valorant.png -> valorant
+vlc.png -> vlc
+whatsapp.png -> whatsapp
+windowsterminal.png -> windowsterminal
+zoom.png -> zoom

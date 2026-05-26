@@ -3,6 +3,13 @@
 let lastGoodNetflixTitle = null;
 let netflixIntervalId = null;
 let netflixStopped = false;
+const NETFLIX_DEBUG = false;
+
+function debugNetflix(...args) {
+  if (NETFLIX_DEBUG) {
+    console.debug('[Netflix]', ...args);
+  }
+}
 
 function stopNetflixTracking() {
   if (netflixStopped) {
@@ -155,14 +162,14 @@ function detectNetflixActivity() {
     }
 
     if (!title) {
-      console.log('[Netflix] No reliable title found yet');
+      debugNetflix('No reliable title found yet');
       return null;
     }
     
     // Check for video element
     const video = document.querySelector('video');
     if (!video) {
-      console.log('[Netflix] No video element found');
+      debugNetflix('No video element found');
       return null;
     }
     
@@ -191,10 +198,10 @@ function detectNetflixActivity() {
       mediaDuration: duration
     };
     
-    console.log('[Netflix] Detected:', activity);
+    debugNetflix('Detected:', activity);
     return activity;
   } catch (error) {
-    console.log('[Netflix] Error:', error.message);
+    debugNetflix('Error:', error.message);
     return null;
   }
 }
@@ -213,7 +220,7 @@ function cleanNetflixTitle(title) {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('[Netflix] Message received:', request.action);
+  debugNetflix('Message received:', request.action);
   if (request.action === 'detectActivity') {
     const found = sendNetflixActivity();
     sendResponse({ ok: true, found });
@@ -230,7 +237,7 @@ function sendNetflixActivity() {
 
   const activity = detectNetflixActivity();
   if (activity) {
-    console.log('[Netflix] Sending activity detected');
+    debugNetflix('Sending activity detected');
     sendNetflixSafely(activity);
     return true;
   }

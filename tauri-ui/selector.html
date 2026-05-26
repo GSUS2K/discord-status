@@ -216,12 +216,35 @@
     .footer {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       gap: 12px;
       border-top: 1px solid var(--line);
       color: var(--muted);
       font-size: 11px;
       font-weight: 750;
       padding: 11px 16px;
+    }
+
+    .footer-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .auto-button {
+      border: 1px solid rgba(111, 246, 189, 0.32);
+      border-radius: 999px;
+      background: rgba(111, 246, 189, 0.1);
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 900;
+      padding: 6px 10px;
+    }
+
+    .auto-button:hover {
+      background: rgba(111, 246, 189, 0.18);
     }
 
     kbd {
@@ -254,7 +277,10 @@
 
     <section class="footer">
       <span><kbd>↑</kbd> <kbd>↓</kbd> move · <kbd>Enter</kbd> select · <kbd>Esc</kbd> close</span>
-      <span id="shortcut">CommandOrControl+Shift+Y</span>
+      <span class="footer-actions">
+        <button id="autoMode" class="auto-button" type="button">Auto mode</button>
+        <span id="shortcut">CommandOrControl+Shift+Y</span>
+      </span>
     </section>
   </main>
 
@@ -275,6 +301,7 @@
     const customTitle = document.getElementById('customTitle');
     const customMessage = document.getElementById('customMessage');
     const customSet = document.getElementById('customSet');
+    const autoMode = document.getElementById('autoMode');
     const list = document.getElementById('list');
     const shortcut = document.getElementById('shortcut');
     const SITE_ICON_ALIASES = {
@@ -420,6 +447,22 @@
       }
     }
 
+    async function returnToAutoMode() {
+      if (isSelecting) return;
+      isSelecting = true;
+      autoMode.disabled = true;
+      try {
+        status = await api.selectActivity(null);
+        query.value = '';
+        refreshFilter();
+      } catch (error) {
+        console.warn('Auto mode failed', error);
+      } finally {
+        autoMode.disabled = false;
+        isSelecting = false;
+      }
+    }
+
     async function syncStatus() {
       status = await api.getStatus();
       refreshFilter();
@@ -436,6 +479,10 @@
     customSet.addEventListener('pointerdown', async event => {
       event.preventDefault();
       setCustomStatus();
+    });
+    autoMode.addEventListener('pointerdown', event => {
+      event.preventDefault();
+      returnToAutoMode();
     });
 
     async function setCustomStatus() {

@@ -1,4 +1,11 @@
 // Generic Content Script - handles multiple platforms
+const GENERIC_DEBUG = false;
+
+function debugGeneric(...args) {
+  if (GENERIC_DEBUG) {
+    console.debug('[Generic]', ...args);
+  }
+}
 
 const PLATFORMS = {
   'twitch.tv': {
@@ -612,7 +619,7 @@ function detectActivity() {
       try {
         return config.detect();
       } catch (error) {
-        console.error(`Error detecting ${config.name} activity:`, error);
+        debugGeneric(`Error detecting ${config.name} activity:`, error);
         return null;
       }
     }
@@ -635,13 +642,13 @@ function sendActivitySafely(activity) {
       () => {
         const error = chrome.runtime.lastError;
         if (error && !/Extension context invalidated/i.test(error.message || '')) {
-          console.warn('[Generic] Send error:', error.message);
+          debugGeneric('Send error:', error.message);
         }
       }
     );
   } catch (error) {
     if (!/Extension context invalidated/i.test(error.message || '')) {
-      console.warn('[Generic] Send error:', error.message);
+      debugGeneric('Send error:', error.message);
     }
   }
 }
