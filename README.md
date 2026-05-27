@@ -29,6 +29,7 @@ The extension detects activity. The companion runs on `localhost`, chooses the a
 | Version check | The popup shows whether the installed extension and companion versions match. |
 | Active Tab Only | Prevents background tabs from taking over your status. |
 | System app picker | Detects running desktop apps in the companion and lets you allow/select apps for Discord status. |
+| Native activity labels | Media is sent as Watching or Listening where Discord RPC supports it. |
 | Privacy controls | Private mode, platform-only mode, incognito blocking, blocked domains, and per-site toggles. |
 | Companion diagnostics | Shows backend, Discord RPC, extension connection, active port, logs, and copyable diagnostics. |
 | System tray app | Native Tauri companion for macOS, Windows, and Linux. |
@@ -54,6 +55,8 @@ http://localhost:17654
 ```
 
 Discord Rich Presence supports HTTPS image URLs for large artwork, so media thumbnails are used when the detected URL is public and short enough for Discord RPC. If that fails or a site does not expose artwork, Discord falls back to uploaded asset keys. Upload assets from `discord-assets-real/` and keep keys in sync with `discord-assets-real/UPLOAD_KEYS.txt` plus any packs in `discord-assets-real/more-discord-assets-*`.
+
+Discord still owns the app identity shown on the card. The companion can send labels like Watching or Listening, but it cannot fully remove the Discord Developer Portal application name from every Discord surface.
 
 The extension uses Chrome's `scripting` permission only to wake detectors in already-open supported tabs. This avoids forcing users to refresh YouTube, Netflix, Spotify, and other sites after installing, updating, or toggling the extension.
 
@@ -81,9 +84,9 @@ dist/discord-status-webstore.zip
 ## Release
 
 ```bash
-git tag v1.0.31
+git tag v1.0.32
 git push origin main
-git push origin v1.0.31
+git push origin v1.0.32
 ```
 
 GitHub Actions builds the companion installers and attaches them to the release.
