@@ -232,6 +232,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     if (selectedTabId === null) {
       companionManualModeActive = false;
+      mode = 'auto';
+      chrome.storage.local.set({ mode });
       clearCompanionSelection();
       applyBestActivity();
       sendResponse({ ok: true });
@@ -240,8 +242,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     const selectedActivity = activityRegistry[selectedTabId];
     if (selectedActivity) {
-      mode = 'manual';
-      companionManualModeActive = true;
+      mode = 'auto';
+      companionManualModeActive = false;
       chrome.storage.local.set({ mode, companionSelectedActivityId: selectedActivity.id || `tab:${selectedTabId}` });
       currentActivity = selectedActivity;
       updateDiscordStatus(currentActivity);
@@ -304,12 +306,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       state: enrichedActivity.state
     });
 
-    if (mode === 'auto' && isEnabled) {
+    if (isEnabled && (mode === 'auto' || selectedTabId === tabId)) {
       applyBestActivity();
     }
   } else if (request.action === 'refreshSelectedActivity') {
     refreshOpenTabs();
-    if (mode === 'auto') {
+    if (mode === 'auto' || selectedTabId !== null) {
       applyBestActivity();
     }
   } else if (request.action === 'refreshBackendHealth') {
@@ -940,9 +942,9 @@ async function reportActivitiesToBackend(serverUrl, fallbackActivity) {
     : null;
   const body = {
     activities,
-    selectedActivityId: mode === 'manual'
-      ? (selectedActivity?.id || (selectedTabId !== null ? `tab:${selectedTabId}` : fallbackId))
-      : (selectedActivity?.id || (selectedTabId !== null ? `tab:${selectedTabId}` : null)),
+    selectedActivityId: selectedActivity?.id
+      || (selectedTabId !== null ? `tab:${selectedTabId}` : null)
+      || (mode === 'manual' ? fallbackId : null),
     autoPickMode
   };
 
@@ -1034,8 +1036,9 @@ function syncCompanionSelection(health = {}) {
     : null;
 
   if (selectedId) {
-    companionManualModeActive = true;
-    mode = 'manual';
+    const isBrowserTabSelection = selectedId.startsWith('tab:');
+    companionManualModeActive = !isBrowserTabSelection;
+    mode = isBrowserTabSelection ? 'auto' : 'manual';
     selectedTabId = selectedTab;
     const companionActivity = activityFromCompanionSnapshot(health.last_activity);
     if (companionActivity) {
@@ -1051,6 +1054,17 @@ function syncCompanionSelection(health = {}) {
   }
 
   chrome.storage.local.set({ companionSelectedActivityId: null });
+
+  if (selectedTabId !== null) {
+    companionManualModeActive = false;
+    mode = 'auto';
+    selectedTabId = null;
+    chrome.storage.local.set({ mode, selectedTabId });
+    if (isEnabled) {
+      applyBestActivity();
+    }
+    return;
+  }
 
   if (companionManualModeActive) {
     companionManualModeActive = false;

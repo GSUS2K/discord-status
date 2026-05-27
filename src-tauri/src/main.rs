@@ -1127,7 +1127,7 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
                     .any(|value| app_name.to_lowercase().contains(value));
 
             let snapshot = foreground;
-            let (should_apply, should_clear_removed_selection) = {
+            let (selected_system, should_apply_auto_system, should_clear_removed_selection) = {
                 let mut inner = match state.inner.lock() {
                     Ok(inner) => inner,
                     Err(_) => continue,
@@ -1139,27 +1139,38 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
                     snapshots.clone()
                 };
                 let mut selected_removed = false;
+                let mut selected_system = None;
                 if let Some(selected) = inner.selected_activity_id.as_deref() {
                     if selected.starts_with("system:")
-                        && !inner.system_apps.iter().any(|app| app.id == selected)
                     {
-                        selected_removed = inner
-                            .last_activity
-                            .as_ref()
-                            .and_then(|activity| activity.id.as_deref())
-                            == Some(selected);
-                        inner.selected_activity_id = None;
+                        selected_system = inner
+                            .system_apps
+                            .iter()
+                            .find(|app| app.id == selected)
+                            .cloned();
+                        if selected_system.is_none() {
+                            selected_removed = inner
+                                .last_activity
+                                .as_ref()
+                                .and_then(|activity| activity.id.as_deref())
+                                == Some(selected);
+                            inner.selected_activity_id = None;
+                        }
                     }
                 }
                 (
+                    selected_system.filter(|_| inner.rpc_connected),
                     is_allowed && inner.activity_inbox.is_empty() && inner.rpc_connected,
                     selected_removed && inner.activity_inbox.is_empty() && inner.rpc_connected,
                 )
             };
 
-            if should_apply {
+            if let Some(system) = selected_system {
+                let payload = payload_from_activity_entry(&system_activity_entry(&system));
+                let _ = apply_activity_payload(&state, payload);
+            } else if should_apply_auto_system {
                 let payload = IncomingActivity {
-                    id: Some(format!("system:{}", app_name.to_lowercase())),
+                    id: Some(snapshot.id.clone()),
                     tab_id: None,
                     tab_title: snapshot.window_title.clone(),
                     details: Some(snapshot.details.clone()),
@@ -1561,8 +1572,9 @@ async fn report_activities(
         .expect("state poisoned")
         .selected_activity_id
         .clone();
-    let selected_id = previous_selected_id
-        .or(report.selected_activity_id)
+    let selected_id = report
+        .selected_activity_id
+        .or(previous_selected_id)
         .filter(|id| {
             if id == COMPANION_CUSTOM_ACTIVITY_ID {
                 return state
