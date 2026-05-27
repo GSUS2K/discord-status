@@ -98,6 +98,7 @@ GitHub Actions builds the companion installers and attaches them to the release.
 | Extension says backend offline | Open the companion and confirm the backend URL. |
 | Discord RPC disconnected | Open Discord desktop, then click Fix Connection in the companion. |
 | Auto mode swaps tabs | Enable Active Tab Only mode. |
+| Status not swapping to system app | Close or switch extension mode to manual. |
 | Status is too detailed | Use platform-only mode or disable that site. |
 | Discord shows the app logo | Upload the matching Discord asset key and wait for cache refresh. |
 | macOS says app is damaged | Run `sudo xattr -cr "/Applications/Activity Status Companion.app"`. |
