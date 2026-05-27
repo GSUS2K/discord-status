@@ -9,7 +9,7 @@ use axum::{
 };
 use chrono::Utc;
 use discord_rich_presence::{
-    activity::{Activity, Assets, Button, Timestamps},
+    activity::{Activity, ActivityType, Assets, Button, StatusDisplayType, Timestamps},
     DiscordIpc, DiscordIpcClient,
 };
 use serde::{Deserialize, Serialize};
@@ -1566,6 +1566,7 @@ async fn report_activities(
 ) -> impl IntoResponse {
     mark_extension_seen(&state);
     let activities = normalize_activity_report(report.activities);
+    let incoming_selected_id = report.selected_activity_id.clone();
     let previous_selected_id = state
         .inner
         .lock()
@@ -1600,6 +1601,11 @@ async fn report_activities(
                 .map(|inner| inner.system_apps.iter().any(|app| app.id == *id))
                 .unwrap_or(false)
         });
+    let companion_owned_selection = incoming_selected_id.is_none()
+        && selected_id
+            .as_deref()
+            .map(|id| id == COMPANION_CUSTOM_ACTIVITY_ID || id.starts_with("system:"))
+            .unwrap_or(false);
     let auto_pick_mode = report.auto_pick_mode.unwrap_or_else(|| "smart".to_string());
     let chosen = choose_report_activity(&activities, selected_id.as_deref(), &auto_pick_mode);
 
@@ -1649,6 +1655,13 @@ async fn report_activities(
         if let Some(activity) = selected {
             return apply_activity_payload(&state, payload_from_activity_entry(&activity));
         }
+    }
+
+    if companion_owned_selection {
+        return (
+            StatusCode::OK,
+            Json(ApiMessage::success("Companion selection retained")),
+        );
     }
 
     if let Some(activity) = chosen {
@@ -1807,6 +1820,52 @@ fn activity_id(payload: &IncomingActivity) -> String {
     format!("{platform}:{details}")
 }
 
+fn activity_display_name(platform: &str) -> String {
+    let trimmed = platform.trim();
+    if trimmed.is_empty() {
+        "Activity".to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn activity_type_for_payload(payload: &IncomingActivity, platform: &str) -> ActivityType {
+    let key = platform.to_lowercase().replace([' ', '.', '-', '_'], "");
+    if matches!(
+        key.as_str(),
+        "spotify" | "youtubemusic" | "applemusic" | "soundcloud" | "bandcamp"
+    ) {
+        return ActivityType::Listening;
+    }
+    if matches!(
+        key.as_str(),
+        "youtube"
+            | "netflix"
+            | "primevideo"
+            | "hulu"
+            | "disney+"
+            | "disneyplus"
+            | "appletv"
+            | "hotstar"
+            | "crunchyroll"
+            | "twitch"
+    ) {
+        return ActivityType::Watching;
+    }
+    if matches!(key.as_str(), "chess" | "lichess" | "geoguessr" | "leetcode") {
+        return ActivityType::Competing;
+    }
+    if payload
+        .state
+        .as_deref()
+        .map(|state| state.to_lowercase().contains("watching"))
+        .unwrap_or(false)
+    {
+        return ActivityType::Watching;
+    }
+    ActivityType::Playing
+}
+
 fn asset_key_for_platform(platform: &str) -> &'static str {
     match platform.to_lowercase().replace(' ', "").as_str() {
         "youtube" => "youtube",
@@ -1879,6 +1938,9 @@ fn apply_activity_payload(
         .and_then(discord_external_image_url)
         .unwrap_or_else(|| stable_large_image.clone());
     let mut activity = Activity::new()
+        .name(activity_display_name(&platform))
+        .activity_type(activity_type_for_payload(&payload, &platform))
+        .status_display_type(StatusDisplayType::Name)
         .details(details.clone())
         .state(presence_state.clone());
 

@@ -215,7 +215,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       lastSeen: Date.now()
     };
     mode = 'manual';
-    companionManualModeActive = true;
+    companionManualModeActive = false;
     selectedTabId = null;
     chrome.storage.local.set({ mode, selectedTabId: null, companionSelectedActivityId: currentActivity.id });
     log('info', 'Manual activity set', { details: currentActivity.details });
@@ -944,7 +944,7 @@ async function reportActivitiesToBackend(serverUrl, fallbackActivity) {
     activities,
     selectedActivityId: selectedActivity?.id
       || (selectedTabId !== null ? `tab:${selectedTabId}` : null)
-      || (mode === 'manual' ? fallbackId : null),
+      || (mode === 'manual' && !companionManualModeActive ? fallbackId : null),
     autoPickMode
   };
 

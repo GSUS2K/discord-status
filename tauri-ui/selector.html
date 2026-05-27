@@ -479,6 +479,12 @@
       refreshFilter();
     }
 
+    function ensurePolling() {
+      if (!pollTimer) {
+        pollTimer = setInterval(() => syncStatus().catch(() => {}), 1000);
+      }
+    }
+
     async function load() {
       await syncStatus();
       const settings = await api.getSettings().catch(() => null);
@@ -546,30 +552,23 @@
     });
     listen('selector:opened', () => {
       load().catch(() => {});
+      ensurePolling();
       focusSearch();
     });
     window.addEventListener('focus', () => {
       focusSearch();
-      if (!pollTimer) {
-        pollTimer = setInterval(() => syncStatus().catch(() => {}), 1200);
-      }
+      ensurePolling();
       load().catch(() => {});
-    });
-    window.addEventListener('blur', () => {
-      if (pollTimer) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-      }
     });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && pollTimer) {
         clearInterval(pollTimer);
         pollTimer = null;
       } else if (!document.hidden && !pollTimer) {
-        pollTimer = setInterval(() => syncStatus().catch(() => {}), 1200);
+        ensurePolling();
       }
     });
-    pollTimer = setInterval(() => syncStatus().catch(() => {}), 1200);
+    ensurePolling();
     load().catch(() => {});
   </script>
 </body>
