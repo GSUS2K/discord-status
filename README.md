@@ -39,6 +39,21 @@ You can also use only the companion app for:
 
 The Chrome extension is only needed for browser tab detection.
 
+## Download Companion App
+
+Go to the [latest release](https://github.com/GSUS2K/discord-status/releases/latest) and download the file for your system.
+
+| Platform            | Download                                           |
+| ------------------- | -------------------------------------------------- |
+| Windows             | `Discord-Status-Companion-Windows-Setup.exe`       |
+| Windows MSI         | `Discord-Status-Companion-Windows.msi`             |
+| macOS Apple Silicon | `Discord-Status-Companion-macOS-Apple-Silicon.dmg` |
+| macOS Intel         | `Discord-Status-Companion-macOS-Intel.dmg`         |
+| Linux AppImage      | `Discord-Status-Companion-Linux.AppImage`          |
+| Linux Debian/Ubuntu | `Discord-Status-Companion-Linux.deb`               |
+
+The Chrome extension is for browser activity detection. The companion app is required to update Discord Rich Presence.
+
 ## Features
 
 | Feature                    | What it does                                                                                                                                          |
