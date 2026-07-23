@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.2",
+    "archiver": "^5.3.2",
     "electron": "^33.4.11",
     "electron-builder": "^25.1.8"
   },
