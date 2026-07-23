@@ -239,6 +239,8 @@ struct ApiMessage {
 
 #[tokio::main]
 async fn main() {
+    configure_linux_webkit_workarounds();
+
     let settings = read_settings();
     let state = AppState {
         inner: Arc::new(Mutex::new(InnerState {
@@ -317,6 +319,19 @@ async fn main() {
         })
         .run(tauri::generate_context!())
         .expect("failed to run Activity Status Companion");
+}
+
+fn configure_linux_webkit_workarounds() {
+    #[cfg(target_os = "linux")]
+    {
+        if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        }
+
+        if std::env::var_os("WEBKIT_DISABLE_COMPOSITING_MODE").is_none() {
+            std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+        }
+    }
 }
 
 fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {

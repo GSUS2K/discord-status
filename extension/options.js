@@ -9,6 +9,7 @@ const DEFAULTS = {
   privacyMode: 'normal',
   incognitoNever: true,
   requirePlayingSites: [],
+  requirePlayingConfigured: false,
   playingOnlyCapableSites: ['youtube','youtubemusic','netflix','primevideo','hulu','disneyplus','appletv','hotstar','crunchyroll','spotify','soundcloud','applemusic','bandcamp','twitch'],
   blockedDomains: [],
   pauseDuringMeetings: false
