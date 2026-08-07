@@ -488,9 +488,11 @@ const PLATFORMS = {
 };
 
 function createPageActivity({ platform, state, largeImageKey, largeImageText, titleFallbacks = [] }) {
-  const title = getMetaTitle()
-    || getText('h1')
-    || cleanTitle(document.title, titleFallbacks);
+  const title = chooseTitle([
+    getMetaTitle(),
+    getFirstText(['h1']),
+    cleanTitle(document.title, titleFallbacks)
+  ], titleFallbacks);
 
   if (!title || title.toLowerCase() === platform.toLowerCase()) return null;
 
@@ -506,9 +508,11 @@ function createPageActivity({ platform, state, largeImageKey, largeImageText, ti
 }
 
 function createMediaActivity({ platform, selectors, fallbackSuffixes, mediaSelector, largeImageKey, largeImageText }) {
-  const title = getFirstText(selectors)
-    || getMetaTitle()
-    || cleanTitle(document.title, fallbackSuffixes);
+  const title = chooseTitle([
+    getFirstText(selectors),
+    getMetaTitle(),
+    cleanTitle(document.title, fallbackSuffixes)
+  ], fallbackSuffixes);
   const media = getMediaInfo(mediaSelector);
 
   if (!title) return null;
@@ -528,9 +532,11 @@ function createMediaActivity({ platform, selectors, fallbackSuffixes, mediaSelec
 }
 
 function createVideoActivity({ platform, titleSelectors, titleFallbacks, largeImageKey, largeImageText }) {
-  const title = getFirstText(titleSelectors)
-    || getMetaTitle()
-    || cleanTitle(document.title, titleFallbacks);
+  const title = chooseTitle([
+    getFirstText(titleSelectors),
+    getMetaTitle(),
+    cleanTitle(document.title, titleFallbacks)
+  ], titleFallbacks);
   const media = getMediaInfo('video');
 
   if (!title || !document.querySelector('video')) {
@@ -595,10 +601,59 @@ function formatDuration(seconds) {
 
 function getFirstText(selectors) {
   for (const selector of selectors) {
-    const text = getText(selector);
-    if (text) return text;
+    const elements = document.querySelectorAll(selector);
+    for (const element of elements) {
+      const text = normalizeTitleText(element?.textContent || element?.getAttribute?.('aria-label') || '');
+      if (text) return text;
+    }
   }
   return '';
+}
+
+function chooseTitle(candidates, fallbacks = []) {
+  for (const candidate of candidates) {
+    const text = normalizeTitleText(candidate);
+    if (isMeaningfulTitle(text, fallbacks)) {
+      return text;
+    }
+  }
+  return '';
+}
+
+function normalizeTitleText(value) {
+  return String(value || '')
+    .replace(/\s+/g, ' ')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim();
+}
+
+function isMeaningfulTitle(value, fallbacks = []) {
+  const text = normalizeTitleText(value);
+  if (!text || text.length < 3) return false;
+
+  const lower = text.toLowerCase();
+  if (fallbacks.some(fallback => lower === normalizeTitleText(fallback).toLowerCase())) {
+    return false;
+  }
+
+  const noisePatterns = [
+    /^browse\b/i,
+    /\bbrowse by languages?\b/i,
+    /\bhome\b/i,
+    /\bsearch\b/i,
+    /\bsign in\b/i,
+    /\bsign up\b/i,
+    /\bsettings\b/i,
+    /\bprofile\b/i,
+    /\baccount\b/i,
+    /\bmy list\b/i,
+    /\bcontinue watching\b/i,
+    /\brecommend(?:ed|ations?)\b/i,
+    /\btrending\b/i,
+    /\btop 10\b/i
+  ];
+
+  return !noisePatterns.some(pattern => pattern.test(text));
 }
 
 function getText(selector) {

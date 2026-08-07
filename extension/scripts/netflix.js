@@ -24,22 +24,9 @@ function detectNetflixActivity() {
     let title = getNetflixTitle();
 
     if (!title || !isLikelyTitle(title)) {
-      const titleElement = document.querySelector('[data-uia*="video-title"]')
-        || document.querySelector('.previewModal--player-titleTreatment-logo, h4');
-      const fallbackTitle = titleElement?.textContent?.trim();
-      if (fallbackTitle && isLikelyTitle(fallbackTitle)) {
-        title = cleanNetflixTitle(fallbackTitle);
-      }
-
-      if (isLikelyTitle(title)) {
-        lastGoodNetflixTitle = title;
-      } else if (lastGoodNetflixTitle) {
+      if (lastGoodNetflixTitle && isLikelyTitle(lastGoodNetflixTitle)) {
         title = lastGoodNetflixTitle;
       }
-    }
-
-    if ((!title || !isLikelyTitle(title)) && lastGoodNetflixTitle) {
-      title = lastGoodNetflixTitle;
     }
 
     if (!title) {
@@ -79,38 +66,86 @@ function detectNetflixActivity() {
 }
 
 function getNetflixTitle() {
-  const titleSelectors = [
+  const selectors = [
+    '[data-uia="video-title"]',
     '[data-uia*="video-title"]',
+    '[data-uia*="episode-title"]',
+    '[data-uia*="player-title"]',
+    '[data-uia*="jawbone-title"]',
     '.watch-video--player-title',
+    '[role="heading"]',
+    'h1',
+    'h2',
+    'h3',
     'h4'
   ];
 
-  for (const selector of titleSelectors) {
-    const text = document.querySelector(selector)?.textContent?.trim();
-    if (text && isLikelyTitle(text)) {
-      return cleanNetflixTitle(text);
+  const candidates = [];
+
+  for (const selector of selectors) {
+    for (const element of document.querySelectorAll(selector)) {
+      const text = normalizeTitleText(element?.textContent || element?.getAttribute?.('aria-label') || '');
+      if (text) {
+        candidates.push(text);
+      }
     }
   }
 
-  const pageTitle = document.title.replace(/\s*-\s*Netflix\s*$/i, '').trim();
-  if (pageTitle && isLikelyTitle(pageTitle)) {
-    return cleanNetflixTitle(pageTitle);
+  const metaTitle = normalizeTitleText(
+    document.querySelector('meta[property="og:title"]')?.content
+      || document.querySelector('meta[name="twitter:title"]')?.content
+      || document.querySelector('meta[name="title"]')?.content
+      || ''
+  );
+  if (metaTitle) {
+    candidates.push(metaTitle);
   }
 
-  return null;
+  const pageTitle = normalizeTitleText(document.title.replace(/\s*-\s*Netflix\s*$/i, ''));
+  if (pageTitle) {
+    candidates.push(pageTitle);
+  }
+
+  const chosen = pickNetflixTitle(candidates);
+  if (chosen) {
+    lastGoodNetflixTitle = chosen;
+  }
+
+  return chosen;
+}
+
+function pickNetflixTitle(candidates) {
+  const valid = candidates
+    .map(cleanNetflixTitle)
+    .filter(isLikelyTitle);
+
+  if (!valid.length) {
+    return null;
+  }
+
+  valid.sort((a, b) => a.length - b.length);
+  return valid[0];
 }
 
 function isLikelyTitle(title) {
-  if (!title) return false;
-  const value = String(title).trim();
-  if (!value) return false;
+  const value = normalizeTitleText(title);
+  if (!value || value.length < 3) return false;
   if (/netflix/i.test(value) && value.length < 28) return false;
-  if (/watch now|browse|home|sign in/i.test(value)) return false;
+  if (/browse by languages?/i.test(value)) return false;
+  if (/^browse\b/i.test(value)) return false;
+  if (/watch now|home|sign in|sign up|profile|account|my list|continue watching|settings|search|trending|top 10/i.test(value)) return false;
   return true;
 }
 
+function normalizeTitleText(value) {
+  return String(value || '')
+    .replace(/\s+/g, ' ')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim();
+}
+
 function cleanNetflixTitle(title) {
-  return String(title || '')
+  return normalizeTitleText(title)
     .replace(/\s*[-|]\s*Netflix.*$/i, '')
     .replace(/\b([A-Za-z][A-Za-z0-9'’:-]*?)E(\d+)\s*Episode\s*\d+\b/i, '$1 Episode $2')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
