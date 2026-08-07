@@ -7,6 +7,7 @@ const DEFAULTS = {
   enabledSites: 'youtube,youtubemusic,netflix,primevideo,hulu,disneyplus,appletv,hotstar,crunchyroll,spotify,soundcloud,applemusic,bandcamp,twitch,discord,meet,github,vscode,linear,jira,notion,googledocs,figma,canva,chatgpt,coursera,udemy,khanacademy,leetcode,reddit,twitter,instagram,linkedin,steam,chess,lichess,skribbl,geoguessr,google,wikipedia',
   logLevel: 'info',
   privacyMode: 'normal',
+  mediaStatusStyle: 'clean',
   incognitoNever: true,
   requirePlayingSites: [],
   requirePlayingConfigured: false,
@@ -64,6 +65,7 @@ const staleThresholdMsInput = document.getElementById('staleThresholdMs');
 const enabledSitesList = document.getElementById('enabledSitesList');
 const logLevelInput = document.getElementById('logLevel');
 const privacyModeInput = document.getElementById('privacyMode');
+const mediaStatusStyleInput = document.getElementById('mediaStatusStyle');
 const incognitoNeverInput = document.getElementById('incognitoNever');
 const requirePlayingInput = document.getElementById('requirePlaying');
 const pauseDuringMeetingsInput = document.getElementById('pauseDuringMeetings');
@@ -141,6 +143,7 @@ function setFormValues(values) {
     : String(values.enabledSites || DEFAULTS.enabledSites).split(','));
   logLevelInput.value = values.logLevel || DEFAULTS.logLevel;
   privacyModeInput.value = values.privacyMode || DEFAULTS.privacyMode;
+  mediaStatusStyleInput.value = values.mediaStatusStyle || DEFAULTS.mediaStatusStyle;
   incognitoNeverInput.checked = values.incognitoNever !== false;
   pauseDuringMeetingsInput.checked = values.pauseDuringMeetings === true;
   const requirePlayingSites = values.requirePlayingConfigured === true && Array.isArray(values.requirePlayingSites)
@@ -161,6 +164,7 @@ function readSettingsFromForm() {
     enabledSites: getEnabledSiteValues(),
     logLevel: ['debug', 'info', 'warn', 'error'].includes(logLevelInput.value) ? logLevelInput.value : DEFAULTS.logLevel,
     privacyMode: ['normal', 'platform', 'private'].includes(privacyModeInput.value) ? privacyModeInput.value : DEFAULTS.privacyMode,
+    mediaStatusStyle: ['clean', 'detailed'].includes(mediaStatusStyleInput.value) ? mediaStatusStyleInput.value : DEFAULTS.mediaStatusStyle,
     incognitoNever: incognitoNeverInput.checked,
     requirePlayingSites,
     requirePlayingConfigured: true,

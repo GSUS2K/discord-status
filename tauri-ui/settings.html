@@ -155,6 +155,67 @@
       overflow: hidden;
     }
 
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .guide-step {
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.16);
+      padding: 14px;
+    }
+
+    .guide-step strong {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: rgba(111, 246, 189, 0.16);
+      color: var(--green);
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+
+    .guide-step span {
+      display: block;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .guide-actions {
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .shortcut-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .shortcut-row .field {
+      flex: 1;
+    }
+
+    .shortcut-record {
+      min-width: 112px;
+      border: 1px solid rgba(111, 246, 189, 0.35);
+      background: rgba(111, 246, 189, 0.12);
+    }
+
+    .shortcut-record.capturing {
+      border-color: rgba(255, 209, 102, 0.7);
+      background: rgba(255, 209, 102, 0.16);
+      color: #fff1ba;
+    }
+
     .row {
       display: flex;
       align-items: center;
@@ -450,6 +511,34 @@
         <div class="lede">Control how the companion behaves in the background.</div>
 
         <section class="panel">
+          <div class="row" style="padding-bottom: 14px;">
+            <div>
+              <div class="title">Quick start</div>
+              <div class="desc">Follow these three steps once, then the companion runs on its own.</div>
+            </div>
+          </div>
+          <div class="guide-grid" style="padding: 0 20px;">
+            <div class="guide-step">
+              <strong>1</strong>
+              <span>Install the Chrome extension and keep the browser sign-in enabled.</span>
+            </div>
+            <div class="guide-step">
+              <strong>2</strong>
+              <span>Open Discord desktop, start the companion, and make sure the backend is online.</span>
+            </div>
+            <div class="guide-step">
+              <strong>3</strong>
+              <span>Choose a shortcut, then open the selector or pick a tab from the popup.</span>
+            </div>
+          </div>
+          <div class="row guide-actions">
+            <button id="guideSelector" class="command primary" type="button">Open selector</button>
+            <button id="guideExtensions" class="command" type="button">Open Chrome extensions</button>
+            <button id="guideCopyUrl" class="command" type="button">Copy backend URL</button>
+          </div>
+        </section>
+
+        <section class="panel">
           <div class="row">
             <div>
               <div class="title">Launch at login</div>
@@ -491,14 +580,20 @@
             <div style="width: 100%;">
               <div class="title">Status selector shortcut</div>
               <div class="desc">Opens the quick selector from anywhere. Use one normal key with modifiers, for example CommandOrControl+Shift+Y. Avoid browser/system shortcuts like Cmd+Shift+D, Cmd+Space, Cmd+Tab, Esc, Q, or W.</div>
-              <input id="selectorShortcut" class="field" type="text" spellcheck="false" placeholder="CommandOrControl+Shift+Y">
+              <div class="shortcut-row">
+                <input id="selectorShortcut" class="field" type="text" spellcheck="false" placeholder="CommandOrControl+Shift+Y">
+                <button id="recordSelectorShortcut" class="command shortcut-record" type="button">Record</button>
+              </div>
             </div>
           </div>
           <div class="row">
             <div style="width: 100%;">
               <div class="title">Settings shortcut</div>
               <div class="desc">Opens this settings window. Default is CommandOrControl+Alt+Shift+S. Keep it different from the selector shortcut.</div>
-              <input id="settingsShortcut" class="field" type="text" spellcheck="false" placeholder="CommandOrControl+Alt+Shift+S">
+              <div class="shortcut-row">
+                <input id="settingsShortcut" class="field" type="text" spellcheck="false" placeholder="CommandOrControl+Alt+Shift+S">
+                <button id="recordSettingsShortcut" class="command shortcut-record" type="button">Record</button>
+              </div>
             </div>
           </div>
           <div class="row">
@@ -657,6 +752,8 @@
     const portInput = document.getElementById('port');
     const selectorShortcutInput = document.getElementById('selectorShortcut');
     const settingsShortcutInput = document.getElementById('settingsShortcut');
+    const recordSelectorShortcutBtn = document.getElementById('recordSelectorShortcut');
+    const recordSettingsShortcutBtn = document.getElementById('recordSettingsShortcut');
     const systemAppsList = document.getElementById('systemAppsList');
     const actionButtons = ['start', 'stop', 'restart', 'reconnect', 'fix', 'checkUpdates'].map(id => document.getElementById(id));
     const toasts = document.getElementById('toasts');
@@ -687,6 +784,17 @@
       for (const button of navButtons) {
         button.classList.toggle('active', button.dataset.view === id);
       }
+    }
+
+    function shortcutLabel(value, fallback) {
+      return String(value || fallback)
+        .replace(/CommandOrControl/g, 'Cmd/Ctrl')
+        .replace(/Command/g, 'Cmd')
+        .replace(/Control/g, 'Ctrl')
+        .replace(/Alt/g, 'Alt')
+        .replace(/Option/g, 'Option')
+        .replace(/Shift/g, 'Shift')
+        .replace(/\+/g, ' + ');
     }
 
     for (const button of navButtons) {
@@ -742,6 +850,71 @@
       selectorShortcutInput.value = settings.selectorShortcut || 'CommandOrControl+Shift+Y';
       settingsShortcutInput.value = settings.settingsShortcut || 'CommandOrControl+Alt+Shift+S';
       renderSystemApps();
+    }
+
+    function normalizeShortcutKey(key) {
+      if (!key) return '';
+      if (['Control', 'Shift', 'Alt', 'Meta'].includes(key)) return '';
+      if (key === ' ') return 'Space';
+      if (key.length === 1) return key.toUpperCase();
+      return key;
+    }
+
+    function shortcutFromEvent(event) {
+      const parts = [];
+      if (event.metaKey || event.ctrlKey) {
+        parts.push('CommandOrControl');
+      }
+      if (event.altKey) {
+        parts.push('Alt');
+      }
+      if (event.shiftKey) {
+        parts.push('Shift');
+      }
+
+      const key = normalizeShortcutKey(event.key);
+      if (!key) {
+        return '';
+      }
+
+      parts.push(key);
+      return parts.join('+');
+    }
+
+    function recordShortcut(input, button, fallbackValue) {
+      const originalText = button.textContent;
+      button.classList.add('capturing');
+      button.textContent = 'Press keys';
+      input.focus();
+      input.select();
+
+      const finish = () => {
+        button.classList.remove('capturing');
+        button.textContent = originalText;
+        window.removeEventListener('keydown', handleKeyDown, true);
+      };
+
+      const handleKeyDown = (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          input.value = fallbackValue;
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+          finish();
+          return;
+        }
+
+        const shortcut = shortcutFromEvent(event);
+        if (!shortcut) {
+          return;
+        }
+
+        event.preventDefault();
+        input.value = shortcut;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        finish();
+      };
+
+      window.addEventListener('keydown', handleKeyDown, true);
     }
 
     function initials(value = 'App') {
@@ -851,6 +1024,37 @@
     portInput.addEventListener('change', saveSettings);
     selectorShortcutInput.addEventListener('change', saveSettings);
     settingsShortcutInput.addEventListener('change', saveSettings);
+    recordSelectorShortcutBtn.addEventListener('click', () => {
+      recordShortcut(selectorShortcutInput, recordSelectorShortcutBtn, 'CommandOrControl+Shift+Y');
+    });
+    recordSettingsShortcutBtn.addEventListener('click', () => {
+      recordShortcut(settingsShortcutInput, recordSettingsShortcutBtn, 'CommandOrControl+Alt+Shift+S');
+    });
+    document.getElementById('guideSelector').addEventListener('click', async () => {
+      try {
+        await activityStatus.openSelector();
+        toast('Status selector opened.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
+    });
+    document.getElementById('guideExtensions').addEventListener('click', async () => {
+      try {
+        await activityStatus.openExtensions();
+        toast('Chrome extensions opened.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
+    });
+    document.getElementById('guideCopyUrl').addEventListener('click', async () => {
+      try {
+        const status = await activityStatus.getStatus();
+        await activityStatus.copyText(status.url);
+        toast('Backend URL copied.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
+    });
     document.getElementById('refreshApps').addEventListener('click', async () => {
       try {
         await activityStatus.refreshSystemApps();

@@ -21,6 +21,7 @@ const repoBtn = document.getElementById('repoBtn');
 const tabList = document.getElementById('tabList');
 const logList = document.getElementById('logList');
 const siteList = document.getElementById('siteList');
+const activitySearchInput = document.getElementById('activitySearchInput');
 const selectedTabLabel = document.getElementById('selectedTabLabel');
 const rpcHealthBadge = document.getElementById('rpcHealthBadge');
 const rpcHealthText = document.getElementById('rpcHealthText');
@@ -270,8 +271,8 @@ function renderSetupChecklist(backendStatus, rpcStatus, versionInfo = {}) {
     && versionInfo.companionVersion
     && versionInfo.companionExpectedExtensionVersion === versionInfo.extensionVersion;
   const rows = [
-    ['Extension installed', true, 'Done'],
-    ['Companion running', backendStatus === 'connected', backendStatus === 'connected' ? 'Online' : 'Install / start'],
+    ['Extension installed', true, 'Ready'],
+    ['Companion running', backendStatus === 'connected', backendStatus === 'connected' ? 'Online' : 'Install or start'],
     ['Discord desktop connected', backendStatus === 'connected' && rpcStatus === 'connected', rpcStatus === 'connected' ? 'Connected' : 'Open Discord'],
     [
       'Version match',
@@ -293,13 +294,13 @@ function renderSetupChecklist(backendStatus, rpcStatus, versionInfo = {}) {
   if (backendStatus !== 'connected') {
     const install = document.createElement('button');
     install.className = 'setup-link';
-    install.textContent = 'Install companion';
+    install.textContent = 'Install the companion app';
     install.addEventListener('click', () => chrome.tabs.create({ url: COMPANION_URL }));
     setupChecklist.appendChild(install);
   } else if (!versionOk) {
     const update = document.createElement('button');
     update.className = 'setup-link';
-    update.textContent = 'Update companion / extension';
+    update.textContent = 'Update the companion app and extension';
     update.addEventListener('click', () => chrome.tabs.create({ url: COMPANION_URL }));
     setupChecklist.appendChild(update);
   }
@@ -309,6 +310,7 @@ function renderDetectedTabs() {
   chrome.storage.local.get(['detectedActivities', 'selectedTabId'], (result) => {
     const activities = Array.isArray(result.detectedActivities) ? result.detectedActivities : [];
     const selectedTabId = normalizeTabId(result.selectedTabId);
+    const query = String(activitySearchInput?.value || '').trim().toLowerCase();
 
     tabList.textContent = '';
 
@@ -321,8 +323,19 @@ function renderDetectedTabs() {
     }
 
     const sortedActivities = [...activities].sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+    const filteredActivities = query
+      ? sortedActivities.filter(activity => matchesActivitySearch(activity, query))
+      : sortedActivities;
 
-    for (const activity of sortedActivities) {
+    if (filteredActivities.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = query ? 'No matching activity found.' : 'No tabs detected yet.';
+      tabList.appendChild(empty);
+      return;
+    }
+
+    for (const activity of filteredActivities) {
       const tabId = normalizeTabId(activity.tabId);
       const isSelected = tabId !== null && tabId === selectedTabId;
       const card = document.createElement('div');
@@ -605,10 +618,24 @@ function normalizeTabId(value) {
 function formatSubtitle(activity) {
   const parts = [
     activity.state,
-    activity.tabTitle,
     activity.lastSeen ? `${Math.max(0, Math.round((Date.now() - activity.lastSeen) / 1000))}s ago` : ''
   ].filter(Boolean);
   return parts.join(' - ');
+}
+
+function matchesActivitySearch(activity, query) {
+  const haystack = [
+    activity.platform,
+    activity.details,
+    activity.state,
+    activity.tabTitle,
+    activity.sourceUrl
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return haystack.includes(query);
 }
 
 function formatTime(timestamp) {
@@ -630,6 +657,10 @@ sendRuntimeMessage({ action: 'refreshBackendHealth' });
 refreshUi();
 setInterval(refreshUi, 2000);
 setInterval(() => sendRuntimeMessage({ action: 'refreshBackendHealth' }), 5000);
+
+if (activitySearchInput) {
+  activitySearchInput.addEventListener('input', () => renderDetectedTabs());
+}
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local') return;

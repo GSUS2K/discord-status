@@ -1,9 +1,17 @@
 // Netflix Content Script
-
-let lastGoodNetflixTitle = null;
-let netflixIntervalId = null;
-let netflixStopped = false;
 const NETFLIX_DEBUG = false;
+let lastGoodNetflixTitle = '';
+let netflixStopped = false;
+let mediaStatusStyle = 'clean';
+
+chrome.storage.local.get(['mediaStatusStyle'], (result) => {
+  mediaStatusStyle = normalizeMediaStatusStyle(result.mediaStatusStyle);
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local' || !changes.mediaStatusStyle) return;
+  mediaStatusStyle = normalizeMediaStatusStyle(changes.mediaStatusStyle.newValue);
+});
 
 function debugNetflix(...args) {
   if (NETFLIX_DEBUG) {
@@ -11,143 +19,16 @@ function debugNetflix(...args) {
   }
 }
 
-function stopNetflixTracking() {
-  if (netflixStopped) {
-    return;
-  }
-
-  netflixStopped = true;
-
-  if (netflixIntervalId) {
-    clearInterval(netflixIntervalId);
-    netflixIntervalId = null;
-  }
-}
-
-function sendNetflixSafely(activity) {
-  if (!activity || netflixStopped || !chrome?.runtime?.id) {
-    return;
-  }
-
-  try {
-    chrome.runtime.sendMessage(
-      {
-        action: 'activityDetected',
-        activity
-      },
-      () => {
-        const error = chrome.runtime.lastError;
-        if (error && !isBenignRuntimeError(error.message || '')) {
-          console.warn('[Netflix] Send error:', error.message);
-        }
-        if (error && /Extension context invalidated/i.test(error.message || '')) {
-          stopNetflixTracking();
-        }
-      }
-    );
-  } catch (error) {
-    if (!isBenignRuntimeError(error.message || '')) {
-      console.warn('[Netflix] Send error:', error.message);
-    } else {
-      stopNetflixTracking();
-    }
-  }
-}
-
-function isBenignRuntimeError(message = '') {
-  return /Extension context invalidated|message port closed before a response was received/i.test(message);
-}
-
 function detectNetflixActivity() {
   try {
-    const titleCandidates = [];
+    let title = getNetflixTitle();
 
-    const addCandidate = (value, source = 'unknown') => {
-      const text = value?.trim();
-      if (text && text.length > 1 && !/^netflix$/i.test(text)) {
-        titleCandidates.push({ text, source });
-      }
-    };
-
-    const isLikelyTitle = (text) => {
-      if (!text) return false;
-      const cleaned = text.trim();
-      if (cleaned.length < 3) return false;
-      if (/^episode\s*\d+$/i.test(cleaned)) return false;
-      if (/^season\s*\d+$/i.test(cleaned)) return false;
-      if (/^audio description available$/i.test(cleaned)) return false;
-      if (/^(skip intro|skip recap|next episode|play|pause|more like this|episodes|details)$/i.test(cleaned)) return false;
-      if (/^(fine, you asked for it\.?|you asked for it\.?|new episode|continue watching)$/i.test(cleaned)) return false;
-      if (/^(i|we|you|he|she|they|this|that|there)\b/i.test(cleaned) && /[.!?]$/.test(cleaned)) return false;
-      if (cleaned.split(/\s+/).length > 9 && /[.!?]$/.test(cleaned)) return false;
-      if (cleaned.length > 72 && /[.!?]$/.test(cleaned)) return false;
-      if (/[“”"]/.test(cleaned) && /[.!?]$/.test(cleaned)) return false;
-      if (/^[\w\s',.!?:;-]+$/.test(cleaned) && cleaned.split(/\s+/).length <= 2 && cleaned.length < 10) {
-        return false;
-      }
-      if (/[.!?]$/.test(cleaned) && cleaned.split(/\s+/).length <= 6) {
-        return false;
-      }
-      return true;
-    };
-
-    const rankTitle = (candidate) => {
-      const text = candidate?.text;
-      if (!text) return -1;
-      let score = 0;
-      const cleaned = text.trim();
-      const source = candidate.source || 'unknown';
-      if (/^(player|metadata|document|meta|title-ui)$/.test(source)) score += 5;
-      if (source === 'last-good') score += 4;
-      if (cleaned.length >= 4) score += 2;
-      if (cleaned.length >= 10) score += 1;
-      if (/\bseason\b/i.test(cleaned)) score += 1;
-      if (/\bepisode\b/i.test(cleaned)) score += 1;
-      if (/^[A-Z][\w\s',:-]+$/.test(cleaned)) score += 1;
-      if (cleaned === document.title.trim()) score += 3;
-      if (cleaned === lastGoodNetflixTitle) score += 2;
-      if (!/[.!?]$/.test(cleaned)) score += 1;
-      if (/^(subtitle|caption|visible-text)$/.test(source)) score -= 8;
-      return score;
-    };
-
-    addCandidate(document.querySelector('[data-testid="player-title"]')?.textContent, 'player');
-    addCandidate(document.querySelector('[data-uia="video-title"]')?.textContent, 'player');
-    addCandidate(document.querySelector('[data-uia="episode-title"]')?.textContent, 'player');
-    addCandidate(document.querySelector('[data-uia="video-title-text"]')?.textContent, 'player');
-    addCandidate(document.querySelector('[data-uia="previewModal--boxart-title"]')?.textContent, 'title-ui');
-    addCandidate(document.querySelector('[data-uia="title-info-title"]')?.textContent, 'title-ui');
-    addCandidate(document.querySelector('[data-uia*="title"]')?.textContent, 'title-ui');
-    addCandidate(document.querySelector('h1[class*="title"]')?.textContent, 'title-ui');
-    addCandidate(document.querySelector('h1')?.textContent, 'title-ui');
-    addCandidate(document.querySelector('[class*="video-title"]')?.textContent, 'player');
-    addCandidate(document.querySelector('meta[property="og:title"]')?.content, 'meta');
-    addCandidate(document.querySelector('meta[name="twitter:title"]')?.content, 'meta');
-
-    const documentTitle = document.title.replace(/\s*[\-|\|]\s*Netflix.*$/i, '').trim();
-    addCandidate(documentTitle, 'document');
-
-    if (lastGoodNetflixTitle) {
-      addCandidate(lastGoodNetflixTitle, 'last-good');
-    }
-
-    let title = null;
-
-    if (titleCandidates.length > 0) {
-      const scoredTitle = titleCandidates
-        .filter(candidate => isLikelyTitle(candidate.text))
-        .sort((left, right) => rankTitle(right) - rankTitle(left))[0]?.text;
-
-      if (scoredTitle) {
-        title = scoredTitle;
-      }
-    }
-
-    if (title) {
-      title = cleanNetflixTitle(title);
-
-      if (/^audio description available$/i.test(title)) {
-        title = lastGoodNetflixTitle || null;
+    if (!title || !isLikelyTitle(title)) {
+      const titleElement = document.querySelector('[data-uia*="video-title"]')
+        || document.querySelector('.previewModal--player-titleTreatment-logo, h4');
+      const fallbackTitle = titleElement?.textContent?.trim();
+      if (fallbackTitle && isLikelyTitle(fallbackTitle)) {
+        title = cleanNetflixTitle(fallbackTitle);
       }
 
       if (isLikelyTitle(title)) {
@@ -165,30 +46,21 @@ function detectNetflixActivity() {
       debugNetflix('No reliable title found yet');
       return null;
     }
-    
-    // Check for video element
+
     const video = document.querySelector('video');
     if (!video) {
       debugNetflix('No video element found');
       return null;
     }
-    
+
     const isPlaying = !video.paused;
     const currentTime = Number.isFinite(video.currentTime) ? Math.max(0, video.currentTime) : 0;
     const duration = Number.isFinite(video.duration) ? Math.max(0, video.duration) : 0;
-    const currentMinutes = Math.floor(currentTime / 60);
-    const currentSeconds = Math.floor(currentTime % 60);
-    const durationMinutes = Math.floor(duration / 60);
-    const durationSeconds = Math.floor(duration % 60);
-    const timeLabel = duration > 0
-      ? ` • ${String(currentMinutes).padStart(2, '0')}:${String(currentSeconds).padStart(2, '0')} / ${String(durationMinutes).padStart(2, '0')}:${String(durationSeconds).padStart(2, '0')}`
-      : '';
-    let state = `${isPlaying ? 'Playing' : 'Paused'}${timeLabel}`;
-    
+
     const activity = {
       platform: 'Netflix',
       details: title.substring(0, 100),
-      state: state,
+      state: formatMediaState('Watching', isPlaying, currentTime, duration),
       largeImageKey: 'netflix',
       largeImageText: 'Watching Netflix',
       thumbnailUrl: document.querySelector('meta[property="og:image"]')?.content?.trim() || '',
@@ -197,7 +69,7 @@ function detectNetflixActivity() {
       mediaCurrentTime: currentTime,
       mediaDuration: duration
     };
-    
+
     debugNetflix('Detected:', activity);
     return activity;
   } catch (error) {
@@ -206,8 +78,39 @@ function detectNetflixActivity() {
   }
 }
 
+function getNetflixTitle() {
+  const titleSelectors = [
+    '[data-uia*="video-title"]',
+    '.watch-video--player-title',
+    'h4'
+  ];
+
+  for (const selector of titleSelectors) {
+    const text = document.querySelector(selector)?.textContent?.trim();
+    if (text && isLikelyTitle(text)) {
+      return cleanNetflixTitle(text);
+    }
+  }
+
+  const pageTitle = document.title.replace(/\s*-\s*Netflix\s*$/i, '').trim();
+  if (pageTitle && isLikelyTitle(pageTitle)) {
+    return cleanNetflixTitle(pageTitle);
+  }
+
+  return null;
+}
+
+function isLikelyTitle(title) {
+  if (!title) return false;
+  const value = String(title).trim();
+  if (!value) return false;
+  if (/netflix/i.test(value) && value.length < 28) return false;
+  if (/watch now|browse|home|sign in/i.test(value)) return false;
+  return true;
+}
+
 function cleanNetflixTitle(title) {
-  return title
+  return String(title || '')
     .replace(/\s*[-|]\s*Netflix.*$/i, '')
     .replace(/\b([A-Za-z][A-Za-z0-9'’:-]*?)E(\d+)\s*Episode\s*\d+\b/i, '$1 Episode $2')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -217,6 +120,34 @@ function cleanNetflixTitle(title) {
     .replace(/\bSeason\s*\d+\b/ig, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
+}
+
+function normalizeMediaStatusStyle(value) {
+  return value === 'detailed' ? 'detailed' : 'clean';
+}
+
+function formatMediaState(action, isPlaying, currentTime, duration, prefix = '') {
+  const parts = [];
+  const cleanPrefix = String(prefix || '').trim();
+
+  if (cleanPrefix) {
+    parts.push(cleanPrefix);
+  }
+
+  parts.push(isPlaying ? action : 'Paused');
+
+  if (mediaStatusStyle === 'detailed' && duration > 0) {
+    parts.push(`${formatDuration(currentTime)} / ${formatDuration(duration)}`);
+  }
+
+  return parts.join(' - ').substring(0, 128);
+}
+
+function formatDuration(seconds) {
+  const safeSeconds = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(safeSeconds / 60);
+  const rest = Math.floor(safeSeconds % 60);
+  return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -232,19 +163,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 function sendNetflixActivity() {
   if (netflixStopped) {
-    return;
+    return false;
   }
 
   const activity = detectNetflixActivity();
   if (activity) {
     debugNetflix('Sending activity detected');
-    sendNetflixSafely(activity);
+    chrome.runtime.sendMessage({
+      action: 'activityDetected',
+      activity: activity
+    }).catch(err => debugNetflix('Send error:', err.message));
     return true;
   }
 
   return false;
 }
 
-sendNetflixActivity();
+function stopNetflixDetection() {
+  netflixStopped = true;
+}
 
-netflixIntervalId = setInterval(sendNetflixActivity, 3000);
+function startNetflixDetection() {
+  netflixStopped = false;
+  sendNetflixActivity();
+}
+
+setInterval(() => {
+  if (!netflixStopped) {
+    sendNetflixActivity();
+  }
+}, 5000);

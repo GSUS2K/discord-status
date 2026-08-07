@@ -87,12 +87,16 @@
     }
 
     .icon-btn {
-      display: grid;
-      width: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 34px;
       height: 34px;
-      place-items: center;
+      padding: 0 10px;
       flex: 0 0 auto;
-      font-size: 16px;
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: 0.02em;
     }
 
     button:hover {
@@ -261,6 +265,13 @@
       white-space: nowrap;
     }
 
+    .setup-copy {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
     .setup-checklist {
       display: grid;
       gap: 6px;
@@ -403,6 +414,23 @@
       max-height: 156px;
       overflow: auto;
       padding-right: 2px;
+    }
+
+    .search-field {
+      width: 100%;
+      margin-top: 8px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #0f1014;
+      color: var(--text);
+      font: inherit;
+      font-size: 12px;
+      padding: 0 10px;
+    }
+
+    .search-field::placeholder {
+      color: #7f8798;
     }
 
     .site-grid {
@@ -580,7 +608,7 @@
           <div class="subtitle">Browser Rich Presence</div>
         </div>
       </div>
-      <button id="settingsBtn" class="icon-btn" title="Open settings" aria-label="Open settings">⚙</button>
+      <button id="settingsBtn" class="icon-btn" title="Open settings" aria-label="Open settings">Settings</button>
     </header>
 
     <section class="section">
@@ -595,6 +623,7 @@
         <button id="toggleBtn" class="toggle-switch" title="Enable or disable Discord status" aria-label="Enable status"></button>
       </div>
       <div id="status" class="status-display empty">No activity detected yet.</div>
+      <div class="setup-copy">Install the companion app, keep Discord desktop open, then pick a status from the list below. Switch to manual mode when you want to pin a custom activity.</div>
       <div id="setupChecklist" class="setup-checklist" aria-live="polite"></div>
       <div id="selectedTabLabel" class="selected-tab-label">Selected tab: Auto</div>
       <div class="actions">
@@ -636,6 +665,7 @@
         <div class="section-title">Detected Tabs</div>
         <button id="clearSelectionBtn" class="mini-btn">Auto pick</button>
       </div>
+      <input id="activitySearchInput" class="search-field" type="search" placeholder="Search activity to show in Discord">
       <div id="tabList" class="tab-list">
         <div class="empty">No tabs detected yet.</div>
       </div>

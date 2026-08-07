@@ -1220,14 +1220,7 @@ fn system_activity_snapshot(
     now: &str,
 ) -> SystemActivity {
     let app_name = app_name.trim();
-    let window_title = window_title.and_then(|value| {
-        let value = value.trim().to_string();
-        if value.is_empty() || value.eq_ignore_ascii_case(app_name) {
-            None
-        } else {
-            Some(value)
-        }
-    });
+    let window_title = clean_system_window_title(app_name, window_title);
     SystemActivity {
         id: format!("system:{}", normalize_app_key(app_name)),
         app_name: app_name.to_string(),
@@ -1244,6 +1237,16 @@ fn system_activity_snapshot(
 }
 
 fn system_activity_state(system: &SystemActivity) -> String {
+    if is_vlc_app(&system.app_name) {
+        return if system.window_title.is_some() {
+            "Watching in VLC".to_string()
+        } else if system.is_foreground {
+            "Watching VLC".to_string()
+        } else {
+            "VLC player".to_string()
+        };
+    }
+
     if system.window_title.is_some() {
         if system.is_foreground {
             "Current app window".to_string()
@@ -1302,6 +1305,41 @@ fn system_icon_key(app_name: &str) -> &'static str {
         "finder" => "finder",
         "explorer" | "fileexplorer" => "files",
         _ => "manual",
+    }
+}
+
+fn is_vlc_app(app_name: &str) -> bool {
+    matches!(
+        normalize_app_key(app_name).as_str(),
+        "vlc" | "vlcmediaplayer"
+    )
+}
+
+fn clean_system_window_title(app_name: &str, window_title: Option<String>) -> Option<String> {
+    let value = window_title?.trim().to_string();
+    if value.is_empty() {
+        return None;
+    }
+
+    if value.eq_ignore_ascii_case(app_name) {
+        return None;
+    }
+
+    let cleaned = if is_vlc_app(app_name) {
+        value
+            .replace(" - VLC media player", "")
+            .replace(" - VLC", "")
+            .replace("VLC media player - ", "")
+            .trim()
+            .to_string()
+    } else {
+        value
+    };
+
+    if cleaned.is_empty() || cleaned.eq_ignore_ascii_case(app_name) {
+        None
+    } else {
+        Some(cleaned)
     }
 }
 

@@ -1,5 +1,15 @@
 // Generic Content Script - handles multiple platforms
 const GENERIC_DEBUG = false;
+let mediaStatusStyle = 'clean';
+
+chrome.storage.local.get(['mediaStatusStyle'], (result) => {
+  mediaStatusStyle = normalizeMediaStatusStyle(result.mediaStatusStyle);
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local' || !changes.mediaStatusStyle) return;
+  mediaStatusStyle = normalizeMediaStatusStyle(changes.mediaStatusStyle.newValue);
+});
 
 function debugGeneric(...args) {
   if (GENERIC_DEBUG) {
@@ -546,14 +556,34 @@ function getMediaInfo(selector) {
   const isPlaying = media ? !media.paused : true;
   const currentTime = media && Number.isFinite(media.currentTime) ? Math.max(0, media.currentTime) : 0;
   const duration = media && Number.isFinite(media.duration) ? Math.max(0, media.duration) : 0;
-  const timeLabel = duration > 0 ? ` • ${formatDuration(currentTime)} / ${formatDuration(duration)}` : '';
 
   return {
     isPlaying,
     currentTime,
     duration,
-    label: `${isPlaying ? 'Playing' : 'Paused'}${timeLabel}`
+    label: formatMediaState('Playing', isPlaying, currentTime, duration)
   };
+}
+
+function normalizeMediaStatusStyle(value) {
+  return value === 'detailed' ? 'detailed' : 'clean';
+}
+
+function formatMediaState(action, isPlaying, currentTime, duration, prefix = '') {
+  const parts = [];
+  const cleanPrefix = String(prefix || '').trim();
+
+  if (cleanPrefix) {
+    parts.push(cleanPrefix);
+  }
+
+  parts.push(isPlaying ? action : 'Paused');
+
+  if (mediaStatusStyle === 'detailed' && duration > 0) {
+    parts.push(`${formatDuration(currentTime)} / ${formatDuration(duration)}`);
+  }
+
+  return parts.join(' - ');
 }
 
 function formatDuration(seconds) {
@@ -672,3 +702,4 @@ setInterval(() => {
     sendActivitySafely(activity);
   }
 }, 5000);
+

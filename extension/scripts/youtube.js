@@ -1,6 +1,16 @@
 // YouTube Content Script
 const YOUTUBE_DEBUG = false;
 let lastYouTubeSignature = '';
+let mediaStatusStyle = 'clean';
+
+chrome.storage.local.get(['mediaStatusStyle'], (result) => {
+  mediaStatusStyle = normalizeMediaStatusStyle(result.mediaStatusStyle);
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local' || !changes.mediaStatusStyle) return;
+  mediaStatusStyle = normalizeMediaStatusStyle(changes.mediaStatusStyle.newValue);
+});
 
 function debugYouTube(...args) {
   if (YOUTUBE_DEBUG) {
@@ -54,19 +64,11 @@ function detectYouTubeActivity() {
     const isPlaying = !video.paused;
     const currentTime = Number.isFinite(video.currentTime) ? Math.max(0, video.currentTime) : 0;
     const duration = Number.isFinite(video.duration) ? Math.max(0, video.duration) : 0;
-    const currentMinutes = Math.floor(currentTime / 60);
-    const currentSeconds = Math.floor(currentTime % 60);
-    const durationMinutes = Math.floor(duration / 60);
-    const durationSeconds = Math.floor(duration % 60);
-    const timeLabel = duration > 0
-      ? ` • ${String(currentMinutes).padStart(2, '0')}:${String(currentSeconds).padStart(2, '0')} / ${String(durationMinutes).padStart(2, '0')}:${String(durationSeconds).padStart(2, '0')}`
-      : '';
-    const state = `${isPlaying ? 'Playing' : 'Paused'}${timeLabel}`;
 
     const activity = {
       platform: 'YouTube',
       details: title.substring(0, 100),
-      state: state,
+      state: formatMediaState('Watching', isPlaying, currentTime, duration),
       largeImageKey: 'youtube',
       largeImageText: 'Watching YouTube',
       thumbnailUrl: getYouTubeThumbnailUrl(),
@@ -108,6 +110,34 @@ function getYouTubeVideoId() {
   }
 }
 
+function normalizeMediaStatusStyle(value) {
+  return value === 'detailed' ? 'detailed' : 'clean';
+}
+
+function formatMediaState(action, isPlaying, currentTime, duration, prefix = '') {
+  const parts = [];
+  const cleanPrefix = String(prefix || '').trim();
+
+  if (cleanPrefix) {
+    parts.push(cleanPrefix);
+  }
+
+  parts.push(isPlaying ? action : 'Paused');
+
+  if (mediaStatusStyle === 'detailed' && duration > 0) {
+    parts.push(`${formatDuration(currentTime)} / ${formatDuration(duration)}`);
+  }
+
+  return parts.join(' - ').substring(0, 128);
+}
+
+function formatDuration(seconds) {
+  const safeSeconds = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(safeSeconds / 60);
+  const rest = Math.floor(safeSeconds % 60);
+  return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   debugYouTube('Message received:', request.action);
   if (request.action === 'detectActivity') {
@@ -139,23 +169,13 @@ function sendDetectedActivity() {
       return;
     }
     lastYouTubeSignature = signature;
+    debugYouTube('Broadcasting activity:', activity.details);
     chrome.runtime.sendMessage({
       action: 'activityDetected',
       activity: activity
-    }).catch(err => debugYouTube('Send error:', err.message));
+    }).catch(err => debugYouTube('Broadcast error:', err.message));
   }
 }
 
-// Retry a few times because YouTube loads the title late
-setTimeout(sendDetectedActivity, 2000);
-setTimeout(sendDetectedActivity, 4000);
-setInterval(sendDetectedActivity, 3000);
-document.addEventListener('yt-navigate-finish', () => {
-  lastYouTubeSignature = '';
-  setTimeout(sendDetectedActivity, 600);
-  setTimeout(sendDetectedActivity, 1600);
-});
-document.addEventListener('yt-page-data-updated', () => {
-  lastYouTubeSignature = '';
-  setTimeout(sendDetectedActivity, 500);
-});
+setInterval(sendDetectedActivity, 5000);
+setTimeout(sendDetectedActivity, 1500);
