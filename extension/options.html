@@ -329,6 +329,14 @@
         </div>
       </div>
       <div class="setting-group">
+        <label for="mediaStatusStyle">Media Status Style</label>
+        <select id="mediaStatusStyle">
+          <option value="clean">Clean status text</option>
+          <option value="detailed">Detailed playback text</option>
+        </select>
+        <div class="hint">Clean mode keeps playback time out of the status text so Discord's own progress bar stays readable. Detailed mode restores the older, more verbose timer text.</div>
+      </div>
+      <div class="setting-group">
         <label>Enabled Sites</label>
         <div id="enabledSitesList" class="site-grid"></div>
         <div class="hint">Choose which built-in detectors can run. New sites require code support, not just a setting.</div>

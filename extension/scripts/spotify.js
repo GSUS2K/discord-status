@@ -1,34 +1,32 @@
 // Spotify Content Script
+let mediaStatusStyle = 'clean';
+
+chrome.storage.local.get(['mediaStatusStyle'], (result) => {
+  mediaStatusStyle = normalizeMediaStatusStyle(result.mediaStatusStyle);
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'local' || !changes.mediaStatusStyle) return;
+  mediaStatusStyle = normalizeMediaStatusStyle(changes.mediaStatusStyle.newValue);
+});
 
 function detectSpotifyActivity() {
-  // Get currently playing track info
   const trackNameElement = document.querySelector('a[data-testid="nowplaying-track-link"]');
   if (!trackNameElement) return null;
-  
+
   const trackName = trackNameElement.textContent.trim();
-  
-  // Get artist info
   const artistElement = document.querySelector('a[data-testid="nowplaying-artist"]');
   const artist = artistElement ? artistElement.textContent.trim() : '';
-  
+
   const audio = document.querySelector('audio');
   const isPlaying = audio ? !audio.paused : !document.querySelector('button[data-testid="control-button-play"]');
   const currentTime = audio && Number.isFinite(audio.currentTime) ? Math.max(0, audio.currentTime) : 0;
   const duration = audio && Number.isFinite(audio.duration) ? Math.max(0, audio.duration) : 0;
-  const currentMinutes = Math.floor(currentTime / 60);
-  const currentSeconds = Math.floor(currentTime % 60);
-  const durationMinutes = Math.floor(duration / 60);
-  const durationSeconds = Math.floor(duration % 60);
-  const timeLabel = duration > 0
-    ? ` • ${String(currentMinutes).padStart(2, '0')}:${String(currentSeconds).padStart(2, '0')} / ${String(durationMinutes).padStart(2, '0')}:${String(durationSeconds).padStart(2, '0')}`
-    : '';
-  
-  let state = `${isPlaying ? 'Playing' : 'Paused'}${timeLabel}`;
-  
+
   return {
     platform: 'Spotify',
     details: trackName.substring(0, 128),
-    state: (artist ? `${artist} • ${state}` : state).substring(0, 128),
+    state: formatMediaState('Listening', isPlaying, currentTime, duration, artist),
     largeImageKey: 'spotify',
     largeImageText: 'Listening on Spotify',
     thumbnailUrl: getSpotifyCoverUrl(),
@@ -44,6 +42,34 @@ function getSpotifyCoverUrl() {
     || document.querySelector('img[data-testid="cover-art-image"]')?.src
     || document.querySelector('meta[property="og:image"]')?.content
     || '';
+}
+
+function normalizeMediaStatusStyle(value) {
+  return value === 'detailed' ? 'detailed' : 'clean';
+}
+
+function formatMediaState(action, isPlaying, currentTime, duration, prefix = '') {
+  const parts = [];
+  const cleanPrefix = String(prefix || '').trim();
+
+  if (cleanPrefix) {
+    parts.push(cleanPrefix);
+  }
+
+  parts.push(isPlaying ? action : 'Paused');
+
+  if (mediaStatusStyle === 'detailed' && duration > 0) {
+    parts.push(`${formatDuration(currentTime)} / ${formatDuration(duration)}`);
+  }
+
+  return parts.join(' - ').substring(0, 128);
+}
+
+function formatDuration(seconds) {
+  const safeSeconds = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(safeSeconds / 60);
+  const rest = Math.floor(safeSeconds % 60);
+  return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
