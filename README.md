@@ -1,178 +1,147 @@
 # Discord Status
 
-Show supported Chrome activity, system apps, games, or custom activity as Discord Rich Presence through a small local companion app.
-
-Discord Status has two parts:
-
-* **Chrome extension**: detects supported browser activity like YouTube, Netflix, Spotify, GitHub, ChatGPT, and more.
-* **Companion app**: runs locally on your computer and updates Discord Rich Presence through Discord desktop.
-
-The companion app can also work without the Chrome extension for manual custom status, supported system apps, and games.
+Show what you are doing in Discord Rich Presence. Discord Status detects browser media, desktop apps, games, and custom activities through a Chrome extension and a small local companion app.
 
 <p align="center">
-  <a href="https://chromewebstore.google.com/detail/discord-status/ekobpekegflobmheipgceigkldggkakd?hl=en"><img alt="Chrome Web Store" src="https://img.shields.io/badge/install-chrome%20web%20store-5865F2?style=for-the-badge&labelColor=1b1f23"></a>
-  <a href="https://github.com/GSUS2K/discord-status/releases/latest"><img alt="Latest companion release" src="https://img.shields.io/github/v/release/GSUS2K/discord-status?style=for-the-badge&label=companion"></a>
-  <a href="LICENSE"><img alt="License" src="https://img.shields.io/github/license/GSUS2K/discord-status?style=for-the-badge"></a>
+  <a href="https://gsus2k.github.io/discord-status/"><img alt="Download site" src="https://img.shields.io/badge/download-site-5865F2?style=for-the-badge&labelColor=1b1f23"></a>
+  <a href="https://chromewebstore.google.com/detail/discord-status/ekobpekegflobmheipgceigkldggkakd?hl=en"><img alt="Chrome Web Store" src="https://img.shields.io/badge/chrome-web%20store-4285F4?style=for-the-badge&labelColor=1b1f23"></a>
+  <a href="https://github.com/GSUS2K/discord-status/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/GSUS2K/discord-status?style=for-the-badge&label=latest%20release"></a>
+  <a href="https://github.com/GSUS2K/discord-status/releases"><img alt="All GitHub release downloads" src="https://img.shields.io/github/downloads/GSUS2K/discord-status/total?style=for-the-badge&label=all%20downloads"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/GSUS2K/discord-status?style=for-the-badge"></a>
 </p>
 
-![Discord Status preview](docs/assets/hero.png)
+<p align="center"><strong>Windows · macOS · Linux</strong> &nbsp;|&nbsp; Chrome extension + local companion &nbsp;|&nbsp; open source</p>
 
-Install guide: [Discord Status download site](https://gsus2k.github.io/discord-status/)
+<p align="center"><img src="docs/assets/store-marquee.png" alt="Discord Status showing a media activity in a Discord profile" width="900"></p>
 
 ## Install
 
-### Extension + Companion
+Most people need both parts:
 
-1. Install the [Chrome extension](https://chromewebstore.google.com/detail/discord-status/ekobpekegflobmheipgceigkldggkakd?hl=en).
-2. Install the [companion app](https://github.com/GSUS2K/discord-status/releases/latest).
-3. Open Discord desktop and keep the companion running in the menu bar/system tray.
+1. Install [Discord Status from the Chrome Web Store](https://chromewebstore.google.com/detail/discord-status/ekobpekegflobmheipgceigkldggkakd?hl=en).
+2. Download the companion for your operating system from the [latest GitHub release](https://github.com/GSUS2K/discord-status/releases/latest), or use the [download site](https://gsus2k.github.io/discord-status/).
+3. Open Discord desktop and start the companion. It stays in the system tray or menu bar.
+4. Pin the extension to Chrome and choose Auto Detect, Active Tab Only, or a custom activity.
 
-The extension detects browser activity. The companion runs on `localhost`, chooses the active status, and sends it to Discord desktop.
+The extension is needed for browser tabs. The companion is needed to connect to Discord desktop and can also work by itself for custom statuses, supported desktop apps, and games.
 
-### Companion Only
+### Which companion file should I download?
 
-You can also use only the companion app for:
+| System | Recommended file |
+| --- | --- |
+| Windows | `Discord-Status-Companion-Windows-Setup.exe` |
+| Windows managed install | `Discord-Status-Companion-Windows.msi` |
+| macOS with Apple Silicon | `Discord-Status-Companion-macOS-Apple-Silicon.dmg` |
+| macOS with Intel | `Discord-Status-Companion-macOS-Intel.dmg` |
+| Linux | `Discord-Status-Companion-Linux.AppImage` |
+| Debian or Ubuntu | `Discord-Status-Companion-Linux.deb` |
 
-* Manual custom Discord status
-* Supported system apps
-* Supported games
-* Activity selection
-* Discord RPC reconnect/diagnostics
+The release also includes checksums. Verify the downloaded file with `SHA256SUMS.txt` when you need to confirm its integrity.
 
-The Chrome extension is only needed for browser tab detection.
+## What It Can Show
 
-## Download Companion App
+- Watching activity from YouTube, Netflix, Prime Video, Hulu, Disney+, Apple TV, Hotstar, Crunchyroll, Twitch, and other supported media sites.
+- Listening activity from Spotify, YouTube Music, SoundCloud, Apple Music, and Bandcamp.
+- Browser work from GitHub, VS Code Web, Linear, Jira, Notion, Google Docs, Figma, Canva, ChatGPT, and Google Meet.
+- Learning, social, and game activity from Coursera, Udemy, Khan Academy, LeetCode, Reddit, X, Instagram, LinkedIn, Steam, Chess.com, Lichess, Skribbl.io, GeoGuessr, and Wikipedia.
+- Local activity from VLC and other supported desktop applications and games.
+- Manual custom activities with your own title, details, state, artwork, buttons, and timestamps.
 
-Go to the [latest release](https://github.com/GSUS2K/discord-status/releases/latest) and download the file for your system.
+Media artwork is shown when a supported site exposes usable poster or album art. If an image cannot be used by Discord, the companion falls back to the platform artwork instead of inventing a thumbnail.
 
-| Platform            | Download                                           |
-| ------------------- | -------------------------------------------------- |
-| Windows             | `Discord-Status-Companion-Windows-Setup.exe`       |
-| Windows MSI         | `Discord-Status-Companion-Windows.msi`             |
-| macOS Apple Silicon | `Discord-Status-Companion-macOS-Apple-Silicon.dmg` |
-| macOS Intel         | `Discord-Status-Companion-macOS-Intel.dmg`         |
-| Linux AppImage      | `Discord-Status-Companion-Linux.AppImage`          |
-| Linux Debian/Ubuntu | `Discord-Status-Companion-Linux.deb`               |
+## Useful Controls
 
-The Chrome extension is for browser activity detection. The companion app is required to update Discord Rich Presence.
+- Auto Detect follows the best available activity.
+- Active Tab Only prevents background tabs from taking over your status.
+- The activity selector lets you choose one detected tab quickly.
+- Manual mode pins a selected activity until you change it.
+- Custom Status lets you write your own activity and choose timestamps and artwork.
+- Shortcuts can be changed in Companion Settings. The default selector shortcut is `CommandOrControl+Shift+Y`.
+- Site toggles, blocked domains, private mode, platform-only mode, incognito blocking, and meeting pause controls limit what is shared.
+- The companion diagnostics panel helps check Discord, extension, backend, and version connections.
 
-For a visual guide to the installers and first launch, use the [download site](https://gsus2k.github.io/discord-status/). Choose one companion installer for your operating system, then install the Chrome extension as well if you want browser activity.
+## Screenshots
 
-## Features
-
-| Feature                    | What it does                                                                                                                                          |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Browser activity detection | Detects supported Chrome tab activity and sends it to the companion.                                                                                  |
-| Media artwork             | Uses show posters, album art, player posters, and structured page artwork when a site exposes it.                                                    |
-| Download hub               | Includes a responsive install guide that explains which release asset belongs to each platform.                                                        |
-| Discord Rich Presence      | Updates Discord desktop with your current activity.                                                                                                   |
-| Companion-only mode        | Use manual custom status, supported system apps, or games without the Chrome extension.                                                               |
-| Manual custom status       | Set your own Discord Rich Presence directly from the companion.                                                                                       |
-| Activity inbox             | Sends all detected browser activities to the companion so one can be selected for Discord.                                                            |
-| Quick selector             | Press `CommandOrControl+Shift+Y` to open a Spotlight-style picker, or click Auto mode to return control to the active tab.                            |
-| Companion shortcuts        | Change the selector shortcut and settings shortcut in Companion Settings. Defaults are `CommandOrControl+Shift+Y` and `CommandOrControl+Alt+Shift+S`. |
-| Two-way mode sync          | Selecting a status in the companion automatically puts the extension popup in Manual mode; Auto mode clears the companion override.                   |
-| Version check              | The popup shows whether the installed extension and companion versions match.                                                                         |
-| Active Tab Only            | Prevents background tabs from taking over your status.                                                                                                |
-| System app picker          | Detects running desktop apps in the companion and lets you allow/select apps for Discord status.                                                      |
-| Native activity labels     | Media is sent as Watching or Listening where Discord RPC supports it.                                                                                 |
-| Privacy controls           | Private mode, platform-only mode, incognito blocking, blocked domains, and per-site toggles.                                                          |
-| Companion diagnostics      | Shows backend, Discord RPC, extension connection, active port, logs, and copyable diagnostics.                                                        |
-| System tray app            | Native Tauri companion for macOS, Windows, and Linux.                                                                                                 |
-
-## Supported Activity
-
-### Browser Activity
-
-Media: YouTube, YouTube Music, Netflix, Prime Video, Hulu, Disney+, Apple TV, Hotstar, Crunchyroll, Spotify, SoundCloud, Apple Music, Bandcamp, Twitch.
-
-Work/dev: GitHub, VS Code Web, Linear, Jira, Notion, Google Docs, Figma, Canva, ChatGPT, Google Meet.
-
-Learning/social/gaming: Coursera, Udemy, Khan Academy, LeetCode, Reddit, X/Twitter, Instagram, LinkedIn, Steam, Chess.com, Lichess, Skribbl.io, GeoGuessr, Wikipedia, Google Search.
-
-### Companion Activity
-
-The companion app can also show manual custom status, supported desktop apps, and supported games without the Chrome extension.
-
-System app detection runs locally on your computer.
+<p align="center">
+  <img src="docs/assets/store-screenshot-1.png" alt="Discord Status setup and browser activity" width="47%">
+  <img src="docs/assets/store-screenshot-2.png" alt="Discord Status supported sites and detected activity" width="47%">
+</p>
+<p align="center">
+  <img src="docs/assets/store-screenshot-3.png" alt="Discord Status automatic activity controls" width="47%">
+  <img src="docs/assets/store-screenshot-4.png" alt="Discord Status customization settings" width="47%">
+</p>
+<p align="center"><img src="docs/assets/store-screenshot-5.png" alt="Discord profile with a show thumbnail and watching activity" width="75%"></p>
 
 ## How It Works
-
-Browser activity flow:
 
 ```text
 Chrome tab -> extension -> localhost companion -> Discord desktop
 ```
 
-Companion-only flow:
+The default local connection is `http://localhost:17654`. Activity data is sent to the local companion, not to a Discord Status server. Discord desktop must be open because it owns the Rich Presence connection.
+
+The companion can also publish a manual or desktop-app activity without the extension:
 
 ```text
-System app/manual status -> companion -> Discord desktop
+Desktop app or custom status -> companion -> Discord desktop
 ```
 
-Default companion URL:
+## Privacy
 
-```text
-http://localhost:17654
-```
+Discord Status is designed to run locally. The extension reads supported pages only to build the activity you choose to share. The companion receives that activity over localhost and sends it to Discord desktop. Use the privacy controls to hide titles, restrict sites, block incognito tabs, or stop automatic updates.
 
-Discord Rich Presence runs locally through Discord desktop, so the Chrome extension alone cannot update Discord status. The companion app is required for Discord RPC.
+See the full [privacy policy](PRIVACY.md).
 
-Discord Rich Presence supports HTTPS image URLs for large artwork, so media thumbnails are used when the detected URL is public and short enough for Discord RPC. If that fails or a site does not expose artwork, Discord falls back to uploaded asset keys. Upload assets from `discord-assets-real/` and keep keys in sync with `discord-assets-real/UPLOAD_KEYS.txt` plus any packs in `discord-assets-real/more-discord-assets-*`.
+## Troubleshooting
 
-Discord still owns the app identity shown on the card. The companion can send labels like Watching or Listening, but it cannot fully remove the Discord Developer Portal application name from every Discord surface.
+### Discord is disconnected
 
-The extension uses Chrome's `scripting` permission only to wake detectors in already-open supported tabs. This avoids forcing users to refresh YouTube, Netflix, Spotify, and other sites after installing, updating, or toggling the extension.
+Open Discord desktop first, restart the companion, and use Reconnect Discord in the companion. If the extension says the backend is offline, confirm that the companion is running and that its URL is `http://localhost:17654`.
 
-## Local Development
+### The wrong tab or app is showing
+
+Refresh the page, then select Active Tab Only or choose the activity from the selector. Manual mode can keep an older selection active until you switch back to Auto Detect.
+
+### The title or thumbnail is wrong
+
+Refresh the media page and check that the correct site detector is enabled. Some sites expose only a page title or platform icon, and Discord may reject an image URL that is not publicly reachable.
+
+### The companion does not detect VLC or another desktop app
+
+Keep the companion running, allow the application in the system-app settings, and bring the desired app to the foreground. App detection is local and only covers supported applications.
+
+### The extension and companion versions do not match
+
+Update both parts. The Chrome Web Store updates the extension separately from the companion installers in GitHub Releases.
+
+## Development
+
+Requirements: Node.js, npm, Rust, and the platform toolchain required by Tauri.
 
 ```bash
 npm install
 npm run check
-~/.cargo/bin/cargo check --manifest-path src-tauri/Cargo.toml
-npm run companion:dev
-```
-
-Package the Chrome Web Store zip:
-
-```bash
 npm run package:webstore
 ```
 
-Upload:
+The Chrome Web Store package is written to `dist/discord-status-webstore.zip`.
 
-```text
-dist/discord-status-webstore.zip
-```
-
-## Release
+To run the companion during development:
 
 ```bash
-git tag v1.0.38
-git push origin main
-git push origin v1.0.38
+npm run companion:dev
 ```
 
-GitHub Actions builds the companion installers and attaches them to the release.
+## Releases
 
-## Troubleshooting
-
-| Problem                                  | Fix                                                                                                                      |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Extension says backend offline           | Open the companion and confirm the backend URL.                                                                          |
-| Companion is not detected                | Make sure the companion app is running and the backend URL is `http://localhost:17654`.                                  |
-| Discord RPC disconnected                 | Close and reopen Discord desktop, then reconnect Discord from the companion and extension.                               |
-| Discord still shows disconnected         | Open Discord desktop first, then click Fix Connection/Reconnect Discord in the companion.                                |
-| Wrong activity is showing                | Refresh the web page and check whether Auto mode, Manual mode, or Active Tab Only is selected correctly.                 |
-| Wrong thumbnail or icon is showing       | Refresh the web page. If Discord does not accept the detected image URL, it may fall back to the uploaded platform icon. |
-| Auto mode swaps tabs                     | Enable Active Tab Only mode.                                                                                             |
-| Status not swapping to system app        | Close or switch extension mode to manual.                                                                                |
-| Companion does not show browser activity | Confirm the extension is installed, enabled, and allowed on the current site.                                            |
-| Companion-only status is not showing     | Open Discord desktop and check Discord RPC connection in the companion.                                                  |
-| Status is too detailed                   | Use platform-only mode or disable that site.                                                                             |
-| Discord shows the app logo               | Upload the matching Discord asset key and wait for cache refresh.                                                        |
-| macOS says app is damaged                | Run `sudo xattr -cr "/Applications/Activity Status Companion.app"`.                                                      |
+GitHub Actions builds the companion installers and publishes the release assets. Use the [latest release](https://github.com/GSUS2K/discord-status/releases/latest) for downloads and checksums. The [download site](https://gsus2k.github.io/discord-status/) explains which file belongs to each operating system.
 
 ## Support
 
-Issues and feature requests: [GitHub Issues](https://github.com/GSUS2K/discord-status/issues)
+- [Report a bug or request a feature](https://github.com/GSUS2K/discord-status/issues)
+- [Browse releases](https://github.com/GSUS2K/discord-status/releases)
+- [Open the download site](https://gsus2k.github.io/discord-status/)
+
+## License
+
+Discord Status is released under the [MIT License](LICENSE).
