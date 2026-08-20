@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: __dirname + '/.env' });
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 17654;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
 const ENABLE_PRESENCE_BUTTONS = process.env.ENABLE_PRESENCE_BUTTONS !== 'false';
@@ -222,8 +222,9 @@ app.post('/api/update-activity', async (req, res) => {
       instance: false
     };
 
-    if (activity.largeImageKey) {
-      presence.largeImageKey = activity.largeImageKey;
+    const artworkUrl = isDiscordImageUrl(activity.thumbnailUrl) ? activity.thumbnailUrl : '';
+    if (artworkUrl || activity.largeImageKey) {
+      presence.largeImageKey = artworkUrl || activity.largeImageKey;
     }
 
     if (activity.largeImageText) {
@@ -312,6 +313,15 @@ function isPublicHttpUrl(value) {
     const url = new URL(value);
     return url.protocol === 'https:' && !['localhost', '127.0.0.1'].includes(url.hostname);
   } catch (error) {
+    return false;
+  }
+}
+
+function isDiscordImageUrl(value) {
+  try {
+    const url = new URL(String(value || '').trim());
+    return url.protocol === 'https:' && url.href.length <= 300;
+  } catch {
     return false;
   }
 }

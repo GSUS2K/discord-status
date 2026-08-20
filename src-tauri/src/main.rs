@@ -1156,8 +1156,7 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
                 let mut selected_removed = false;
                 let mut selected_system = None;
                 if let Some(selected) = inner.selected_activity_id.as_deref() {
-                    if selected.starts_with("system:")
-                    {
+                    if selected.starts_with("system:") {
                         selected_system = inner
                             .system_apps
                             .iter()
@@ -1472,17 +1471,6 @@ fn parse_app_title_line(value: &str) -> Option<(String, Option<String>)> {
         .next()
         .map(|value| value.trim().trim_matches('"').to_string());
     Some((app_name, title.filter(|value| !value.is_empty())))
-}
-
-fn split_app_names(value: &str) -> Vec<String> {
-    let mut apps = value
-        .split(|char| char == '\n' || char == '\r' || char == ',')
-        .map(|item| item.trim().trim_matches('"').to_string())
-        .filter(|item| item.len() > 1)
-        .collect::<Vec<_>>();
-    apps.sort_by_key(|item| item.to_lowercase());
-    apps.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
-    apps
 }
 
 fn run_command_text(command: &str, args: &[&str]) -> Option<String> {
@@ -2242,8 +2230,10 @@ fn register_global_shortcuts<R: Runtime>(
     app: &AppHandle<R>,
     settings: &Settings,
 ) -> Result<(), String> {
-    let selector_shortcut = validate_shortcut(&settings.selector_shortcut, DEFAULT_SELECTOR_SHORTCUT)?;
-    let settings_shortcut = validate_shortcut(&settings.settings_shortcut, DEFAULT_SETTINGS_SHORTCUT)?;
+    let selector_shortcut =
+        validate_shortcut(&settings.selector_shortcut, DEFAULT_SELECTOR_SHORTCUT)?;
+    let settings_shortcut =
+        validate_shortcut(&settings.settings_shortcut, DEFAULT_SETTINGS_SHORTCUT)?;
     if selector_shortcut.eq_ignore_ascii_case(&settings_shortcut) {
         return Err("Status selector and settings shortcuts must be different.".to_string());
     }
@@ -2337,8 +2327,14 @@ fn normalize_settings(settings: Settings) -> Settings {
             .map(|value| value.trim().to_string())
             .filter(|value| !value.is_empty())
             .collect(),
-        selector_shortcut: normalize_shortcut(&settings.selector_shortcut, DEFAULT_SELECTOR_SHORTCUT),
-        settings_shortcut: normalize_shortcut(&settings.settings_shortcut, DEFAULT_SETTINGS_SHORTCUT),
+        selector_shortcut: normalize_shortcut(
+            &settings.selector_shortcut,
+            DEFAULT_SELECTOR_SHORTCUT,
+        ),
+        settings_shortcut: normalize_shortcut(
+            &settings.settings_shortcut,
+            DEFAULT_SETTINGS_SHORTCUT,
+        ),
     }
 }
 
@@ -2370,12 +2366,23 @@ fn validate_shortcut(value: &str, default_value: &str) -> Result<String, String>
     let has_primary_modifier = modifiers.iter().any(|part| {
         matches!(
             part.to_ascii_lowercase().as_str(),
-            "commandorcontrol" | "cmdorctrl" | "command" | "cmd" | "control" | "ctrl" | "super" | "meta" | "alt" | "option"
+            "commandorcontrol"
+                | "cmdorctrl"
+                | "command"
+                | "cmd"
+                | "control"
+                | "ctrl"
+                | "super"
+                | "meta"
+                | "alt"
+                | "option"
         )
     });
 
     if !has_primary_modifier {
-        return Err("Shortcut must include CommandOrControl, Command, Control, Alt, or Option.".to_string());
+        return Err(
+            "Shortcut must include CommandOrControl, Command, Control, Alt, or Option.".to_string(),
+        );
     }
 
     if matches!(

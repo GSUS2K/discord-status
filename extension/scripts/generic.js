@@ -674,7 +674,6 @@ function getThumbnailUrl() {
     document.querySelector('meta[name="twitter:image"]')?.content,
     document.querySelector('link[rel="image_src"]')?.href,
     document.querySelector('video[poster]')?.poster,
-    document.querySelector('video source[src]')?.src,
     getStructuredImage()
   ];
 
