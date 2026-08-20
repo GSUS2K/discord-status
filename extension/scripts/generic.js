@@ -669,10 +669,43 @@ function getMetaTitle() {
 }
 
 function getThumbnailUrl() {
-  return document.querySelector('meta[property="og:image"]')?.content?.trim()
-    || document.querySelector('meta[name="twitter:image"]')?.content?.trim()
-    || document.querySelector('link[rel="image_src"]')?.href?.trim()
-    || '';
+  const candidates = [
+    document.querySelector('meta[property="og:image"]')?.content,
+    document.querySelector('meta[name="twitter:image"]')?.content,
+    document.querySelector('link[rel="image_src"]')?.href,
+    document.querySelector('video[poster]')?.poster,
+    document.querySelector('video source[src]')?.src,
+    getStructuredImage()
+  ];
+
+  return candidates
+    .map(value => String(value || '').trim())
+    .map(value => {
+      try {
+        return new URL(value, window.location.href).href;
+      } catch {
+        return '';
+      }
+    })
+    .find(value => /^https?:\/\//i.test(value)) || '';
+}
+
+function getStructuredImage() {
+  for (const script of document.querySelectorAll('script[type="application/ld+json"]')) {
+    try {
+      const value = JSON.parse(script.textContent || 'null');
+      const entries = Array.isArray(value) ? value : [value];
+      for (const entry of entries) {
+        const image = entry?.image;
+        if (typeof image === 'string') return image;
+        if (Array.isArray(image) && typeof image[0] === 'string') return image[0];
+        if (image?.url) return image.url;
+      }
+    } catch {
+      // Pages often contain partial JSON-LD while they are still loading.
+    }
+  }
+  return '';
 }
 
 function cleanTitle(title, suffixes = []) {

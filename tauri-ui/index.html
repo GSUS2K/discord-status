@@ -224,6 +224,15 @@
       flex: 0 0 auto;
     }
 
+    .choice-artwork {
+      width: 42px;
+      height: 28px;
+      border-radius: 7px;
+      object-fit: cover;
+      background: rgba(255, 255, 255, 0.08);
+      flex: 0 0 auto;
+    }
+
     .choice-copy {
       min-width: 0;
       flex: 1;
@@ -604,6 +613,7 @@
         row.className = 'choice-row';
 
         const icon = createSiteIcon(item.platform);
+        const artwork = createActivityArtwork(item);
 
         const copy = document.createElement('div');
         copy.className = 'choice-copy';
@@ -617,7 +627,7 @@
         meta.textContent = item.state || item.tabTitle || 'Active';
 
         copy.append(title, meta);
-        row.append(icon, copy);
+        row.append(icon, copy, artwork);
         button.append(row);
         button.addEventListener('click', () => runAction(() => activityStatus.selectActivity(item.id), 'Activity selected.'));
         activityInbox.append(button);
@@ -634,6 +644,20 @@
         img.src = makeFallbackIcon(platform);
       }, { once: true });
       return img;
+    }
+
+    function createActivityArtwork(item) {
+      const image = document.createElement('img');
+      image.className = 'choice-artwork';
+      image.alt = '';
+      const source = String(item.thumbnailUrl || '').trim();
+      if (!/^https?:\/\//i.test(source)) {
+        image.style.display = 'none';
+        return image;
+      }
+      image.src = source;
+      image.addEventListener('error', () => image.remove(), { once: true });
+      return image;
     }
 
     function makeFallbackIcon(platform = 'Activity') {

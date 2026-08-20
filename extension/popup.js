@@ -183,8 +183,9 @@ function updateStatus() {
     state.className = 'activity-state';
     state.textContent = activity.state || 'Active';
 
+    const artwork = createActivityArtwork(activity);
     copy.append(platform, details, state);
-    row.append(icon, copy);
+    row.append(icon, copy, artwork);
     statusDiv.append(row);
   });
 }
@@ -346,6 +347,8 @@ function renderDetectedTabs() {
 
       const icon = createSiteIcon(activity.platform);
 
+      const artwork = createActivityArtwork(activity);
+
       const info = document.createElement('div');
       info.className = 'tab-info';
 
@@ -358,7 +361,7 @@ function renderDetectedTabs() {
       subtitle.textContent = formatSubtitle(activity);
 
       info.append(title, subtitle);
-      main.append(icon, info);
+      main.append(icon, info, artwork);
 
       const button = document.createElement('button');
       button.className = `tab-select${isSelected ? ' active' : ''}`;
@@ -373,6 +376,18 @@ function renderDetectedTabs() {
       tabList.appendChild(card);
     }
   });
+}
+
+function createActivityArtwork(activity) {
+  const image = document.createElement('img');
+  image.className = 'activity-artwork hidden';
+  image.alt = '';
+  const source = String(activity.thumbnailUrl || '').trim();
+  if (!/^https?:\/\//i.test(source)) return image;
+  image.src = source;
+  image.addEventListener('load', () => image.classList.remove('hidden'), { once: true });
+  image.addEventListener('error', () => image.remove(), { once: true });
+  return image;
 }
 
 function renderSiteToggles() {

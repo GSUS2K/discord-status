@@ -17,6 +17,8 @@ The companion app can also work without the Chrome extension for manual custom s
 
 ![Discord Status preview](docs/assets/hero.png)
 
+Install guide: [Discord Status download site](https://gsus2k.github.io/discord-status/)
+
 ## Install
 
 ### Extension + Companion
@@ -54,11 +56,15 @@ Go to the [latest release](https://github.com/GSUS2K/discord-status/releases/lat
 
 The Chrome extension is for browser activity detection. The companion app is required to update Discord Rich Presence.
 
+For a visual guide to the installers and first launch, use the [download site](https://gsus2k.github.io/discord-status/). Choose one companion installer for your operating system, then install the Chrome extension as well if you want browser activity.
+
 ## Features
 
 | Feature                    | What it does                                                                                                                                          |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Browser activity detection | Detects supported Chrome tab activity and sends it to the companion.                                                                                  |
+| Media artwork             | Uses show posters, album art, player posters, and structured page artwork when a site exposes it.                                                    |
+| Download hub               | Includes a responsive install guide that explains which release asset belongs to each platform.                                                        |
 | Discord Rich Presence      | Updates Discord desktop with your current activity.                                                                                                   |
 | Companion-only mode        | Use manual custom status, supported system apps, or games without the Chrome extension.                                                               |
 | Manual custom status       | Set your own Discord Rich Presence directly from the companion.                                                                                       |
