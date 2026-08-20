@@ -21,7 +21,8 @@ function debugNetflix(...args) {
 
 function detectNetflixActivity() {
   try {
-    let title = getNetflixTitle();
+    const metadata = getNetflixMetadata();
+    let title = metadata.seriesTitle || metadata.episodeTitle;
 
     if (!title || !isLikelyTitle(title)) {
       if (lastGoodNetflixTitle && isLikelyTitle(lastGoodNetflixTitle)) {
@@ -46,11 +47,16 @@ function detectNetflixActivity() {
 
     const activity = {
       platform: 'Netflix',
-      details: title.substring(0, 100),
-      state: formatMediaState('Watching', isPlaying, currentTime, duration),
+      details: metadata.seriesTitle || title.substring(0, 100),
+      state: formatMediaState('Watching', isPlaying, currentTime, duration, metadata.episodeLabel),
+      seriesTitle: metadata.seriesTitle || title.substring(0, 100),
+      seasonNumber: metadata.seasonNumber,
+      episodeNumber: metadata.episodeNumber,
+      episodeTitle: metadata.episodeTitle,
+      episodeLabel: metadata.episodeLabel,
       largeImageKey: 'netflix',
       largeImageText: 'Watching Netflix',
-      thumbnailUrl: document.querySelector('meta[property="og:image"]')?.content?.trim() || '',
+      thumbnailUrl: getNetflixThumbnailUrl(),
       url: window.location.href,
       isPlaying,
       mediaCurrentTime: currentTime,
@@ -66,6 +72,10 @@ function detectNetflixActivity() {
 }
 
 function getNetflixTitle() {
+  return getNetflixMetadata().rawTitle;
+}
+
+function getNetflixMetadata() {
   const selectors = [
     '[data-uia="video-title"]',
     '[data-uia*="video-title"]',
@@ -106,25 +116,68 @@ function getNetflixTitle() {
     candidates.push(pageTitle);
   }
 
-  const chosen = pickNetflixTitle(candidates);
+  const rawTitle = pickNetflixRawTitle(candidates);
+  const parsed = parseEpisodeTitle(rawTitle || lastGoodNetflixTitle || '');
+  const chosen = parsed.seriesTitle || parsed.episodeTitle;
   if (chosen) {
     lastGoodNetflixTitle = chosen;
   }
 
-  return chosen;
+  return { rawTitle, ...parsed };
 }
 
-function pickNetflixTitle(candidates) {
+function pickNetflixRawTitle(candidates) {
   const valid = candidates
-    .map(cleanNetflixTitle)
+    .map(normalizeTitleText)
     .filter(isLikelyTitle);
 
   if (!valid.length) {
     return null;
   }
 
-  valid.sort((a, b) => a.length - b.length);
-  return valid[0];
+  valid.sort((a, b) => scoreNetflixTitle(b) - scoreNetflixTitle(a));
+  return valid[0] || '';
+}
+
+function scoreNetflixTitle(value) {
+  let score = String(value || '').length;
+  if (/\b(?:S\d+\s*)?E\d+\b|\bEpisode\s*\d+\b/i.test(value)) score += 80;
+  if (/browse|home|profile|search/i.test(value)) score -= 100;
+  return score;
+}
+
+function parseEpisodeTitle(value) {
+  const raw = cleanNetflixTitle(value);
+  if (!raw) return { seriesTitle: '', episodeTitle: '', seasonNumber: null, episodeNumber: null, episodeLabel: '' };
+
+  const seasonEpisode = raw.match(/^(.*?)\s+S(\d+)\s*E(\d+)(?:\s*[-:|.]?\s*)(.*)$/i);
+  const episodeOnly = raw.match(/^(.*?)\s+E(\d+)(?:\s*[-:|.]?\s*)(.*)$/i)
+    || raw.match(/^(.*?)\s+Episode\s*(\d+)(?:\s*[-:|.]?\s*)(.*)$/i);
+
+  if (!seasonEpisode && !episodeOnly) {
+    return { seriesTitle: raw, episodeTitle: '', seasonNumber: null, episodeNumber: null, episodeLabel: '' };
+  }
+
+  const season = seasonEpisode ? Number(seasonEpisode[2]) : null;
+  const episode = Number(seasonEpisode ? seasonEpisode[3] : episodeOnly[2]);
+  const episodeTitle = normalizeTitleText(seasonEpisode ? seasonEpisode[4] : episodeOnly[3]);
+  const label = `${season ? `S${season} ` : ''}E${episode}${episodeTitle ? ` · ${episodeTitle}` : ''}`;
+  return {
+    seriesTitle: normalizeTitleText(seasonEpisode ? seasonEpisode[1] : episodeOnly[1]),
+    episodeTitle,
+    seasonNumber: season,
+    episodeNumber: episode,
+    episodeLabel: label
+  };
+}
+
+function getNetflixThumbnailUrl() {
+  const candidates = [
+    document.querySelector('meta[property="og:image"]')?.content,
+    document.querySelector('meta[name="twitter:image"]')?.content,
+    document.querySelector('video[poster]')?.poster
+  ];
+  return candidates.map(value => String(value || '').trim()).find(value => /^https?:\/\//i.test(value)) || '';
 }
 
 function isLikelyTitle(title) {

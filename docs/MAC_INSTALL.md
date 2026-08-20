@@ -1,11 +1,11 @@
 # Opening The macOS Companion App
 
-Activity Status Companion is currently distributed without Apple Developer ID notarization.
+Discord Status Companion is currently distributed without Apple Developer ID notarization.
 
 Because of that, macOS Gatekeeper may show:
 
 ```text
-"Activity Status Companion" is damaged and can't be opened.
+"Discord Status Companion" is damaged and can't be opened.
 You should move it to the Trash.
 ```
 
@@ -18,10 +18,10 @@ Release builds are ad-hoc signed so the app bundle is sealed consistently, but t
 After moving the app to `/Applications`, run:
 
 ```bash
-xattr -dr com.apple.quarantine "/Applications/Activity Status Companion.app"
+xattr -dr com.apple.quarantine "/Applications/Discord Status Companion.app"
 ```
 
-Then open Activity Status Companion again.
+Then open Discord Status Companion again.
 
 If you kept the app somewhere else, replace the path with the actual `.app` path.
 

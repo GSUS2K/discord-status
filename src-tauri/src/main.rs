@@ -114,6 +114,11 @@ struct ActivityEntry {
     platform: String,
     details: String,
     state: String,
+    series_title: Option<String>,
+    season_number: Option<u32>,
+    episode_number: Option<u32>,
+    episode_title: Option<String>,
+    episode_label: Option<String>,
     url: Option<String>,
     large_image_key: Option<String>,
     large_image_text: Option<String>,
@@ -195,6 +200,11 @@ struct IncomingActivity {
     tab_title: Option<String>,
     details: Option<String>,
     state: Option<String>,
+    series_title: Option<String>,
+    season_number: Option<u32>,
+    episode_number: Option<u32>,
+    episode_title: Option<String>,
+    episode_label: Option<String>,
     platform: Option<String>,
     large_image_key: Option<String>,
     large_image_text: Option<String>,
@@ -265,7 +275,7 @@ async fn main() {
     tauri::Builder::default()
         .plugin(
             tauri_plugin_autostart::Builder::new()
-                .app_name("Activity Status Companion")
+                .app_name("Discord Status Companion")
                 .build(),
         )
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
@@ -320,7 +330,7 @@ async fn main() {
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("failed to run Activity Status Companion");
+        .expect("failed to run Discord Status Companion");
 }
 
 fn configure_linux_webkit_workarounds() {
@@ -338,7 +348,7 @@ fn configure_linux_webkit_workarounds() {
 
 fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let icon = Image::from_bytes(include_bytes!("../icons/icon.png"))?;
-    let open = MenuItem::with_id(app, "open", "Open Activity Status", true, None::<&str>)?;
+    let open = MenuItem::with_id(app, "open", "Open Discord Status", true, None::<&str>)?;
     let selector = MenuItem::with_id(app, "selector", "Select Discord Status", true, None::<&str>)?;
     let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
     let chrome = MenuItem::with_id(app, "chrome", "Open Chrome Extensions", true, None::<&str>)?;
@@ -370,8 +380,8 @@ fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         ],
     )?;
 
-    TrayIconBuilder::with_id("activity-status")
-        .tooltip("Activity Status Companion")
+    TrayIconBuilder::with_id("discord-status")
+        .tooltip("Discord Status Companion")
         .icon(icon)
         .menu(&menu)
         .show_menu_on_left_click(false)
@@ -680,6 +690,11 @@ async fn set_custom_activity(
         } else {
             message.to_string()
         }),
+        series_title: None,
+        season_number: None,
+        episode_number: None,
+        episode_title: None,
+        episode_label: None,
         platform: Some("Custom".to_string()),
         large_image_key: Some("manual".to_string()),
         large_image_text: Some("Custom Discord status".to_string()),
@@ -1238,6 +1253,11 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
                     tab_title: snapshot.window_title.clone(),
                     details: Some(snapshot.details.clone()),
                     state: Some(system_activity_state(&snapshot)),
+                    series_title: None,
+                    season_number: None,
+                    episode_number: None,
+                    episode_title: None,
+                    episode_label: None,
                     platform: Some(snapshot.app_name.clone()),
                     large_image_key: Some(snapshot.icon_key.clone()),
                     large_image_text: Some(format!("Using {}", snapshot.app_name)),
@@ -1417,7 +1437,10 @@ mod tests {
     #[test]
     fn vlc_titles_show_the_movie_without_player_suffix() {
         assert_eq!(
-            clean_system_window_title("VLC media player", Some("Chainsmoker Cat - VLC media player".to_string())),
+            clean_system_window_title(
+                "VLC media player",
+                Some("Chainsmoker Cat - VLC media player".to_string())
+            ),
             Some("Chainsmoker Cat".to_string())
         );
         assert_eq!(
@@ -1912,6 +1935,11 @@ fn activity_entry_from_payload(payload: &IncomingActivity) -> ActivityEntry {
             128,
         ),
         state: truncate(payload.state.as_deref().unwrap_or("Active"), 128),
+        series_title: payload.series_title.clone(),
+        season_number: payload.season_number,
+        episode_number: payload.episode_number,
+        episode_title: payload.episode_title.clone(),
+        episode_label: payload.episode_label.clone(),
         url: payload.url.clone().or_else(|| payload.source_url.clone()),
         large_image_key: payload.large_image_key.clone(),
         large_image_text: payload.large_image_text.clone(),
@@ -1933,6 +1961,11 @@ fn payload_from_activity_entry(entry: &ActivityEntry) -> IncomingActivity {
         tab_title: entry.tab_title.clone(),
         details: Some(entry.details.clone()),
         state: Some(entry.state.clone()),
+        series_title: entry.series_title.clone(),
+        season_number: entry.season_number,
+        episode_number: entry.episode_number,
+        episode_title: entry.episode_title.clone(),
+        episode_label: entry.episode_label.clone(),
         platform: Some(entry.platform.clone()),
         large_image_key: entry
             .large_image_key
@@ -2298,6 +2331,11 @@ fn system_activity_entry(system: &SystemActivity) -> ActivityEntry {
         platform: system.app_name.clone(),
         details: system.details.clone(),
         state: system_activity_state(system),
+        series_title: None,
+        season_number: None,
+        episode_number: None,
+        episode_title: None,
+        episode_label: None,
         url: None,
         large_image_key: Some(system.icon_key.clone()),
         large_image_text: Some(format!("Using {}", system.app_name)),

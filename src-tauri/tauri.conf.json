@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Activity Status Companion",
-  "version": "1.0.42",
+  "productName": "Discord Status Companion",
+  "version": "1.0.43",
   "identifier": "com.gsus.activitystatus",
   "build": {
     "frontendDist": "../tauri-ui"
@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Activity Status Companion",
+        "title": "Discord Status Companion",
         "url": "index.html",
         "width": 382,
         "height": 560,
@@ -24,7 +24,7 @@
       },
       {
         "label": "settings",
-        "title": "Activity Status Companion Settings",
+        "title": "Discord Status Companion Settings",
         "url": "settings.html",
         "width": 930,
         "height": 680,

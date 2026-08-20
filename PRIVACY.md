@@ -2,7 +2,7 @@
 
 Last updated: August 21, 2026
 
-Discord Status is a Chrome extension that shows supported browser activity as Discord Rich Presence through the local Activity Status Companion app.
+Discord Status is a Chrome extension that shows supported browser activity as Discord Rich Presence through the Discord Status Companion app.
 
 ## Data Stored Locally
 
@@ -18,7 +18,7 @@ This may include:
 
 ## Data Sent To The Companion App
 
-When enabled, the extension sends the current activity to the Activity Status Companion app running locally on the same computer, usually at `http://localhost:17654`.
+When enabled, the extension sends the current activity to the Discord Status Companion app running on the same computer, usually at `http://localhost:17654`.
 
 The companion app forwards the current activity to Discord through Discord's local Rich Presence connection.
 
@@ -42,7 +42,7 @@ Supported websites such as YouTube, Netflix, Spotify, GitHub, ChatGPT, Google Me
 
 Users can disable the extension, clear their current activity, clear extension logs, or uninstall the extension at any time.
 
-Users can also stop the Activity Status Companion app to stop Discord Rich Presence updates.
+Users can also stop the Discord Status Companion app to stop Discord Rich Presence updates.
 
 ## Contact
 

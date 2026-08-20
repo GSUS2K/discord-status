@@ -327,15 +327,17 @@
 
     .quick-start {
       position: fixed;
-      inset: 12px;
+      inset: auto 16px 16px 16px;
       z-index: 5;
       display: grid;
       align-content: start;
+      width: auto;
+      max-height: calc(100% - 32px);
       gap: 12px;
       padding: 16px;
       border: 1px solid #4d556b;
       border-radius: 12px;
-      background: #171a22;
+      background: linear-gradient(145deg, #17213b, #101621 58%);
       box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
     }
 
@@ -682,6 +684,11 @@
     .footer-actions { gap: 9px; }
     .footer-actions .action-btn { min-height: 36px; }
     .feedback-panel { border-color: rgba(124, 140, 255, .38); border-radius: 12px; background: linear-gradient(135deg, rgba(124, 140, 255, .16), rgba(114, 225, 165, .06)); }
+    .site-icon { width: 36px; height: 36px; border-radius: 10px; padding: 5px; background: #26334a; }
+    .activity-artwork { width: 60px; height: 42px; border-radius: 9px; }
+    .quick-start { border-color: rgba(124, 140, 255, .62); }
+    .quick-start h2 { font-family: "Space Grotesk", ui-sans-serif, sans-serif; font-size: 20px; letter-spacing: -.04em; }
+    .quick-start ol { padding-left: 21px; }
   </style>
 </head>
 <body>

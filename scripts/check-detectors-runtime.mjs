@@ -47,8 +47,8 @@ const netflixDocument = {
 };
 const netflix = loadDetector('extension/scripts/netflix.js', netflixDocument);
 const netflixActivity = netflix.detectNetflixActivity();
-if (netflixActivity?.details !== 'Chainsmoker Cat Episode 8') {
-  throw new Error(`Netflix title regression: ${netflixActivity?.details || 'no activity'}`);
+if (netflixActivity?.details !== 'Chainsmoker Cat' || netflixActivity?.episodeLabel !== 'E8') {
+  throw new Error(`Netflix metadata regression: ${netflixActivity?.details || 'no activity'} ${netflixActivity?.episodeLabel || ''}`);
 }
 
 const spotifyDocument = {
@@ -87,8 +87,8 @@ const genericDocument = {
 const generic = loadDetector('extension/scripts/generic.js', genericDocument);
 generic.window.location.hostname = 'crunchyroll.com';
 const genericActivity = generic.detectActivity();
-if (genericActivity?.details === 'Browse by Languages' || genericActivity?.details !== 'Chainsmoker Cat Episode 8') {
-  throw new Error(`Generic title regression: ${genericActivity?.details || 'no activity'}`);
+if (genericActivity?.details === 'Browse by Languages' || genericActivity?.details !== 'Chainsmoker Cat' || genericActivity?.episodeLabel !== 'E8') {
+  throw new Error(`Generic metadata regression: ${genericActivity?.details || 'no activity'} ${genericActivity?.episodeLabel || ''}`);
 }
 
 console.log('detector runtime checks passed');
