@@ -599,7 +599,7 @@
           <div class="row">
             <div>
               <div class="title">System app detection</div>
-              <div class="desc">Optional. Pick detected apps below; browser activity still wins when present.</div>
+              <div class="desc">Optional. Pick detected apps below; browser activity still wins when present. Media apps can show window titles such as the movie currently open in VLC.</div>
             </div>
             <label class="toggle">
               <input id="systemActivityEnabled" type="checkbox">
@@ -613,6 +613,7 @@
               <div class="app-picker">
                 <div class="actions">
                   <button id="refreshApps" class="command" type="button">Refresh Apps</button>
+                  <button id="enableMediaApps" class="command primary" type="button">Enable media apps</button>
                 </div>
                 <div id="systemAppsList" class="app-list"></div>
               </div>
@@ -1060,6 +1061,18 @@
         await activityStatus.refreshSystemApps();
         await refresh();
         toast('Detected apps refreshed.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
+    });
+    document.getElementById('enableMediaApps').addEventListener('click', async () => {
+      try {
+        for (const appName of ['VLC', 'Spotify', 'Steam']) {
+          currentSettings = await activityStatus.setSystemAppAllowed(appName, true);
+        }
+        await activityStatus.refreshSystemApps();
+        await refresh();
+        toast('VLC, Spotify, and Steam are ready for desktop status.');
       } catch (error) {
         toast(errorMessage(error), 'bad');
       }
