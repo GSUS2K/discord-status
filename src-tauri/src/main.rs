@@ -39,6 +39,7 @@ const DEFAULT_PORT: u16 = 17654;
 const LEGACY_PORT: u16 = 3000;
 const RPC_CONNECT_TIMEOUT: Duration = Duration::from_secs(4);
 const RELEASES_URL: &str = "https://github.com/GSUS2K/discord-status/releases/latest";
+const SETUP_GUIDE_URL: &str = "https://gsus2k.github.io/discord-status/";
 const DEFAULT_SELECTOR_SHORTCUT: &str = "CommandOrControl+Shift+Y";
 const DEFAULT_SETTINGS_SHORTCUT: &str = "CommandOrControl+Alt+Shift+S";
 const OLD_SETTINGS_SHORTCUT: &str = "CommandOrControl+Shift+Comma";
@@ -284,6 +285,7 @@ async fn main() {
             show_selector,
             hide_selector,
             open_chrome_extensions,
+            open_setup_guide,
             copy_text,
             check_for_updates,
             install_update,
@@ -724,6 +726,11 @@ async fn hide_selector(app: AppHandle) -> Result<(), String> {
 #[tauri::command]
 async fn open_chrome_extensions() -> Result<(), String> {
     open_chrome_url("chrome://extensions/")
+}
+
+#[tauri::command]
+async fn open_setup_guide() -> Result<(), String> {
+    open::that(SETUP_GUIDE_URL).map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -1400,6 +1407,32 @@ fn remove_case_insensitive_prefix(value: &str, prefix: &str) -> String {
         value[prefix.len()..].to_string()
     } else {
         value.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{clean_system_window_title, normalize_app_key};
+
+    #[test]
+    fn vlc_titles_show_the_movie_without_player_suffix() {
+        assert_eq!(
+            clean_system_window_title("VLC media player", Some("Chainsmoker Cat - VLC media player".to_string())),
+            Some("Chainsmoker Cat".to_string())
+        );
+        assert_eq!(
+            clean_system_window_title("VLC", Some("VLC media player - Episode 8".to_string())),
+            Some("Episode 8".to_string())
+        );
+    }
+
+    #[test]
+    fn generic_window_titles_are_not_used_for_the_app_name() {
+        assert_eq!(
+            clean_system_window_title("VLC", Some("VLC".to_string())),
+            None
+        );
+        assert_eq!(normalize_app_key("VLC media player"), "vlcmediaplayer");
     }
 }
 

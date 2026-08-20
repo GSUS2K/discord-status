@@ -534,6 +534,7 @@
           <div class="row guide-actions">
             <button id="guideSelector" class="command primary" type="button">Open selector</button>
             <button id="guideExtensions" class="command" type="button">Open Chrome extensions</button>
+            <button id="guideWebsite" class="command" type="button">Open setup guide</button>
             <button id="guideCopyUrl" class="command" type="button">Copy backend URL</button>
           </div>
         </section>
@@ -736,6 +737,7 @@
       installUpdate: () => invoke('install_update'),
       openSelector: () => invoke('show_selector'),
       openExtensions: () => invoke('open_chrome_extensions'),
+      openSetupGuide: () => invoke('open_setup_guide'),
       refreshSystemApps: () => invoke('refresh_system_apps'),
       setSystemAppAllowed: (appName, allowed) => invoke('set_system_app_allowed', { appName, allowed }),
       copyText: text => invoke('copy_text', { text }),
@@ -1043,6 +1045,14 @@
       try {
         await activityStatus.openExtensions();
         toast('Chrome extensions opened.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
+    });
+    document.getElementById('guideWebsite').addEventListener('click', async () => {
+      try {
+        await activityStatus.openSetupGuide();
+        toast('Setup guide opened.');
       } catch (error) {
         toast(errorMessage(error), 'bad');
       }

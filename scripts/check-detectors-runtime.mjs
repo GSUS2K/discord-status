@@ -69,4 +69,26 @@ if (spotifyActivity?.isPlaying !== false) {
   throw new Error('Spotify pause-state regression: paused media was reported as playing');
 }
 
+const genericDocument = {
+  title: 'Chainsmoker Cat Episode 8 - Netflix',
+  querySelectorAll: selector => {
+    if (selector === '[class*="erc-player-header-title"]') return [element('Browse by Languages')];
+    if (selector === 'h1') return [element('Chainsmoker Cat Episode 8')];
+    if (selector === 'script[type="application/ld+json"]') return [];
+    return [];
+  },
+  querySelector: selector => {
+    if (selector === 'video') return { paused: false, currentTime: 124, duration: 1422 };
+    if (selector === 'meta[property="og:title"]') return { content: 'Chainsmoker Cat Episode 8' };
+    if (selector === 'meta[property="og:image"]') return { content: 'https://image.example/show.jpg' };
+    return null;
+  }
+};
+const generic = loadDetector('extension/scripts/generic.js', genericDocument);
+generic.window.location.hostname = 'crunchyroll.com';
+const genericActivity = generic.detectActivity();
+if (genericActivity?.details === 'Browse by Languages' || genericActivity?.details !== 'Chainsmoker Cat Episode 8') {
+  throw new Error(`Generic title regression: ${genericActivity?.details || 'no activity'}`);
+}
+
 console.log('detector runtime checks passed');
