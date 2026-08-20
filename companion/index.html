@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Activity Status Companion</title>
+  <title>Discord Status Companion</title>
   <style>
     :root {
       color-scheme: dark;
@@ -296,6 +296,58 @@
       white-space: pre-wrap;
       overflow-wrap: anywhere;
     }
+
+    .guide {
+      margin-top: 12px;
+      padding: 14px;
+      border: 1px solid rgba(123, 140, 255, 0.4);
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(123, 140, 255, 0.13), rgba(255, 255, 255, 0.035));
+    }
+
+    .guide-title {
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+    .guide-copy {
+      margin: 4px 0 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .guide-steps {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: guide;
+    }
+
+    .guide-steps li {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 8px;
+      align-items: start;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .guide-steps li::before {
+      counter-increment: guide;
+      content: counter(guide);
+      display: grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 8px;
+      color: var(--text);
+      background: rgba(123, 140, 255, 0.25);
+      font-size: 11px;
+      font-weight: 850;
+    }
   </style>
 </head>
 <body>
@@ -303,12 +355,22 @@
     <section class="header">
       <img class="logo" src="../extension/icons/icon128.png" alt="">
       <div>
-        <h1>Activity Status</h1>
+        <h1>Discord Status Companion</h1>
         <div class="subtle">Discord Rich Presence bridge</div>
       </div>
     </section>
 
     <section class="content">
+      <section class="guide">
+        <div class="guide-title">Start here</div>
+        <p class="guide-copy">The companion connects Discord desktop to your browser extension and supported desktop apps.</p>
+        <ol class="guide-steps">
+          <li>Keep Discord desktop open and sign in.</li>
+          <li>Install and pin the Discord Status extension.</li>
+          <li>Start the backend, then choose Auto Detect or an activity.</li>
+        </ol>
+      </section>
+
       <section class="card status-grid">
         <div class="status-cell">
           <div class="label">Backend</div>

@@ -109,7 +109,7 @@ function createPopoverWindow() {
     skipTaskbar: true,
     alwaysOnTop: true,
     transparent: true,
-    title: 'Activity Status Companion',
+    title: 'Discord Status Companion',
     backgroundColor: '#00000000',
     vibrancy: process.platform === 'darwin' ? 'popover' : undefined,
     visualEffectState: process.platform === 'darwin' ? 'active' : undefined,
@@ -147,7 +147,7 @@ function createSettingsWindow() {
     minWidth: 760,
     minHeight: 560,
     show: false,
-    title: 'Activity Status Companion Settings',
+    title: 'Discord Status Companion Settings',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     backgroundColor: '#101114',
     vibrancy: process.platform === 'darwin' ? 'sidebar' : undefined,
@@ -183,7 +183,7 @@ function createTray() {
   if (tray) return;
 
   tray = new Tray(createTrayImage());
-  tray.setToolTip('Activity Status Companion');
+  tray.setToolTip('Discord Status Companion');
   tray.on('click', () => togglePopover());
   tray.on('right-click', () => showNativeTrayMenu());
 }

@@ -1,6 +1,6 @@
 {
   "appId": "com.gsus.activitystatus",
-  "productName": "Activity Status Companion",
+  "productName": "Discord Status Companion",
   "asarUnpack": [
     "backend/**/*"
   ],

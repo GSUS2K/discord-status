@@ -3,7 +3,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Activity Status Companion",
+        "title": "Discord Status Companion",
         "url": "index.html",
         "width": 382,
         "height": 560,
@@ -16,7 +16,7 @@
       },
       {
         "label": "settings",
-        "title": "Activity Status Companion Settings",
+        "title": "Discord Status Companion Settings",
         "url": "settings.html",
         "width": 930,
         "height": 680,

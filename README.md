@@ -58,7 +58,7 @@ The companion also works without the extension for custom activities, supported 
   <img src="docs/assets/store-screenshot-3.png" alt="Discord Status activity controls" width="47%">
   <img src="docs/assets/store-screenshot-4.png" alt="Discord Status settings" width="47%">
 </p>
-<p align="center"><img src="docs/assets/store-screenshot-5.png" alt="Discord profile with a show thumbnail and watching activity" width="75%"></p>
+<p align="center"><img src="docs/assets/hero.png" alt="Discord Status product overview" width="75%"></p>
 
 ## How It Works
 

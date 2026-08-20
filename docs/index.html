@@ -53,6 +53,18 @@
     .activity span { color:var(--muted); font-size:11px; }
     .progress { height:5px; margin-top:11px; border-radius:99px; background:#30394a; overflow:hidden; }
     .progress i { display:block; width:62%; height:100%; border-radius:inherit; background:var(--blue); }
+    .activity-console { position:relative; width:min(100%,470px); padding:18px; border:1px solid rgba(108,229,227,.3); border-radius:23px; background:linear-gradient(145deg,rgba(27,39,71,.92),rgba(11,19,31,.94)); box-shadow:0 30px 90px rgba(0,0,0,.42); transform:rotate(2deg); }
+    .console-top { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:15px; border-bottom:1px solid var(--line); }
+    .console-brand { display:flex; align-items:center; gap:10px; font:700 16px 'Space Grotesk',sans-serif; }
+    .console-brand img { width:34px; height:34px; border-radius:10px; }
+    .console-pill { padding:6px 9px; border:1px solid rgba(114,225,165,.4); border-radius:99px; color:var(--green); font-size:11px; font-weight:700; }
+    .console-activity { display:grid; grid-template-columns:62px 1fr; gap:13px; align-items:center; margin-top:15px; padding:13px; border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.05); }
+    .console-art { width:62px; height:78px; object-fit:cover; border-radius:9px; background:#253454; }
+    .console-activity small { color:var(--cyan); font-size:10px; font-weight:700; letter-spacing:.09em; }
+    .console-activity strong { display:block; margin:4px 0; font:700 17px 'Space Grotesk',sans-serif; }
+    .console-activity span { color:var(--muted); font-size:12px; }
+    .console-actions { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:13px; }
+    .console-actions span { padding:10px 7px; border:1px solid var(--line); border-radius:9px; color:var(--muted); text-align:center; font-size:11px; font-weight:700; }
     .floating-note { position:absolute; right:0; bottom:40px; display:flex; align-items:center; gap:9px; padding:10px 13px; border:1px solid rgba(108,229,227,.38); border-radius:11px; background:rgba(11,24,31,.88); color:var(--cyan); font-size:12px; font-weight:700; box-shadow:0 12px 32px rgba(0,0,0,.3); }
     .dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 12px var(--green); }
     section { padding:94px 0; border-top:1px solid var(--line); }
@@ -77,7 +89,10 @@
     .platform-result p { margin:5px 0 0; color:var(--muted); }
     .file-list { display:grid; gap:8px; margin-top:15px; }
     .file { display:flex; align-items:center; gap:10px; color:var(--muted); font-size:12px; }
-    .file b { color:var(--green); font-size:13px; }
+    .file-download { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border:1px solid var(--line); border-radius:9px; background:rgba(255,255,255,.035); transition:border-color .2s ease,background .2s ease,transform .2s ease; }
+    .file-download:hover { border-color:rgba(108,229,227,.65); background:rgba(108,229,227,.09); transform:translateX(2px); }
+    .file-download b { color:var(--ink); font-size:13px; }
+    .file-download small { color:var(--green); font-weight:700; }
     .direct-download { min-width:160px; }
     .download-note { margin:16px 0 0; color:var(--dim); font-size:12px; }
     .steps { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:33px; }
@@ -118,19 +133,14 @@
           <h1>Make your Discord status feel <em>alive.</em></h1>
           <p class="lead">Show the movie, music, game, app, or project you are actually using. Discord Status connects your browser and desktop to Discord Rich Presence without a remote activity service.</p>
           <div class="actions"><a class="button primary" href="#download">Choose my download</a><a class="button" href="https://chromewebstore.google.com/detail/discord-status/ekobpekegflobmheipgceigkldggkakd">Install the extension</a></div>
-          <div class="hero-meta"><span>Local-first</span><span>Windows</span><span>macOS</span><span>Linux</span><span>Open source</span></div>
+          <div class="hero-meta"><span>Windows</span><span>macOS</span><span>Linux</span><span>Browser media</span><span>Open source</span></div>
         </div>
         <div class="profile-stage">
           <div class="profile-glow"></div>
-          <div class="profile-card">
-            <div class="profile-banner"></div>
-            <div class="profile-body">
-              <div class="avatar"></div>
-              <div class="profile-name">GSUS2K</div>
-              <div class="profile-handle">gsus2k · online</div>
-              <div class="profile-tabs"><span>About Me</span><strong>Activity</strong><span>Mutual Servers</span></div>
-              <div class="activity"><img src="assets/store-screenshot-5.png" alt="Show activity thumbnail"><div><small>WATCHING NETFLIX</small><strong>The Headless Star</strong><span>Watching · 21:48 / 23:36</span><div class="progress"><i></i></div></div></div>
-            </div>
+          <div class="activity-console">
+            <div class="console-top"><div class="console-brand"><img src="assets/discord-status.png" alt="">Discord Status</div><span class="console-pill">Discord connected</span></div>
+            <div class="console-activity"><img class="console-art" src="assets/discord-status.png" alt="Discord Status"><div><small>WATCHING MEDIA</small><strong>Series and episode activity</strong><span>Artwork, playback state, and progress when available</span><div class="progress"><i></i></div></div></div>
+            <div class="console-actions"><span>Auto Detect</span><span>Choose activity</span><span>Custom status</span></div>
           </div>
           <div class="floating-note"><i class="dot"></i>Connected through your companion</div>
         </div>
@@ -151,7 +161,7 @@
 
       <section id="features"><div class="eyebrow">Built for real use</div><h2>More than a page title.</h2><p class="section-lead">Useful controls for people who want a status that is accurate, private, and easy to change.</p><div class="feature-grid"><article class="feature"><div class="feature-icon">◌</div><h3>Media that looks right</h3><p>Show posters, album art, playback state, and timing when supported by the site or app.</p></article><article class="feature"><div class="feature-icon">⌘</div><h3>Desktop activity</h3><p>Detect supported apps such as VLC and games locally through the companion.</p></article><article class="feature"><div class="feature-icon">✦</div><h3>Flexible controls</h3><p>Use active-tab mode, manual selection, custom status fields, shortcuts, and site toggles.</p></article><article class="feature"><div class="feature-icon">⌁</div><h3>Private by default</h3><p>Activity travels from the extension to localhost and then to Discord desktop, not through a hosted presence service.</p></article><article class="feature"><div class="feature-icon">↺</div><h3>Recovery built in</h3><p>Connection checks, reconnect actions, version matching, logs, and diagnostics help you fix problems quickly.</p></article><article class="feature"><div class="feature-icon">+</div><h3>Custom activities</h3><p>Write your own title, details, artwork, buttons, and timestamps when automatic detection is not enough.</p></article></div></section>
 
-      <section><div class="section-head"><div><div class="eyebrow">See the result</div><h2>Made for the Discord profile.</h2><p class="section-lead">The extension and companion stay out of the way while the useful part appears where friends already look.</p></div></div><div class="gallery"><img class="wide" src="assets/store-marquee.png" alt="Discord Status profile activity preview"><img src="assets/store-screenshot-1.png" alt="Discord Status browser activity setup"><img src="assets/store-screenshot-2.png" alt="Discord Status supported sites"><img src="assets/store-screenshot-3.png" alt="Discord Status activity controls"><img src="assets/store-screenshot-4.png" alt="Discord Status customization settings"><img class="wide" src="assets/store-screenshot-5.png" alt="Discord profile showing a show thumbnail"></div></section>
+      <section><div class="section-head"><div><div class="eyebrow">See the product</div><h2>Clear controls, useful activity.</h2><p class="section-lead">The real extension and companion screens show what you can control before you install.</p></div></div><div class="gallery"><img class="wide" src="assets/hero.png" alt="Discord Status product overview"><img src="assets/popup.png" alt="Discord Status extension popup"><img src="assets/manual-mode.png" alt="Discord Status manual activity selector"><img src="assets/settings.png" alt="Discord Status settings"><img src="assets/discord-status.png" alt="Discord Status application icon"></div></section>
 
       <section><div class="eyebrow">Need a hand?</div><h2>Quick answers.</h2><div class="faq"><details><summary>Do I need both downloads?</summary><p>For browser activity, yes: install the Chrome extension and one companion installer. The companion alone is enough for supported desktop apps and custom activities.</p></details><details><summary>Which Windows file should I choose?</summary><p>Use the Setup executable for a normal install. Use the MSI only for managed or scripted deployments.</p></details><details><summary>Why is Discord disconnected?</summary><p>Open Discord desktop, start the companion, and use Reconnect in the extension or companion. The local endpoint is http://localhost:17654.</p></details><details><summary>Where is my activity sent?</summary><p>The extension sends activity to the local companion over localhost. The companion sends it to Discord desktop. There is no remote activity server.</p></details></div></section>
     </main>
@@ -180,7 +190,14 @@
       platformCopy.textContent = data.copy;
       fileList.textContent = '';
       const matches = data.files.map(([label, pattern]) => [label, releaseAssets.find(asset => pattern.test(asset.name))]).filter(([, asset]) => asset);
-      matches.forEach(([label, asset], index) => { const row = document.createElement('div'); row.className='file'; row.innerHTML=`<b>${index === 0 ? '↓' : '·'}</b><span>${label}: ${asset.name}</span>`; fileList.appendChild(row); });
+      matches.forEach(([label, asset]) => {
+        const row = document.createElement('a');
+        row.className = 'file-download';
+        row.href = asset.browser_download_url;
+        row.download = '';
+        row.innerHTML = `<b>${label}</b><small>Download</small>`;
+        fileList.appendChild(row);
+      });
       const primary = releaseAssets.find(asset => data.match.test(asset.name));
       directDownload.href = primary?.browser_download_url || fallbackRelease;
       directDownload.textContent = primary ? 'Download now' : 'Open latest release';
@@ -197,7 +214,7 @@
     const gl = canvas.getContext('webgl', { alpha:true, antialias:false });
     if (gl) {
       const vertex = 'attribute vec2 p; void main(){gl_Position=vec4(p,0.0,1.0);}';
-      const fragment = 'precision mediump float; uniform vec2 r; uniform float t; void main(){vec2 p=(gl_FragCoord.xy-.5*r)/r.y; float d=length(p); float a=atan(p.y,p.x); float wave=sin(a*8.0+t*.45+d*18.0)*.5+.5; vec3 c=mix(vec3(.02,.055,.11),vec3(.08,.16,.22),smoothstep(1.1,.05,d)); c+=vec3(.12,.18,.5)*wave*.08*(1.0-smoothstep(.1,1.1,d)); gl_FragColor=vec4(c*(1.0-smoothstep(.3,1.25,d)),.34);}';
+      const fragment = 'precision mediump float; uniform vec2 r; uniform float t; void main(){vec2 p=(gl_FragCoord.xy-.5*r)/r.y; float waves=sin(p.x*3.0+t*.08)+sin(p.y*4.0-t*.06)+sin((p.x+p.y)*2.5+t*.04); float glow=smoothstep(1.2,.05,length(p)); vec3 c=vec3(.025,.06,.11)+vec3(.025,.07,.12)*(waves*.166+.5); c+=vec3(.025,.08,.12)*glow; gl_FragColor=vec4(c,.2);}';
       function shader(type, source) { const item=gl.createShader(type); gl.shaderSource(item,source); gl.compileShader(item); return item; }
       const program=gl.createProgram(); gl.attachShader(program,shader(gl.VERTEX_SHADER,vertex)); gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fragment)); gl.linkProgram(program); gl.useProgram(program); const buffer=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buffer); gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW); const loc=gl.getAttribLocation(program,'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0); const time=gl.getUniformLocation(program,'t'); const resolution=gl.getUniformLocation(program,'r'); function frame(now){ const scale=window.devicePixelRatio||1; canvas.width=innerWidth*scale; canvas.height=innerHeight*scale; gl.viewport(0,0,canvas.width,canvas.height); gl.uniform1f(time,now*.001); gl.uniform2f(resolution,canvas.width,canvas.height); gl.drawArrays(gl.TRIANGLES,0,6); requestAnimationFrame(frame); } requestAnimationFrame(frame);
     }

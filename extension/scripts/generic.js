@@ -516,11 +516,17 @@ function createMediaActivity({ platform, selectors, fallbackSuffixes, mediaSelec
   const media = getMediaInfo(mediaSelector);
 
   if (!title) return null;
+  const metadata = parseEpisodeMetadata(title);
 
   return {
     platform,
-    details: truncate(title),
-    state: truncate(media.label),
+    details: truncate(metadata.seriesTitle),
+    state: truncate(formatMediaState('Playing', media.isPlaying, media.currentTime, media.duration, metadata.episodeLabel)),
+    seriesTitle: metadata.seriesTitle,
+    seasonNumber: metadata.seasonNumber,
+    episodeNumber: metadata.episodeNumber,
+    episodeTitle: metadata.episodeTitle,
+    episodeLabel: metadata.episodeLabel,
     largeImageKey,
     largeImageText,
     thumbnailUrl: getThumbnailUrl(),
@@ -542,11 +548,17 @@ function createVideoActivity({ platform, titleSelectors, titleFallbacks, largeIm
   if (!title || !document.querySelector('video')) {
     return null;
   }
+  const metadata = parseEpisodeMetadata(title);
 
   return {
     platform,
-    details: truncate(title),
-    state: truncate(media.label),
+    details: truncate(metadata.seriesTitle),
+    state: truncate(formatMediaState('Watching', media.isPlaying, media.currentTime, media.duration, metadata.episodeLabel)),
+    seriesTitle: metadata.seriesTitle,
+    seasonNumber: metadata.seasonNumber,
+    episodeNumber: metadata.episodeNumber,
+    episodeTitle: metadata.episodeTitle,
+    episodeLabel: metadata.episodeLabel,
     largeImageKey,
     largeImageText,
     thumbnailUrl: getThumbnailUrl(),
@@ -597,6 +609,36 @@ function formatDuration(seconds) {
   const minutes = Math.floor(safeSeconds / 60);
   const rest = Math.floor(safeSeconds % 60);
   return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
+}
+
+function parseEpisodeMetadata(value) {
+  const raw = normalizeTitleText(value);
+  const match = raw.match(/^(.*?)\s+S(\d+)\s*E(\d+)(?:\s*[-:|.]?\s*)(.*)$/i);
+  if (match) {
+    const episodeTitle = normalizeTitleText(match[4] || '');
+    return {
+      seriesTitle: normalizeTitleText(match[1]),
+      seasonNumber: Number(match[2]),
+      episodeNumber: Number(match[3]),
+      episodeTitle,
+      episodeLabel: `S${match[2]} E${match[3]}${episodeTitle ? ` · ${episodeTitle}` : ''}`
+    };
+  }
+
+  const episode = raw.match(/^(.*?)\s+E(\d+)(?:\s*[-:|.]?\s*)(.*)$/i)
+    || raw.match(/^(.*?)\s+Episode\s*(\d+)(?:\s*[-:|.]?\s*)(.*)$/i);
+  if (!episode) {
+    return { seriesTitle: raw, seasonNumber: null, episodeNumber: null, episodeTitle: '', episodeLabel: '' };
+  }
+
+  const episodeTitle = normalizeTitleText(episode[3] || '');
+  return {
+    seriesTitle: normalizeTitleText(episode[1]),
+    seasonNumber: null,
+    episodeNumber: Number(episode[2]),
+    episodeTitle,
+    episodeLabel: `E${episode[2]}${episodeTitle ? ` · ${episodeTitle}` : ''}`
+  };
 }
 
 function getFirstText(selectors) {
