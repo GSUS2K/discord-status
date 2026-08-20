@@ -645,6 +645,44 @@
       transform: translateY(0);
     }
   </style>
+  <style>
+    :root {
+      --bg: #0b0f18;
+      --panel: #121927;
+      --panel-soft: #192235;
+      --line: rgba(169, 186, 220, 0.16);
+      --muted: #95a3bb;
+      --accent: #7c8cff;
+      --accent-strong: #91a0ff;
+      --success: #72e1a5;
+    }
+
+    body { background: radial-gradient(circle at 100% 0, rgba(124, 140, 255, .17), transparent 32%), var(--bg); font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif; }
+    .shell { padding: 16px; }
+    header { margin-bottom: 16px; }
+    .mark { border-radius: 12px; box-shadow: 0 8px 22px rgba(0, 0, 0, .28); }
+    h1 { font-family: "Space Grotesk", ui-sans-serif, sans-serif; letter-spacing: -.04em; }
+    .subtitle { color: #8f9db7; }
+    .section { border-color: var(--line); border-radius: 14px; background: rgba(18, 25, 39, .88); box-shadow: 0 12px 28px rgba(0, 0, 0, .16); padding: 14px; margin-bottom: 12px; }
+    .section-title { color: #b8c5dc; letter-spacing: .1em; font-size: 10px; }
+    .status-display { border-color: rgba(169, 186, 220, .13); border-radius: 11px; background: #0e1522; }
+    .activity-details, .tab-title { font-family: "Space Grotesk", ui-sans-serif, sans-serif; letter-spacing: -.02em; }
+    .activity-platform, .activity-state, .selected-tab-label, .empty { color: var(--muted); }
+    .health-badge { border-color: var(--line); background: rgba(255, 255, 255, .045); }
+    .toggle-switch.active { border-color: rgba(114, 225, 165, .72); background: rgba(114, 225, 165, .26); }
+    button:hover { border-color: rgba(145, 160, 255, .65); background: rgba(124, 140, 255, .13); }
+    .action-btn, .mode-btn, .tab-select { border-radius: 9px; background: rgba(255, 255, 255, .045); }
+    .mode-selector, .pick-selector { gap: 8px; }
+    .mode-btn.active, .pick-btn.active { border-color: rgba(124, 140, 255, .9); background: rgba(124, 140, 255, .25); }
+    .setup-checklist, .tab-card, .site-chip { border-color: rgba(169, 186, 220, .13); border-radius: 10px; background: #0e1522; }
+    .site-chip { min-height: 34px; }
+    .site-chip:hover, .tab-card:hover { border-color: rgba(124, 140, 255, .62); background: rgba(124, 140, 255, .1); }
+    .search-field, input { border-color: rgba(169, 186, 220, .18); border-radius: 9px; background: #0b111c; }
+    .search-field:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 140, 255, .13); }
+    .footer-actions { gap: 9px; }
+    .footer-actions .action-btn { min-height: 36px; }
+    .feedback-panel { border-color: rgba(124, 140, 255, .38); border-radius: 12px; background: linear-gradient(135deg, rgba(124, 140, 255, .16), rgba(114, 225, 165, .06)); }
+  </style>
 </head>
 <body>
   <main class="shell">

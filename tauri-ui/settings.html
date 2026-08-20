@@ -489,6 +489,27 @@
       }
     }
   </style>
+  <style>
+    :root { --bg: #090e17; --glass: rgba(18, 25, 39, .88); --panel: rgba(255, 255, 255, .045); --panel-strong: rgba(124, 140, 255, .14); --line: rgba(169, 186, 220, .16); --text: #f4f7fb; --muted: #95a3bb; --green: #72e1a5; --amber: #ffbd73; }
+    html, body { background: radial-gradient(circle at 100% 0, rgba(124, 140, 255, .18), transparent 31%), #090e17; font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif; }
+    .shell { grid-template-columns: 226px 1fr; border-color: var(--line); background: rgba(8, 13, 22, .35); }
+    aside { border-color: var(--line); background: rgba(10, 16, 27, .76); padding: 24px 14px; }
+    .brand-title, h1, .title { font-family: "Space Grotesk", ui-sans-serif, sans-serif; letter-spacing: -.04em; }
+    .nav-button { border-radius: 10px; }
+    .nav-button.active { border-color: rgba(124, 140, 255, .5); background: rgba(124, 140, 255, .15); }
+    main { padding: 38px 42px 52px; }
+    h1 { font-size: 34px; }
+    .lede { color: var(--muted); }
+    .panel { border-color: var(--line); border-radius: 16px; background: var(--glass); box-shadow: 0 22px 65px rgba(0, 0, 0, .2); }
+    .guide-step, .status-card { border-color: rgba(169, 186, 220, .14); border-radius: 11px; background: rgba(7, 12, 21, .55); }
+    input, select { border-color: rgba(169, 186, 220, .18); border-radius: 9px; background: #0b111c; }
+    input:focus, select:focus { border-color: #7c8cff; box-shadow: 0 0 0 3px rgba(124, 140, 255, .13); }
+    .row { border-color: var(--line); }
+    .toggle input:checked + .slider { background: var(--green); }
+    button { border-radius: 9px; background: rgba(255, 255, 255, .05); }
+    button:hover { border-color: rgba(145, 160, 255, .65); background: rgba(124, 140, 255, .13); }
+    .shortcut-record, #saveSettings { border-color: rgba(114, 225, 165, .58); background: rgba(114, 225, 165, .14); }
+  </style>
 </head>
 <body>
   <div class="shell">
