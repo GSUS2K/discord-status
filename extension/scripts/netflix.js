@@ -172,10 +172,24 @@ function parseEpisodeTitle(value) {
 }
 
 function getNetflixThumbnailUrl() {
+  const playerImages = Array.from(document.querySelectorAll('img[src], [style*="background-image"]'))
+    .map(element => {
+      const background = String(element.style?.backgroundImage || '').match(/url\(["']?(.*?)["']?\)/i)?.[1];
+      const url = element.currentSrc || element.src || background || '';
+      const width = Number(element.naturalWidth || element.clientWidth || 0);
+      const height = Number(element.naturalHeight || element.clientHeight || 0);
+      return { url, area: width * height, ratio: height > 0 ? width / height : 0 };
+    })
+    .filter(item => /^https?:\/\//i.test(item.url))
+    .filter(item => !/avatar|profile|logo|sprite|icon/i.test(item.url))
+    .filter(item => item.area === 0 || (item.area > 24000 && item.ratio > .55 && item.ratio < 2.4))
+    .sort((a, b) => b.area - a.area)
+    .map(item => item.url);
   const candidates = [
+    document.querySelector('video[poster]')?.poster,
+    ...playerImages,
     document.querySelector('meta[property="og:image"]')?.content,
-    document.querySelector('meta[name="twitter:image"]')?.content,
-    document.querySelector('video[poster]')?.poster
+    document.querySelector('meta[name="twitter:image"]')?.content
   ];
   return candidates.map(value => String(value || '').trim()).find(value => /^https?:\/\//i.test(value)) || '';
 }

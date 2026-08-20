@@ -439,88 +439,27 @@
     .pill { background: rgba(124, 140, 255, .13); color: #b4c0ff; }
     .choice-icon { width: 38px; height: 38px; border-radius: 10px; padding: 5px; background: #26334a; }
   </style>
+  <link rel="stylesheet" href="app-redesign.css">
 </head>
 <body>
   <main class="popover">
-    <section class="header">
-      <img class="logo" src="icon128.png" alt="">
-      <div>
-        <h1>Discord Status Companion</h1>
-        <div class="subtle">Discord Rich Presence bridge</div>
-      </div>
-    </section>
-
+    <section class="header"><div class="brand-lockup"><img class="logo" src="icon128.png" alt=""><div><h1>Discord Status Companion</h1><div class="subtle">Current activity</div></div></div><button id="settings" class="header-action" type="button">Settings</button></section>
     <section class="content">
-      <section class="card status-grid">
-        <div class="status-cell">
-          <div class="label">Backend</div>
-          <div id="backend" class="value"><span class="dot warn"></span>Checking</div>
-        </div>
-        <div class="status-cell">
-          <div class="label">Discord RPC</div>
-          <div id="discord" class="value"><span class="dot warn"></span>Checking</div>
-        </div>
-      </section>
-
-      <section class="card activity">
-        <div class="label">Last Activity</div>
-        <div id="activity" class="activity-title">None</div>
-        <div id="rpcError" class="subtle error"></div>
-      </section>
-
-      <section class="card inbox">
-        <div class="label">Activity Inbox</div>
-        <div id="activityInbox" class="inbox-list">
-          <div class="subtle">Waiting for browser activity.</div>
-        </div>
-      </section>
-
-      <section class="controls">
-        <button id="start" class="btn primary">Start</button>
-        <button id="stop" class="btn danger">Stop</button>
-        <button id="restart" class="btn wide">Restart Backend</button>
-        <button id="reconnect" class="btn wide">Reconnect Discord RPC</button>
-        <button id="fix" class="btn wide">Fix Connection</button>
-      </section>
-
-      <section class="card menu">
-        <button id="settings" class="row">
-          <strong>Settings</strong>
-          <span id="settingsShortcutPill" class="pill">Cmd/Ctrl + Alt + Shift + S</span>
-        </button>
-        <button id="selector" class="row">
-          <strong>Select Discord Status</strong>
-          <span id="selectorShortcutPill" class="pill">Cmd/Ctrl + Shift + Y</span>
-        </button>
-        <button id="extensions" class="row">
-          <strong>Open Chrome Extensions</strong>
-          <span class="pill">Chrome</span>
-        </button>
-        <button id="setupGuide" class="row">
-          <strong>Open Setup Guide</strong>
-          <span class="pill">Website</span>
-        </button>
-        <button id="copyUrl" class="row">
-          <strong>Copy Backend URL</strong>
-          <span id="urlPill" class="pill">localhost</span>
-        </button>
-        <button id="updates" class="row">
-          <strong>Open Latest Release</strong>
-          <span id="updatePill" class="pill">GitHub</span>
-        </button>
-        <button id="installUpdate" class="row">
-          <strong>Copy Diagnostics</strong>
-          <span class="pill">Debug</span>
-        </button>
-        <button id="quit" class="row">
-          <strong>Quit Companion</strong>
-          <span class="pill">Exit</span>
-        </button>
-      </section>
-
-      <section id="log" class="card log">Companion ready.</section>
+      <section class="connection-bar"><div id="backend" class="value"><span class="dot warn"></span>Checking</div><div id="discord" class="value"><span class="dot warn"></span>Checking</div></section>
+      <section class="card activity"><div id="currentArtwork" class="activity-art-placeholder">ARTWORK<br>FROM SOURCE</div><div class="activity-copy"><div class="label">SHOWING IN DISCORD</div><div id="activity" class="activity-title">Nothing selected</div><div id="activityMeta" class="activity-meta">Waiting for a source</div><div id="rpcError" class="subtle error"></div></div></section>
+      <button id="selector" class="select-action" type="button"><strong>Select activity</strong><span id="selectorShortcutPill" class="pill">Cmd/Ctrl + Shift + Y</span></button>
+      <section class="card inbox"><div class="inbox-heading"><div class="label">RECENT ACTIVITY</div><span>Choose a source</span></div><div id="activityInbox" class="inbox-list"><div class="subtle">Open a supported tab or desktop app.</div></div></section>
+      <section class="controls"><button id="start" class="btn primary">Start updates</button><button id="stop" class="btn danger">Pause updates</button><button id="reconnect" class="btn">Reconnect</button></section>
+      <details class="utility"><summary>More tools</summary><div class="utility-grid"><button id="restart" class="btn">Restart backend</button><button id="fix" class="btn">Repair connection</button><button id="extensions" class="btn">Chrome extensions</button><button id="setupGuide" class="btn">Setup guide</button><button id="copyUrl" class="btn">Copy <span id="urlPill">localhost</span></button><button id="updates" class="btn">Release <span id="updatePill"></span></button><button id="installUpdate" class="btn">Copy diagnostics</button><button id="quit" class="btn danger">Quit companion</button></div><div id="settingsShortcutPill" class="shortcut-note">Settings shortcut: Cmd/Ctrl + Alt + Shift + S</div><div id="log" class="log">Companion ready.</div></details>
     </section>
   </main>
+  <section id="onboarding" class="onboarding" hidden>
+    <div class="onboarding-head"><img src="icon128.png" alt=""><span>Discord Status Companion</span><b>QUICK START</b></div>
+    <h2>Get your first activity online.</h2>
+    <p>The companion connects your browser and desktop apps to Discord. Set it up once, then leave it running in the tray.</p>
+    <ol><li><span>1</span><div><b>Open Discord desktop</b><small>Sign in before starting Rich Presence.</small></div></li><li><span>2</span><div><b>Install the Chrome extension</b><small>It detects supported browser activity.</small></div></li><li><span>3</span><div><b>Choose an activity</b><small>Use the selector now or let Auto mode decide.</small></div></li></ol>
+    <div class="onboarding-actions"><button id="onboardingGuide" type="button">Setup website</button><button id="onboardingSelector" class="primary" type="button">Open selector</button><button id="onboardingDone" type="button">I’m ready</button></div>
+  </section>
   <section id="toasts" class="toasts" aria-live="polite"></section>
 
   <script>
@@ -550,6 +489,8 @@
     const backend = document.getElementById('backend');
     const discord = document.getElementById('discord');
     const activity = document.getElementById('activity');
+    const activityMeta = document.getElementById('activityMeta');
+    const currentArtwork = document.getElementById('currentArtwork');
     const rpcError = document.getElementById('rpcError');
     const activityInbox = document.getElementById('activityInbox');
     const log = document.getElementById('log');
@@ -559,12 +500,11 @@
     const selectorShortcutPill = document.getElementById('selectorShortcutPill');
     const installUpdate = document.getElementById('installUpdate');
     const toasts = document.getElementById('toasts');
+    const onboarding = document.getElementById('onboarding');
     const SITE_ICON_ALIASES = {
       googlemeet: 'meet',
       manualactivity: 'manual',
-      youtubemusic: 'youtube',
-      googledocs: 'google',
-      visualstudiocode: 'github'
+      visualstudiocode: 'vscode'
     };
     const actionButtons = ['start', 'stop', 'restart', 'reconnect', 'fix'].map(id => document.getElementById(id));
     let busy = false;
@@ -606,18 +546,39 @@
     function setStatus(status) {
       setLine(backend, status.backend, 'backend');
       setLine(discord, status.discord, 'discord');
-      activity.textContent = status.lastActivity || 'None';
+      const activities = status.activities || [];
+      const selectedId = status.selectedActivityId || status.currentActivityId || null;
+      const current = activities.find(item => item.id === selectedId) || activities[0] || null;
+      activity.textContent = current?.details || status.lastActivity || 'Nothing selected';
+      activityMeta.textContent = [current?.episodeLabel, current?.state, current?.platform].filter(Boolean).join(' · ') || 'Waiting for a source';
+      renderCurrentArtwork(current);
       rpcError.textContent = status.lastRpcError ? `RPC: ${status.lastRpcError}` : '';
       log.textContent = status.log || '';
       const update = status.update || {};
       updatePill.textContent = update.availableVersion || update.version || 'check';
       installUpdate.disabled = false;
-      renderActivityInbox(status.activities || [], status.selectedActivityId || status.currentActivityId || null);
+      renderActivityInbox(activities, selectedId);
       try {
         urlPill.textContent = new URL(status.url || 'http://localhost:17654').host;
       } catch {
         urlPill.textContent = 'localhost';
       }
+    }
+
+    function renderCurrentArtwork(item) {
+      currentArtwork.textContent = '';
+      currentArtwork.classList.remove('has-artwork');
+      const source = String(item?.thumbnailUrl || '').trim();
+      if (!/^https?:\/\//i.test(source)) {
+        currentArtwork.innerHTML = 'ARTWORK<br>FROM SOURCE';
+        return;
+      }
+      const image = document.createElement('img');
+      image.alt = '';
+      image.src = source;
+      image.addEventListener('load', () => currentArtwork.classList.add('has-artwork'), { once: true });
+      image.addEventListener('error', () => { currentArtwork.innerHTML = 'ARTWORK<br>FROM SOURCE'; }, { once: true });
+      currentArtwork.append(image);
     }
 
     function renderActivityInbox(activities, selectedId) {
@@ -815,6 +776,17 @@
       }
     });
     document.getElementById('quit').addEventListener('click', () => activityStatus.quit());
+    document.getElementById('onboardingGuide').addEventListener('click', () => activityStatus.openSetupGuide());
+    document.getElementById('onboardingSelector').addEventListener('click', async () => {
+      localStorage.setItem('onboardingComplete', 'true');
+      onboarding.hidden = true;
+      await activityStatus.openSelector();
+    });
+    document.getElementById('onboardingDone').addEventListener('click', () => {
+      localStorage.setItem('onboardingComplete', 'true');
+      onboarding.hidden = true;
+    });
+    if (localStorage.getItem('onboardingComplete') !== 'true') onboarding.hidden = false;
 
     activityStatus.onStatusUpdate(setStatus);
     window.addEventListener('blur', () => activityStatus.hideIfConfigured().catch(() => {}));

@@ -690,6 +690,7 @@
     .quick-start h2 { font-family: "Space Grotesk", ui-sans-serif, sans-serif; font-size: 20px; letter-spacing: -.04em; }
     .quick-start ol { padding-left: 21px; }
   </style>
+  <link rel="stylesheet" href="popup-redesign.css">
 </head>
 <body>
   <main class="shell">
@@ -704,7 +705,7 @@
       <button id="settingsBtn" class="icon-btn" title="Open settings" aria-label="Open settings">Settings</button>
     </header>
 
-    <section class="section">
+    <section class="section status-section">
       <div class="top-row">
         <div>
           <div class="section-title">Status</div>
@@ -727,7 +728,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section mode-section">
       <div class="section-title">Mode</div>
       <div class="mode-selector">
         <button class="mode-btn active" data-mode="auto">Auto Detect</button>
@@ -746,7 +747,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section advanced-section sites-section">
       <div class="section-head">
         <div class="section-title">Sites</div>
         <button id="allSitesBtn" class="mini-btn">Enable all</button>
@@ -754,7 +755,7 @@
       <div id="siteList" class="site-grid"></div>
     </section>
 
-    <section class="section">
+    <section class="section activity-section">
       <div class="section-head">
         <div class="section-title">Detected Tabs</div>
         <button id="clearSelectionBtn" class="mini-btn">Auto pick</button>
@@ -765,7 +766,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section advanced-section logs-section">
       <div class="section-head">
         <div class="section-title">Recent Logs</div>
         <button id="clearLogsBtn" class="mini-btn">Clear logs</button>

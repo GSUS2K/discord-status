@@ -6,7 +6,7 @@ import archiver from 'archiver';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const distDir = resolve(root, 'dist');
-const outFile = resolve(distDir, 'activity-status-extension.zip');
+const outFile = resolve(distDir, 'discord-status-extension.zip');
 
 await mkdir(distDir, { recursive: true });
 await rm(outFile, { force: true });

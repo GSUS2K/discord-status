@@ -281,6 +281,7 @@
     .icon { width: 48px; height: 48px; border-radius: 12px; padding: 6px; background: #26334a; }
     .artwork { width: 76px; height: 50px; border-radius: 9px; }
   </style>
+  <link rel="stylesheet" href="selector-redesign.css">
 </head>
 <body>
   <main class="selector">
@@ -289,6 +290,15 @@
         <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       </svg>
       <input id="query" autocomplete="off" spellcheck="false" placeholder="Search activity to show in Discord">
+      <kbd>Esc</kbd>
+    </section>
+
+    <section class="filters" aria-label="Activity type">
+      <button class="filter active" type="button" data-filter="all">All</button>
+      <button class="filter" type="button" data-filter="watching">Watching</button>
+      <button class="filter" type="button" data-filter="listening">Listening</button>
+      <button class="filter" type="button" data-filter="apps">Apps</button>
+      <button class="filter" type="button" data-filter="custom">Custom</button>
     </section>
 
     <section class="custom" aria-label="Custom status">
@@ -331,15 +341,14 @@
     const SITE_ICON_ALIASES = {
       googlemeet: 'meet',
       manualactivity: 'manual',
-      youtubemusic: 'youtube',
-      googledocs: 'google',
-      visualstudiocode: 'github'
+      visualstudiocode: 'vscode'
     };
     let status = null;
     let filtered = [];
     let activeIndex = 0;
     let pollTimer = null;
     let isSelecting = false;
+    let activeFilter = 'all';
 
     function focusSearch() {
       requestAnimationFrame(() => {
@@ -366,9 +375,8 @@
       const previousActiveId = filtered[activeIndex]?.id;
       const needle = query.value.trim().toLowerCase();
       const activities = status?.activities || [];
-      filtered = needle
-        ? activities.filter(item => searchableText(item).includes(needle))
-        : activities;
+      const byType = activities.filter(item => matchesFilter(item, activeFilter));
+      filtered = needle ? byType.filter(item => searchableText(item).includes(needle)) : byType;
       const previousIndex = previousActiveId
         ? filtered.findIndex(item => item.id === previousActiveId)
         : -1;
@@ -401,16 +409,19 @@
 
         const icon = createSiteIcon(item.platform);
         const artwork = createActivityArtwork(item);
+        const media = document.createElement('div');
+        media.className = 'item-media';
+        media.append(icon, artwork);
         const copy = document.createElement('div');
         copy.className = 'copy';
 
         const title = document.createElement('div');
         title.className = 'title';
-        title.textContent = `${item.platform || 'Activity'} · ${item.details || item.tabTitle || 'Untitled'}`;
+        title.textContent = item.details || item.tabTitle || item.platform || 'Untitled';
 
         const meta = document.createElement('div');
         meta.className = 'meta';
-        meta.textContent = item.state || item.tabTitle || item.url || 'Ready';
+        meta.textContent = [item.episodeLabel, item.state, item.platform].filter(Boolean).join(' · ') || 'Ready';
 
         const badge = document.createElement('span');
         badge.className = `badge${item.isActiveTab ? ' current' : ''}`;
@@ -418,7 +429,7 @@
         badge.textContent = isSelected ? 'selected' : (item.isActiveTab ? 'current tab' : 'saved');
 
         copy.append(title, meta);
-        button.append(icon, copy, artwork, badge);
+        button.append(media, copy, badge);
         button.addEventListener('pointerenter', () => {
           activeIndex = index;
           for (const child of list.querySelectorAll('.item')) {
@@ -457,8 +468,18 @@
         return image;
       }
       image.src = source;
+      image.addEventListener('load', () => image.parentElement?.classList.add('has-artwork'), { once: true });
       image.addEventListener('error', () => image.remove(), { once: true });
       return image;
+    }
+
+    function matchesFilter(item, filter) {
+      if (filter === 'all') return true;
+      if (filter === 'custom') return String(item.platform || '').toLowerCase() === 'custom';
+      const source = `${item.platform || ''} ${item.state || ''}`.toLowerCase();
+      if (filter === 'watching') return /watch|netflix|youtube|twitch|prime|hulu|disney|crunchy|hotstar|apple tv/.test(source);
+      if (filter === 'listening') return /listen|spotify|music|soundcloud|bandcamp/.test(source);
+      return !/watch|listen|netflix|youtube|twitch|spotify|music|prime|hulu|disney|crunchy|hotstar|soundcloud|bandcamp/.test(source);
     }
 
     function makeFallbackIcon(platform = 'Activity') {
@@ -532,6 +553,15 @@
     }
 
     query.addEventListener('input', refreshFilter);
+    for (const button of document.querySelectorAll('.filter')) {
+      button.addEventListener('pointerdown', event => {
+        event.preventDefault();
+        activeFilter = button.dataset.filter;
+        document.querySelectorAll('.filter').forEach(item => item.classList.toggle('active', item === button));
+        document.querySelector('.custom').classList.toggle('visible', activeFilter === 'custom');
+        refreshFilter();
+      });
+    }
     customSet.addEventListener('pointerdown', async event => {
       event.preventDefault();
       setCustomStatus();
