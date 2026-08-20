@@ -220,7 +220,13 @@ function renderSupportedSiteOptions() {
     const text = document.createElement('span');
     text.textContent = label;
 
-    option.append(input, text);
+    const icon = document.createElement('img');
+    icon.className = 'site-option-icon';
+    icon.alt = '';
+    icon.src = chrome.runtime.getURL(`site-icons/${value}.png`);
+    icon.addEventListener('error', () => icon.remove(), { once: true });
+
+    option.append(input, icon, text);
     enabledSitesList.appendChild(option);
   }
 }

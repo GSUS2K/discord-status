@@ -133,19 +133,8 @@ const SUPPORTED_SITES = [
 const SITE_ICON_ALIASES = {
   googlemeet: 'meet',
   manualactivity: 'manual',
-  youtubemusic: 'youtube',
-  primevideo: 'manual',
-  disney: 'manual',
-  disneyplus: 'manual',
-  appletv: 'manual',
-  applemusic: 'manual',
-  soundcloud: 'manual',
-  bandcamp: 'manual',
-  vscode: 'github',
-  visualstudiocode: 'github',
-  googledocs: 'google',
-  twitter: 'manual',
-  x: 'manual'
+  visualstudiocode: 'vscode',
+  x: 'twitter'
 };
 
 chrome.storage.local.get(['enabled', 'mode', 'autoPickMode'], (result) => {
@@ -400,7 +389,10 @@ function createActivityArtwork(activity) {
   const source = String(activity.thumbnailUrl || '').trim();
   if (!/^https?:\/\//i.test(source)) return image;
   image.src = source;
-  image.addEventListener('load', () => image.classList.remove('hidden'), { once: true });
+  image.addEventListener('load', () => {
+    image.classList.remove('hidden');
+    image.parentElement?.classList.add('has-artwork');
+  }, { once: true });
   image.addEventListener('error', () => image.remove(), { once: true });
   return image;
 }

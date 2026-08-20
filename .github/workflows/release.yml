@@ -44,8 +44,8 @@ jobs:
       - name: Upload extension package
         uses: actions/upload-artifact@v4
         with:
-          name: activity-status-extension
-          path: dist/activity-status-extension.zip
+          name: discord-status-extension
+          path: dist/discord-status-extension.zip
           if-no-files-found: error
 
       - name: Upload Chrome Web Store package
@@ -62,26 +62,26 @@ jobs:
         include:
           - os: macos-latest
             command: npm run dist:companion:tauri
-            artifact: activity-status-companion-macos-arm64
+            artifact: discord-status-companion-macos-arm64
             rust_target: ''
             artifact_glob: |
               src-tauri/target/release/bundle/dmg/*.dmg
           - os: macos-latest
             command: npm run dist:companion:tauri -- --target x86_64-apple-darwin
-            artifact: activity-status-companion-macos-intel
+            artifact: discord-status-companion-macos-intel
             rust_target: x86_64-apple-darwin
             artifact_glob: |
               src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
           - os: windows-latest
             command: npm run dist:companion:tauri
-            artifact: activity-status-companion-windows
+            artifact: discord-status-companion-windows
             rust_target: ''
             artifact_glob: |
               src-tauri/target/release/bundle/nsis/*.exe
               src-tauri/target/release/bundle/msi/*.msi
           - os: ubuntu-latest
             command: npm run dist:companion:tauri
-            artifact: activity-status-companion-linux
+            artifact: discord-status-companion-linux
             rust_target: ''
             artifact_glob: |
               src-tauri/target/release/bundle/appimage/*.AppImage
@@ -139,7 +139,7 @@ jobs:
       - name: Download extension package
         uses: actions/download-artifact@v4
         with:
-          name: activity-status-extension
+          name: discord-status-extension
           path: release-assets/extension
 
       - name: Download Chrome Web Store package
@@ -151,20 +151,20 @@ jobs:
       - name: Download macOS companion
         uses: actions/download-artifact@v4
         with:
-          pattern: activity-status-companion-macos-*
+          pattern: discord-status-companion-macos-*
           path: release-assets/macos
           merge-multiple: true
 
       - name: Download Windows companion
         uses: actions/download-artifact@v4
         with:
-          name: activity-status-companion-windows
+          name: discord-status-companion-windows
           path: release-assets/windows
 
       - name: Download Linux companion
         uses: actions/download-artifact@v4
         with:
-          name: activity-status-companion-linux
+          name: discord-status-companion-linux
           path: release-assets/linux
 
       - name: Collect release assets

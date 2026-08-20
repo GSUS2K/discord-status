@@ -989,7 +989,7 @@ async fn bind_listener_with_fallback(
 
             if port == LEGACY_PORT {
                 Err(format!(
-                    "Could not bind port {port}: {first_error}. Another local app is using the old Activity Status port."
+                    "Could not bind port {port}: {first_error}. Another app is using the companion port."
                 ))
             } else {
                 Err(format!("Could not bind port {port}: {first_error}"))

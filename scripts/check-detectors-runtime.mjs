@@ -13,6 +13,7 @@ function loadDetector(path, document) {
   const listeners = [];
   const context = {
     console,
+    URL,
     window: { location: { href: 'https://example.test/watch' } },
     document,
     setInterval: () => 0,
@@ -49,6 +50,9 @@ const netflix = loadDetector('extension/scripts/netflix.js', netflixDocument);
 const netflixActivity = netflix.detectNetflixActivity();
 if (netflixActivity?.details !== 'Chainsmoker Cat' || netflixActivity?.episodeLabel !== 'E8') {
   throw new Error(`Netflix metadata regression: ${netflixActivity?.details || 'no activity'} ${netflixActivity?.episodeLabel || ''}`);
+}
+if (netflixActivity.thumbnailUrl !== 'https://image.example/show.jpg') {
+  throw new Error(`Netflix artwork regression: ${netflixActivity.thumbnailUrl || 'no artwork'}`);
 }
 
 const spotifyDocument = {
@@ -89,6 +93,9 @@ generic.window.location.hostname = 'crunchyroll.com';
 const genericActivity = generic.detectActivity();
 if (genericActivity?.details === 'Browse by Languages' || genericActivity?.details !== 'Chainsmoker Cat' || genericActivity?.episodeLabel !== 'E8') {
   throw new Error(`Generic metadata regression: ${genericActivity?.details || 'no activity'} ${genericActivity?.episodeLabel || ''}`);
+}
+if (genericActivity.thumbnailUrl !== 'https://image.example/show.jpg') {
+  throw new Error(`Generic artwork regression: ${genericActivity.thumbnailUrl || 'no artwork'}`);
 }
 
 console.log('detector runtime checks passed');

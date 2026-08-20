@@ -712,15 +712,17 @@ function getMetaTitle() {
 
 function getThumbnailUrl() {
   const candidates = [
+    document.querySelector('video[poster]')?.poster,
+    getStructuredImage(),
+    getVisibleMediaImage(),
     document.querySelector('meta[property="og:image"]')?.content,
     document.querySelector('meta[name="twitter:image"]')?.content,
-    document.querySelector('link[rel="image_src"]')?.href,
-    document.querySelector('video[poster]')?.poster,
-    getStructuredImage()
+    document.querySelector('link[rel="image_src"]')?.href
   ];
 
   return candidates
     .map(value => String(value || '').trim())
+    .filter(Boolean)
     .map(value => {
       try {
         return new URL(value, window.location.href).href;
@@ -729,6 +731,22 @@ function getThumbnailUrl() {
       }
     })
     .find(value => /^https?:\/\//i.test(value)) || '';
+}
+
+function getVisibleMediaImage() {
+  const images = Array.from(document.querySelectorAll('img[src]'))
+    .map(image => ({
+      url: image.currentSrc || image.src || '',
+      area: Number(image.naturalWidth || image.clientWidth || 0) * Number(image.naturalHeight || image.clientHeight || 0),
+      ratio: Number(image.naturalHeight || image.clientHeight || 0) > 0
+        ? Number(image.naturalWidth || image.clientWidth || 0) / Number(image.naturalHeight || image.clientHeight || 0)
+        : 0
+    }))
+    .filter(image => /^https?:\/\//i.test(image.url))
+    .filter(image => !/avatar|profile|logo|sprite|icon|badge/i.test(image.url))
+    .filter(image => image.area > 24000 && image.ratio > .55 && image.ratio < 2.4)
+    .sort((a, b) => b.area - a.area);
+  return images[0]?.url || '';
 }
 
 function getStructuredImage() {
