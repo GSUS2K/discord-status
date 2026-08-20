@@ -27,6 +27,10 @@ const selectedTabLabel = document.getElementById('selectedTabLabel');
 const rpcHealthBadge = document.getElementById('rpcHealthBadge');
 const rpcHealthText = document.getElementById('rpcHealthText');
 const setupChecklist = document.getElementById('setupChecklist');
+const quickStart = document.getElementById('quickStart');
+const quickStartBtn = document.getElementById('quickStartBtn');
+const quickStartGuide = document.getElementById('quickStartGuide');
+const quickStartClose = document.getElementById('quickStartClose');
 const toastRoot = document.getElementById('toastRoot');
 
 const REPO_URL = 'https://github.com/GSUS2K/discord-status';
@@ -601,6 +605,16 @@ allSitesBtn.addEventListener('click', () => {
 supportBtn.addEventListener('click', () => chrome.tabs.create({ url: ISSUES_URL }));
 repoBtn.addEventListener('click', () => chrome.tabs.create({ url: REPO_URL }));
 setupGuideBtn.addEventListener('click', () => chrome.tabs.create({ url: SETUP_GUIDE_URL }));
+quickStartBtn.addEventListener('click', () => quickStart.removeAttribute('hidden'));
+quickStartClose.addEventListener('click', () => {
+  quickStart.setAttribute('hidden', '');
+  chrome.storage.local.set({ quickStartSeen: true });
+});
+quickStartGuide.addEventListener('click', () => chrome.tabs.create({ url: SETUP_GUIDE_URL }));
+
+chrome.storage.local.get(['quickStartSeen'], result => {
+  if (!result.quickStartSeen) quickStart.removeAttribute('hidden');
+});
 
 function saveSiteToggles() {
   const enabledSites = Array.from(siteList.querySelectorAll('input[type="checkbox"]:checked'))
