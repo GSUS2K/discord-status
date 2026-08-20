@@ -32,9 +32,18 @@ const quickStartBtn = document.getElementById('quickStartBtn');
 const quickStartGuide = document.getElementById('quickStartGuide');
 const quickStartClose = document.getElementById('quickStartClose');
 const toastRoot = document.getElementById('toastRoot');
+const feedbackPanel = document.getElementById('feedbackPanel');
+const feedbackStoreBtn = document.getElementById('feedbackStoreBtn');
+const feedbackStarBtn = document.getElementById('feedbackStarBtn');
+const feedbackIssueBtn = document.getElementById('feedbackIssueBtn');
+const feedbackSupportBtn = document.getElementById('feedbackSupportBtn');
+const feedbackLaterBtn = document.getElementById('feedbackLaterBtn');
 
 const REPO_URL = 'https://github.com/GSUS2K/discord-status';
 const ISSUES_URL = `${REPO_URL}/issues`;
+const NEW_ISSUE_URL = `${ISSUES_URL}/new`;
+const CHROME_STORE_URL = 'https://chromewebstore.google.com/detail/discord-status/ekobpekegflobmheipgceigkldggkakd';
+const SUPPORT_URL = 'https://github.com/GSUS2K';
 const COMPANION_URL = `${REPO_URL}/releases/latest`;
 const SETUP_GUIDE_URL = 'https://gsus2k.github.io/discord-status/';
 const DEFAULT_ENABLED_SITES = [
@@ -682,7 +691,61 @@ function refreshUi() {
   updateSelectedTabLabel();
   updateRpcHealthBadge();
   renderLogs();
+  maybeShowFeedbackPanel();
 }
+
+function maybeShowFeedbackPanel() {
+  if (!feedbackPanel) return;
+
+  chrome.storage.local.get([
+    'currentActivity',
+    'backendStatus',
+    'feedbackPromptCount',
+    'feedbackPromptShown',
+    'feedbackPromptDismissed'
+  ], result => {
+    const healthy = Boolean(result.currentActivity) && result.backendStatus === 'connected';
+    if (!healthy || result.feedbackPromptShown || result.feedbackPromptDismissed) {
+      feedbackPanel.setAttribute('hidden', '');
+      return;
+    }
+
+    const promptCount = Number(result.feedbackPromptCount || 0) + 1;
+    chrome.storage.local.set({ feedbackPromptCount: promptCount });
+    if (promptCount >= 5) {
+      feedbackPanel.removeAttribute('hidden');
+    }
+  });
+}
+
+function completeFeedbackPrompt(storageKey) {
+  chrome.storage.local.set({ [storageKey]: true });
+  feedbackPanel?.setAttribute('hidden', '');
+}
+
+feedbackStoreBtn?.addEventListener('click', () => {
+  completeFeedbackPrompt('feedbackPromptShown');
+  chrome.tabs.create({ url: CHROME_STORE_URL });
+});
+
+feedbackStarBtn?.addEventListener('click', () => {
+  completeFeedbackPrompt('feedbackPromptShown');
+  chrome.tabs.create({ url: REPO_URL });
+});
+
+feedbackIssueBtn?.addEventListener('click', () => {
+  completeFeedbackPrompt('feedbackPromptShown');
+  chrome.tabs.create({ url: NEW_ISSUE_URL });
+});
+
+feedbackSupportBtn?.addEventListener('click', () => {
+  completeFeedbackPrompt('feedbackPromptShown');
+  chrome.tabs.create({ url: SUPPORT_URL });
+});
+
+feedbackLaterBtn?.addEventListener('click', () => {
+  completeFeedbackPrompt('feedbackPromptDismissed');
+});
 
 renderSiteToggles();
 sendRuntimeMessage({ action: 'refreshBackendHealth' });

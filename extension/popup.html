@@ -600,6 +600,20 @@
       margin-bottom: 10px;
     }
 
+    .feedback-panel {
+      border: 1px solid rgba(88, 101, 242, 0.45);
+      border-radius: 8px;
+      background: rgba(88, 101, 242, 0.1);
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .feedback-panel[hidden] { display: none; }
+    .feedback-title { font-size: 12px; font-weight: 800; }
+    .feedback-copy { margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+    .feedback-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .feedback-actions button { min-height: 28px; padding: 0 8px; font-size: 11px; }
+
     .toast-root {
       position: fixed;
       right: 12px;
@@ -721,6 +735,18 @@
       <button class="action-btn" id="supportBtn">Support</button>
       <button class="action-btn" id="repoBtn">GitHub</button>
     </div>
+
+    <section id="feedbackPanel" class="feedback-panel" hidden>
+      <div class="feedback-title">How is Discord Status working for you?</div>
+      <div class="feedback-copy">Tell us what works, what does not, or which site you want supported next.</div>
+      <div class="feedback-actions">
+        <button id="feedbackStoreBtn" class="action-btn primary" type="button">Leave a review</button>
+        <button id="feedbackStarBtn" class="action-btn" type="button">Star on GitHub</button>
+        <button id="feedbackIssueBtn" class="action-btn" type="button">Report a problem</button>
+        <button id="feedbackSupportBtn" class="action-btn" type="button">Support development</button>
+      </div>
+      <button id="feedbackLaterBtn" class="mini-btn" type="button" style="margin-top: 8px;">Not now</button>
+    </section>
   </main>
 
   <section id="quickStart" class="quick-start" hidden aria-labelledby="quickStartTitle">
