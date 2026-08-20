@@ -148,9 +148,9 @@ dist/discord-status-webstore.zip
 ## Release
 
 ```bash
-git tag v1.0.37
+git tag v1.0.38
 git push origin main
-git push origin v1.0.37
+git push origin v1.0.38
 ```
 
 GitHub Actions builds the companion installers and attaches them to the release.

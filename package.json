@@ -1,6 +1,6 @@
 {
   "name": "activity-status",
-  "version": "1.0.37",
+  "version": "1.0.38",
   "private": true,
   "description": "Chrome extension plus local Discord RPC backend for browser activity status.",
   "author": {
@@ -9,7 +9,7 @@
   },
   "type": "module",
   "scripts": {
-    "check": "node --check backend/server.js && node --check companion/main.cjs && node --check companion/preload.cjs && node --check extension/popup.js && node --check extension/options.js && node --check extension/scripts/background.js && node --check extension/scripts/youtube.js && node --check extension/scripts/netflix.js && node --check extension/scripts/spotify.js && node --check extension/scripts/googlemeet.js && node --check extension/scripts/generic.js && node scripts/check-release.mjs && node -e \"JSON.parse(require('fs').readFileSync('extension/manifest.json','utf8')); console.log('checks ok')\"",
+    "check": "node --check backend/server.js && node --check companion/main.cjs && node --check companion/preload.cjs && node --check extension/popup.js && node --check extension/options.js && node --check extension/scripts/background.js && node --check extension/scripts/youtube.js && node --check extension/scripts/netflix.js && node --check extension/scripts/spotify.js && node --check extension/scripts/googlemeet.js && node --check extension/scripts/generic.js && node scripts/check-release.mjs && node scripts/check-detectors.mjs && node scripts/check-detectors-runtime.mjs && node scripts/check-ui-scripts.mjs && node -e \"JSON.parse(require('fs').readFileSync('extension/manifest.json','utf8')); console.log('checks ok')\"",
     "install:backend": "npm --prefix backend install",
     "start": "npm --prefix backend start",
     "dev": "npm --prefix backend run dev",

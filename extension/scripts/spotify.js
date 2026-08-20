@@ -15,11 +15,14 @@ function detectSpotifyActivity() {
   if (!trackNameElement) return null;
 
   const trackName = trackNameElement.textContent.trim();
+  if (!trackName) return null;
   const artistElement = document.querySelector('a[data-testid="nowplaying-artist"]');
   const artist = artistElement ? artistElement.textContent.trim() : '';
 
   const audio = document.querySelector('audio');
-  const isPlaying = audio ? !audio.paused : !document.querySelector('button[data-testid="control-button-play"]');
+  const pauseButton = document.querySelector('button[data-testid="control-button-pause"]');
+  const playButton = document.querySelector('button[data-testid="control-button-play"]');
+  const isPlaying = audio ? !audio.paused : Boolean(pauseButton && !playButton);
   const currentTime = audio && Number.isFinite(audio.currentTime) ? Math.max(0, audio.currentTime) : 0;
   const duration = audio && Number.isFinite(audio.duration) ? Math.max(0, audio.duration) : 0;
 

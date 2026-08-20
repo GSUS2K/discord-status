@@ -5,9 +5,6 @@ function detectGoogleMeetActivity() {
   const meetingTitle = document.querySelector('[role="heading"]');
   if (!meetingTitle) return null;
   
-  // Check call status
-  const callStatus = document.querySelector('[aria-label*="Call"], [aria-label*="Meeting"]');
-  
   // Get participant count
   const participantElements = document.querySelectorAll('[data-participant-id]');
   const participantCount = participantElements.length;
@@ -16,8 +13,10 @@ function detectGoogleMeetActivity() {
   const videoButton = document.querySelector('[aria-label*="Turn off camera"], [aria-label*="Turn on camera"]');
   const audioButton = document.querySelector('[aria-label*="Turn off microphone"], [aria-label*="Turn on microphone"]');
   
-  const videoOn = videoButton?.getAttribute('aria-label').includes('Turn off');
-  const audioOn = audioButton?.getAttribute('aria-label').includes('Turn off');
+  const videoLabel = videoButton?.getAttribute('aria-label') || '';
+  const audioLabel = audioButton?.getAttribute('aria-label') || '';
+  const videoOn = videoLabel.includes('Turn off');
+  const audioOn = audioLabel.includes('Turn off');
   
   let state = 'In Meeting';
   if (participantCount > 0) {

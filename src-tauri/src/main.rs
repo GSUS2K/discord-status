@@ -607,6 +607,7 @@ async fn select_activity_id(
     activity_id: Option<String>,
     state: TauriState<'_, AppState>,
 ) -> Result<CompanionStatus, String> {
+    let selecting_auto = activity_id.is_none();
     let selected = select_activity_from_inbox(&state, activity_id);
     if let Some(activity) = selected {
         let (status, message) =
@@ -615,6 +616,38 @@ async fn select_activity_id(
             return Err(message.0.message);
         }
     } else {
+        if selecting_auto {
+            let auto_activity = {
+                let inner = state.inner.lock().map_err(|error| error.to_string())?;
+                inner
+                    .activity_inbox
+                    .iter()
+                    .filter(|activity| activity.id != COMPANION_CUSTOM_ACTIVITY_ID)
+                    .find(|activity| activity.is_active_tab)
+                    .cloned()
+                    .or_else(|| {
+                        inner
+                            .activity_inbox
+                            .iter()
+                            .find(|activity| activity.id != COMPANION_CUSTOM_ACTIVITY_ID)
+                            .cloned()
+                    })
+            };
+            if let Some(activity) = auto_activity {
+                let (status, message) =
+                    apply_activity_payload(&state, payload_from_activity_entry(&activity));
+                if !status.is_success() {
+                    return Err(message.0.message);
+                }
+            } else if state
+                .inner
+                .lock()
+                .map(|inner| inner.system_activity.is_none())
+                .unwrap_or(true)
+            {
+                let _ = clear_activity_response(&state);
+            }
+        }
         set_log(
             &state,
             "Companion returned to auto activity selection.".to_string(),
@@ -791,8 +824,11 @@ async fn set_system_app_allowed(
     if app_name.is_empty() {
         return Err("Choose an app first.".to_string());
     }
-    let settings = {
+    let system_id = format!("system:{}", normalize_app_key(&app_name));
+    let (settings, should_clear_selected) = {
         let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
+        let should_clear =
+            !allowed && inner.selected_activity_id.as_deref() == Some(system_id.as_str());
         if allowed {
             if !inner
                 .settings
@@ -811,10 +847,16 @@ async fn set_system_app_allowed(
                 .settings
                 .system_activity_allowed_apps
                 .retain(|value| !value.eq_ignore_ascii_case(&app_name));
+            if should_clear {
+                inner.selected_activity_id = None;
+            }
         }
-        inner.settings.clone()
+        (inner.settings.clone(), should_clear)
     };
     write_settings(&settings)?;
+    if should_clear_selected {
+        let _ = clear_activity_response(&state);
+    }
     set_log(
         &state,
         if allowed {
@@ -1325,10 +1367,11 @@ fn clean_system_window_title(app_name: &str, window_title: Option<String>) -> Op
     }
 
     let cleaned = if is_vlc_app(app_name) {
-        value
-            .replace(" - VLC media player", "")
-            .replace(" - VLC", "")
-            .replace("VLC media player - ", "")
+        let without_suffix = remove_case_insensitive_suffix(
+            &remove_case_insensitive_suffix(&value, " - VLC media player"),
+            " - VLC",
+        );
+        remove_case_insensitive_prefix(&without_suffix, "VLC media player - ")
             .trim()
             .to_string()
     } else {
@@ -1339,6 +1382,24 @@ fn clean_system_window_title(app_name: &str, window_title: Option<String>) -> Op
         None
     } else {
         Some(cleaned)
+    }
+}
+
+fn remove_case_insensitive_suffix(value: &str, suffix: &str) -> String {
+    if value.len() >= suffix.len()
+        && value[value.len() - suffix.len()..].eq_ignore_ascii_case(suffix)
+    {
+        value[..value.len() - suffix.len()].to_string()
+    } else {
+        value.to_string()
+    }
+}
+
+fn remove_case_insensitive_prefix(value: &str, prefix: &str) -> String {
+    if value.len() >= prefix.len() && value[..prefix.len()].eq_ignore_ascii_case(prefix) {
+        value[prefix.len()..].to_string()
+    } else {
+        value.to_string()
     }
 }
 
@@ -1471,6 +1532,18 @@ fn parse_app_title_line(value: &str) -> Option<(String, Option<String>)> {
         .next()
         .map(|value| value.trim().trim_matches('"').to_string());
     Some((app_name, title.filter(|value| !value.is_empty())))
+}
+
+#[cfg(target_os = "macos")]
+fn split_app_names(value: &str) -> Vec<String> {
+    let mut apps = value
+        .split(|character| character == '\n' || character == '\r' || character == ',')
+        .map(|item| item.trim().trim_matches('"').to_string())
+        .filter(|item| item.len() > 1)
+        .collect::<Vec<_>>();
+    apps.sort_by_key(|item| item.to_lowercase());
+    apps.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+    apps
 }
 
 fn run_command_text(command: &str, args: &[&str]) -> Option<String> {
