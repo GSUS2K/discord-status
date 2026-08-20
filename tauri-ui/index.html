@@ -475,6 +475,10 @@
           <strong>Open Chrome Extensions</strong>
           <span class="pill">Chrome</span>
         </button>
+        <button id="setupGuide" class="row">
+          <strong>Open Setup Guide</strong>
+          <span class="pill">Website</span>
+        </button>
         <button id="copyUrl" class="row">
           <strong>Copy Backend URL</strong>
           <span id="urlPill" class="pill">localhost</span>
@@ -512,6 +516,7 @@
       checkForUpdates: () => invoke('check_for_updates'),
       installUpdate: () => invoke('install_update'),
       openExtensions: () => invoke('open_chrome_extensions'),
+      openSetupGuide: () => invoke('open_setup_guide'),
       openSettings: () => invoke('show_settings'),
       openSelector: () => invoke('show_selector'),
       getSettings: () => invoke('get_settings'),
@@ -754,6 +759,14 @@
       try {
         await activityStatus.openExtensions();
         toast('Chrome extensions opened.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
+    });
+    document.getElementById('setupGuide').addEventListener('click', async () => {
+      try {
+        await activityStatus.openSetupGuide();
+        toast('Setup guide opened.');
       } catch (error) {
         toast(errorMessage(error), 'bad');
       }

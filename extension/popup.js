@@ -18,6 +18,7 @@ const clearLogsBtn = document.getElementById('clearLogsBtn');
 const allSitesBtn = document.getElementById('allSitesBtn');
 const supportBtn = document.getElementById('supportBtn');
 const repoBtn = document.getElementById('repoBtn');
+const setupGuideBtn = document.getElementById('setupGuideBtn');
 const tabList = document.getElementById('tabList');
 const logList = document.getElementById('logList');
 const siteList = document.getElementById('siteList');
@@ -31,6 +32,7 @@ const toastRoot = document.getElementById('toastRoot');
 const REPO_URL = 'https://github.com/GSUS2K/discord-status';
 const ISSUES_URL = `${REPO_URL}/issues`;
 const COMPANION_URL = `${REPO_URL}/releases/latest`;
+const SETUP_GUIDE_URL = 'https://gsus2k.github.io/discord-status/';
 const DEFAULT_ENABLED_SITES = [
   'youtube',
   'youtubemusic',
@@ -598,6 +600,7 @@ allSitesBtn.addEventListener('click', () => {
 
 supportBtn.addEventListener('click', () => chrome.tabs.create({ url: ISSUES_URL }));
 repoBtn.addEventListener('click', () => chrome.tabs.create({ url: REPO_URL }));
+setupGuideBtn.addEventListener('click', () => chrome.tabs.create({ url: SETUP_GUIDE_URL }));
 
 function saveSiteToggles() {
   const enabledSites = Array.from(siteList.querySelectorAll('input[type="checkbox"]:checked'))
