@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "activity-status-companion"
-version = "1.0.35"
+version = "1.0.36"
 dependencies = [
  "arboard",
  "axum",
@@ -5237,4 +5237,3 @@ checksum = "27bc9d5b815bc103f142aa054f561d9187d191692ec7c2d1e2b4737f8dbd7296"
 dependencies = [
  "zune-core",
 ]
-

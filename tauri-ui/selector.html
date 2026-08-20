@@ -168,6 +168,14 @@
       padding: 5px;
     }
 
+    .artwork {
+      width: 64px;
+      height: 42px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
     .copy {
       min-width: 0;
     }
@@ -376,6 +384,7 @@
         button.type = 'button';
 
         const icon = createSiteIcon(item.platform);
+        const artwork = createActivityArtwork(item);
         const copy = document.createElement('div');
         copy.className = 'copy';
 
@@ -393,7 +402,7 @@
         badge.textContent = isSelected ? 'selected' : (item.isActiveTab ? 'current tab' : 'saved');
 
         copy.append(title, meta);
-        button.append(icon, copy, badge);
+        button.append(icon, copy, artwork, badge);
         button.addEventListener('pointerenter', () => {
           activeIndex = index;
           for (const child of list.querySelectorAll('.item')) {
@@ -420,6 +429,20 @@
         img.src = makeFallbackIcon(platform);
       }, { once: true });
       return img;
+    }
+
+    function createActivityArtwork(item) {
+      const image = document.createElement('img');
+      image.className = 'artwork';
+      image.alt = '';
+      const source = String(item.thumbnailUrl || '').trim();
+      if (!/^https?:\/\//i.test(source)) {
+        image.style.display = 'none';
+        return image;
+      }
+      image.src = source;
+      image.addEventListener('error', () => image.remove(), { once: true });
+      return image;
     }
 
     function makeFallbackIcon(platform = 'Activity') {
