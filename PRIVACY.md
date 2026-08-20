@@ -1,6 +1,6 @@
 # Privacy Policy for Discord Status
 
-Last updated: May 20, 2026
+Last updated: August 21, 2026
 
 Discord Status is a Chrome extension that shows supported browser activity as Discord Rich Presence through the local Activity Status Companion app.
 
@@ -18,7 +18,7 @@ This may include:
 
 ## Data Sent To The Companion App
 
-When enabled, the extension sends the current activity to the Activity Status Companion app running locally on the same computer, usually at `http://localhost:3000`.
+When enabled, the extension sends the current activity to the Activity Status Companion app running locally on the same computer, usually at `http://localhost:17654`.
 
 The companion app forwards the current activity to Discord through Discord's local Rich Presence connection.
 

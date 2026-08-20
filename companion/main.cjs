@@ -26,7 +26,7 @@ let cachedStatus = {
   discord: 'unknown',
   lastActivity: 'None',
   lastRpcError: null,
-  url: `http://localhost:${config.port || 3000}`,
+  url: `http://localhost:${config.port || 17654}`,
   log: lastBackendLine,
   update: updateStatus
 };
@@ -38,7 +38,7 @@ const backendScript = path.join(backendRoot, 'backend', 'server.js');
 const iconPath = path.join(bundledAppRoot, 'extension', 'icons', 'icon128.png');
 const trayIconPath = path.join(bundledAppRoot, 'extension', 'icons', process.platform === 'darwin' ? 'icon16.png' : 'icon48.png');
 const settingsPath = path.join(app.getPath('userData'), 'companion-settings.json');
-const defaultPort = Number(config.port || 3000);
+const defaultPort = Number(config.port || 17654);
 const defaultSettings = {
   autoStartBackend: true,
   launchAtLogin: false,
