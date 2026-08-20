@@ -701,17 +701,24 @@ function maybeShowFeedbackPanel() {
     'currentActivity',
     'backendStatus',
     'feedbackPromptCount',
+    'feedbackLastCountAt',
     'feedbackPromptShown',
-    'feedbackPromptDismissed'
+    'feedbackPromptDismissed',
+    'feedbackPromptSnoozedUntil'
   ], result => {
     const healthy = Boolean(result.currentActivity) && result.backendStatus === 'connected';
-    if (!healthy || result.feedbackPromptShown || result.feedbackPromptDismissed) {
+    const snoozedUntil = Number(result.feedbackPromptSnoozedUntil || 0);
+    if (!healthy || result.feedbackPromptShown || result.feedbackPromptDismissed || snoozedUntil > Date.now()) {
       feedbackPanel.setAttribute('hidden', '');
       return;
     }
 
-    const promptCount = Number(result.feedbackPromptCount || 0) + 1;
-    chrome.storage.local.set({ feedbackPromptCount: promptCount });
+    const lastCountAt = Number(result.feedbackLastCountAt || 0);
+    const countToday = lastCountAt > 0 && Date.now() - lastCountAt < 24 * 60 * 60 * 1000;
+    const promptCount = Number(result.feedbackPromptCount || 0) + (countToday ? 0 : 1);
+    if (!countToday) {
+      chrome.storage.local.set({ feedbackPromptCount: promptCount, feedbackLastCountAt: Date.now() });
+    }
     if (promptCount >= 5) {
       feedbackPanel.removeAttribute('hidden');
     }
@@ -744,7 +751,8 @@ feedbackSupportBtn?.addEventListener('click', () => {
 });
 
 feedbackLaterBtn?.addEventListener('click', () => {
-  completeFeedbackPrompt('feedbackPromptDismissed');
+  chrome.storage.local.set({ feedbackPromptSnoozedUntil: Date.now() + 30 * 24 * 60 * 60 * 1000 });
+  feedbackPanel?.setAttribute('hidden', '');
 });
 
 renderSiteToggles();
