@@ -265,6 +265,20 @@
       padding: 2px 6px;
     }
   </style>
+  <style>
+    :root { --line: rgba(169, 186, 220, .16); --panel: rgba(18, 25, 39, .86); --panel-strong: rgba(124, 140, 255, .15); --green: #72e1a5; }
+    body { font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif; }
+    .selector { border-color: rgba(169, 186, 220, .18); border-radius: 20px; background: radial-gradient(circle at 100% 0, rgba(124, 140, 255, .2), transparent 34%), rgba(11, 16, 27, .96); box-shadow: 0 30px 90px rgba(0, 0, 0, .52); }
+    .search { padding: 17px 18px; border-color: var(--line); }
+    input { font-family: "Space Grotesk", ui-sans-serif, sans-serif; letter-spacing: -.03em; }
+    .item { border-color: rgba(169, 186, 220, .14); border-radius: 13px; background: rgba(255, 255, 255, .04); }
+    .item:hover, .item.active { border-color: rgba(124, 140, 255, .62); background: rgba(124, 140, 255, .12); }
+    .title { font-family: "Space Grotesk", ui-sans-serif, sans-serif; letter-spacing: -.02em; }
+    .custom input { border-color: rgba(169, 186, 220, .16); border-radius: 10px; background: #0b111c; }
+    .custom button { border-color: rgba(114, 225, 165, .58); border-radius: 10px; background: rgba(114, 225, 165, .15); }
+    .footer { border-color: var(--line); }
+    .auto-button { border-color: rgba(124, 140, 255, .54); background: rgba(124, 140, 255, .12); }
+  </style>
 </head>
 <body>
   <main class="selector">

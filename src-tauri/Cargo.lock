@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "activity-status-companion"
-version = "1.0.41"
+version = "1.0.42"
 dependencies = [
  "arboard",
  "axum",

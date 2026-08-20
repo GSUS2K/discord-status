@@ -294,6 +294,26 @@
       }
     }
   </style>
+  <style>
+    :root { --bg: #090e17; --panel: #121927; --panel-soft: #192235; --line: rgba(169, 186, 220, .16); --text: #f4f7fb; --muted: #95a3bb; --accent: #7c8cff; --success: #72e1a5; }
+    body { background: radial-gradient(circle at 100% 0, rgba(124, 140, 255, .18), transparent 31%), #090e17; font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif; padding: 42px 24px; }
+    .container { width: min(980px, 100%); }
+    header { margin-bottom: 30px; }
+    h1 { font-family: "Space Grotesk", ui-sans-serif, sans-serif; font-size: 36px; letter-spacing: -.06em; }
+    .lede { max-width: 620px; color: var(--muted); font-size: 15px; }
+    .panel { border-color: var(--line); border-radius: 16px; background: rgba(18, 25, 39, .88); box-shadow: 0 18px 50px rgba(0, 0, 0, .2); padding: 22px; margin-bottom: 16px; }
+    .section-title { color: #b8c5dc; letter-spacing: .12em; font-size: 10px; }
+    label { font-family: "Space Grotesk", ui-sans-serif, sans-serif; }
+    input, select, textarea { border-color: rgba(169, 186, 220, .18); border-radius: 9px; background: #0b111c; }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 140, 255, .13); }
+    .hint { color: var(--muted); }
+    .note { border-color: rgba(124, 140, 255, .4); border-radius: 10px; background: rgba(124, 140, 255, .1); }
+    .site-option, .check-option, .status-card { border-color: rgba(169, 186, 220, .14); border-radius: 10px; background: #0e1522; }
+    .site-option:hover, .check-option:hover { border-color: rgba(124, 140, 255, .62); background: rgba(124, 140, 255, .08); }
+    button { border-color: rgba(169, 186, 220, .18); border-radius: 9px; background: rgba(255, 255, 255, .05); }
+    button:hover { border-color: rgba(145, 160, 255, .65); background: rgba(124, 140, 255, .13); }
+    #saveBtn { border-color: rgba(114, 225, 165, .65); background: rgba(114, 225, 165, .17); }
+  </style>
 </head>
 <body>
   <main class="container">
