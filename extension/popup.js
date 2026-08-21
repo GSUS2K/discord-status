@@ -8,6 +8,7 @@ const autoPickSection = document.getElementById('autoPickSection');
 const manualSection = document.getElementById('manualSection');
 const manualTitleInput = document.getElementById('manualTitleInput');
 const manualMessageInput = document.getElementById('manualMessageInput');
+const manualSubmessageInput = document.getElementById('manualSubmessageInput');
 const setActivityBtn = document.getElementById('setActivityBtn');
 const settingsBtn = document.getElementById('settingsBtn');
 const reconnectBtn = document.getElementById('reconnectBtn');
@@ -191,11 +192,14 @@ function updateStatus() {
 
     const details = document.createElement('div');
     details.className = 'activity-details';
-    details.textContent = activity.details || 'Unknown activity';
+    const customName = String(activity.activityName || '').trim();
+    details.textContent = customName || activity.details || 'Unknown activity';
 
     const state = document.createElement('div');
     state.className = 'activity-state';
-    state.textContent = activity.state || 'Active';
+    state.textContent = customName
+      ? [activity.details, activity.state].filter(Boolean).join(' · ') || 'Custom activity'
+      : activity.state || 'Active';
 
     const artwork = createActivityArtwork(activity);
     copy.append(platform, details, state);
@@ -216,7 +220,7 @@ function updateSelectedTabLabel() {
     if (companionSelectedActivityId && selectedTabId === null) {
       const activity = result.currentActivity;
       selectedTabLabel.textContent = activity
-        ? `Manual: ${activity.platform || 'Activity'} - ${activity.details || 'Selected in companion'}`
+        ? `Manual: ${activity.activityName || activity.details || 'Selected in companion'}`
         : 'Manual: selected in companion';
       return;
     }
@@ -544,19 +548,26 @@ function updateAutoPickMode(autoPickMode) {
 setActivityBtn.addEventListener('click', () => {
   const title = manualTitleInput.value.trim();
   const message = manualMessageInput.value.trim();
-  if (!title && !message) return;
+  const submessage = manualSubmessageInput.value.trim();
+  if (!title) {
+    showToast('Add a title first');
+    manualTitleInput.focus();
+    return;
+  }
 
   sendRuntimeMessage({
     action: 'setManualActivity',
     title,
-    message
+    message,
+    submessage
   });
   manualTitleInput.value = '';
   manualMessageInput.value = '';
+  manualSubmessageInput.value = '';
   showToast('Manual activity sent');
 });
 
-for (const input of [manualTitleInput, manualMessageInput]) {
+for (const input of [manualTitleInput, manualMessageInput, manualSubmessageInput]) {
   input.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       setActivityBtn.click();

@@ -553,8 +553,11 @@
       const activities = status.activities || [];
       const selectedId = status.selectedActivityId || status.currentActivityId || null;
       const current = activities.find(item => item.id === selectedId) || activities[0] || null;
-      activity.textContent = current?.details || status.lastActivity || 'Choose an activity';
-      activityMeta.textContent = [current?.episodeLabel, current?.state, current?.platform].filter(Boolean).join(' · ') || 'Open a supported source or use the selector';
+      activity.textContent = current?.activityName || current?.details || status.lastActivity || 'Choose an activity';
+      const currentMeta = current?.activityName
+        ? [current.details, current.state]
+        : [current?.episodeLabel, current?.state, current?.platform];
+      activityMeta.textContent = currentMeta.filter(Boolean).join(' · ') || 'Open a supported source or use the selector';
       renderCurrentArtwork(current);
       rpcError.textContent = status.lastRpcError ? `RPC: ${status.lastRpcError}` : '';
       log.textContent = status.log || '';
@@ -625,11 +628,14 @@
 
         const title = document.createElement('div');
         title.className = 'choice-title';
-        title.textContent = `${item.isActiveTab ? 'Current - ' : ''}${item.platform || 'Browser'} - ${item.details || 'Activity'}`;
+        const activityTitle = item.activityName || item.details || 'Activity';
+        title.textContent = `${item.isActiveTab ? 'Current - ' : ''}${item.platform || 'Browser'} - ${activityTitle}`;
 
         const meta = document.createElement('div');
         meta.className = 'choice-meta';
-        meta.textContent = item.state || item.tabTitle || 'Active';
+        meta.textContent = item.activityName
+          ? [item.details, item.state].filter(Boolean).join(' · ') || 'Custom activity'
+          : item.state || item.tabTitle || 'Active';
 
         copy.append(title, meta);
         row.append(icon, copy, artwork);

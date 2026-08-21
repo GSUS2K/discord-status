@@ -202,11 +202,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return;
     }
 
-    const details = String(request.title || request.activity || 'Custom Status').trim();
-    const state = String(request.message || 'Manual Activity').trim();
+    const activityName = String(request.title || request.activity || 'Custom Status').trim();
+    const details = String(request.message || 'Custom activity').trim();
+    const state = String(request.submessage || '').trim();
 
     currentActivity = {
       id: 'manual:extension',
+      activityName,
       details,
       state,
       largeImageKey: 'manual',
@@ -218,7 +220,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     companionManualModeActive = false;
     selectedTabId = null;
     chrome.storage.local.set({ mode, selectedTabId: null, companionSelectedActivityId: currentActivity.id });
-    log('info', 'Manual activity set', { details: currentActivity.details });
+    log('info', 'Manual activity set', { title: currentActivity.activityName });
     updateDiscordStatus(currentActivity);
   } else if (request.action === 'clearActivity') {
     currentActivity = null;

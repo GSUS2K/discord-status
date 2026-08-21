@@ -17,3 +17,10 @@
 .footer-actions .action-btn {
   min-height: 41px;
 }
+.manual-row {
+  grid-template-columns:1fr 1fr;
+}
+
+.manual-row input:first-child {
+  grid-column:1 / -1;
+}

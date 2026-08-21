@@ -97,6 +97,7 @@ struct ActivitySnapshot {
     id: Option<String>,
     tab_id: Option<i64>,
     tab_title: Option<String>,
+    activity_name: Option<String>,
     platform: String,
     details: String,
     state: String,
@@ -113,6 +114,7 @@ struct ActivityEntry {
     id: String,
     tab_id: Option<i64>,
     tab_title: Option<String>,
+    activity_name: Option<String>,
     platform: String,
     details: String,
     state: String,
@@ -200,6 +202,7 @@ struct IncomingActivity {
     id: Option<String>,
     tab_id: Option<i64>,
     tab_title: Option<String>,
+    activity_name: Option<String>,
     details: Option<String>,
     state: Option<String>,
     series_title: Option<String>,
@@ -241,6 +244,8 @@ struct SelectActivityRequest {
 struct CustomActivityRequest {
     title: String,
     message: String,
+    #[serde(default)]
+    submessage: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -574,7 +579,7 @@ async fn set_settings(
     let mut should_clear_system_status = false;
     {
         let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
-        if inner.settings.system_activity_enabled && !settings.system_activity_enabled {
+        if !settings.system_activity_enabled {
             let showing_system_activity = inner
                 .last_activity
                 .as_ref()
@@ -750,6 +755,7 @@ async fn set_custom_activity(
 ) -> Result<CompanionStatus, String> {
     let title = request.title.trim();
     let message = request.message.trim();
+    let submessage = request.submessage.trim();
     if title.is_empty() {
         return Err("Add a title first.".to_string());
     }
@@ -757,12 +763,13 @@ async fn set_custom_activity(
         id: Some(COMPANION_CUSTOM_ACTIVITY_ID.to_string()),
         tab_id: None,
         tab_title: None,
-        details: Some(title.to_string()),
-        state: Some(if message.is_empty() {
+        activity_name: Some(title.to_string()),
+        details: Some(if message.is_empty() {
             "Custom status".to_string()
         } else {
             message.to_string()
         }),
+        state: Some(submessage.to_string()),
         series_title: None,
         season_number: None,
         episode_number: None,
@@ -1311,6 +1318,11 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
                     Ok(inner) => inner,
                     Err(_) => continue,
                 };
+                if !inner.settings.system_activity_enabled {
+                    inner.system_activity = None;
+                    inner.system_apps.clear();
+                    continue;
+                }
                 inner.system_activity = Some(snapshot.clone());
                 inner.system_apps = if snapshots.is_empty() {
                     vec![snapshot.clone()]
@@ -1351,6 +1363,7 @@ fn spawn_system_activity_monitor(app: AppHandle, state: AppState) {
                     id: Some(snapshot.id.clone()),
                     tab_id: None,
                     tab_title: snapshot.window_title.clone(),
+                    activity_name: None,
                     details: Some(snapshot.details.clone()),
                     state: Some(system_activity_state(&snapshot)),
                     series_title: None,
@@ -1532,7 +1545,10 @@ fn remove_case_insensitive_prefix(value: &str, prefix: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{clean_system_window_title, normalize_app_key};
+    use super::{
+        activity_display_name, clean_system_window_title, normalize_app_key,
+        system_apps_for_status, SystemActivity,
+    };
 
     #[test]
     fn vlc_titles_show_the_movie_without_player_suffix() {
@@ -1556,6 +1572,31 @@ mod tests {
             None
         );
         assert_eq!(normalize_app_key("VLC media player"), "vlcmediaplayer");
+    }
+
+    #[test]
+    fn manual_title_becomes_the_discord_activity_name() {
+        assert_eq!(
+            activity_display_name("Manual", Some("Watching with friends")),
+            "Watching with friends"
+        );
+        assert_eq!(activity_display_name("Netflix", None), "Netflix");
+    }
+
+    #[test]
+    fn disabled_desktop_detection_hides_stale_apps() {
+        let app = SystemActivity {
+            id: "system:example".to_string(),
+            app_name: "Example".to_string(),
+            details: "Example window".to_string(),
+            window_title: Some("Example window".to_string()),
+            icon_key: "manual".to_string(),
+            is_foreground: true,
+            updated_at: "2026-08-21T00:00:00Z".to_string(),
+        };
+
+        assert!(system_apps_for_status(false, std::slice::from_ref(&app)).is_empty());
+        assert_eq!(system_apps_for_status(true, &[app]).len(), 1);
     }
 }
 
@@ -2029,6 +2070,7 @@ fn activity_entry_from_payload(payload: &IncomingActivity) -> ActivityEntry {
         id: activity_id(payload),
         tab_id: payload.tab_id,
         tab_title: payload.tab_title.clone(),
+        activity_name: payload.activity_name.clone(),
         platform: truncate(payload.platform.as_deref().unwrap_or("Browser"), 64),
         details: truncate(
             payload.details.as_deref().unwrap_or("Browser Activity"),
@@ -2059,6 +2101,7 @@ fn payload_from_activity_entry(entry: &ActivityEntry) -> IncomingActivity {
         id: Some(entry.id.clone()),
         tab_id: entry.tab_id,
         tab_title: entry.tab_title.clone(),
+        activity_name: entry.activity_name.clone(),
         details: Some(entry.details.clone()),
         state: Some(entry.state.clone()),
         series_title: entry.series_title.clone(),
@@ -2100,8 +2143,11 @@ fn activity_id(payload: &IncomingActivity) -> String {
     format!("{platform}:{details}")
 }
 
-fn activity_display_name(platform: &str) -> String {
-    let trimmed = platform.trim();
+fn activity_display_name(platform: &str, custom_name: Option<&str>) -> String {
+    let trimmed = custom_name
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or_else(|| platform.trim());
     if trimmed.is_empty() {
         "Activity".to_string()
     } else {
@@ -2201,8 +2247,18 @@ fn apply_activity_payload(
         payload.details.as_deref().unwrap_or("Browser Activity"),
         128,
     );
-    let presence_state = truncate(payload.state.as_deref().unwrap_or("Active"), 128);
+    let presence_state = payload
+        .state
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(|value| truncate(value, 128))
+        .unwrap_or_default();
     let platform = truncate(payload.platform.as_deref().unwrap_or("Browser"), 64);
+    let display_name = truncate(
+        &activity_display_name(&platform, payload.activity_name.as_deref()),
+        64,
+    );
     let stable_large_image = payload
         .large_image_key
         .as_deref()
@@ -2215,11 +2271,13 @@ fn apply_activity_payload(
         .and_then(discord_external_image_url)
         .unwrap_or_else(|| stable_large_image.clone());
     let mut activity = Activity::new()
-        .name(activity_display_name(&platform))
+        .name(display_name)
         .activity_type(activity_type_for_payload(&payload, &platform))
         .status_display_type(StatusDisplayType::Name)
-        .details(details.clone())
-        .state(presence_state.clone());
+        .details(details.clone());
+    if !presence_state.is_empty() {
+        activity = activity.state(presence_state.clone());
+    }
 
     let mut assets = Assets::new().small_text(platform.clone());
     assets = assets.large_image(preferred_large_image);
@@ -2290,6 +2348,7 @@ fn apply_activity_payload(
                     id: Some(activity_id(&payload)),
                     tab_id: payload.tab_id,
                     tab_title: payload.tab_title,
+                    activity_name: payload.activity_name,
                     platform,
                     details,
                     state: presence_state,
@@ -2352,8 +2411,8 @@ fn api_status_payload(state: &AppState) -> ApiStatus {
         selected_activity_id: inner.selected_activity_id.clone(),
         extension_connected: extension_seen_recent(inner.last_extension_seen.as_deref()),
         last_extension_seen: inner.last_extension_seen.clone(),
-        system_activity: inner.system_activity.clone(),
-        system_apps: inner.system_apps.clone(),
+        system_activity: visible_system_activity(&inner),
+        system_apps: visible_system_apps(&inner),
         uptime_seconds: inner.started_at.elapsed().as_secs(),
         timestamp: Utc::now().to_rfc3339(),
     }
@@ -2394,8 +2453,8 @@ fn companion_status(state: &AppState) -> CompanionStatus {
             .and_then(|activity| activity.id.clone()),
         extension_connected: extension_seen_recent(inner.last_extension_seen.as_deref()),
         last_extension_seen: inner.last_extension_seen.clone(),
-        system_activity: inner.system_activity.clone(),
-        system_apps: inner.system_apps.clone(),
+        system_activity: visible_system_activity(&inner),
+        system_apps: visible_system_apps(&inner),
         update: UpdateStatus {
             state: "manual".to_string(),
             message: "Tauri builds update through GitHub releases for now.".to_string(),
@@ -2408,13 +2467,33 @@ fn companion_status(state: &AppState) -> CompanionStatus {
 
 fn combined_activities(inner: &InnerState) -> Vec<ActivityEntry> {
     let mut activities = inner.activity_inbox.clone();
-    for system in &inner.system_apps {
+    for system in visible_system_apps(inner) {
         if activities.iter().any(|item| item.id == system.id) {
             continue;
         }
-        activities.push(system_activity_entry(system));
+        activities.push(system_activity_entry(&system));
     }
     activities
+}
+
+fn visible_system_activity(inner: &InnerState) -> Option<SystemActivity> {
+    inner
+        .settings
+        .system_activity_enabled
+        .then(|| inner.system_activity.clone())
+        .flatten()
+}
+
+fn visible_system_apps(inner: &InnerState) -> Vec<SystemActivity> {
+    system_apps_for_status(inner.settings.system_activity_enabled, &inner.system_apps)
+}
+
+fn system_apps_for_status(enabled: bool, system_apps: &[SystemActivity]) -> Vec<SystemActivity> {
+    if enabled {
+        system_apps.to_vec()
+    } else {
+        Vec::new()
+    }
 }
 
 fn system_activity_entry(system: &SystemActivity) -> ActivityEntry {
@@ -2425,6 +2504,7 @@ fn system_activity_entry(system: &SystemActivity) -> ActivityEntry {
             .window_title
             .clone()
             .or_else(|| Some("System app".to_string())),
+        activity_name: None,
         platform: system.app_name.clone(),
         details: system.details.clone(),
         state: system_activity_state(system),

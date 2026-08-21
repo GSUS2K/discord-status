@@ -305,6 +305,7 @@
     <section class="custom" aria-label="Custom status">
       <input id="customTitle" autocomplete="off" spellcheck="false" maxlength="128" placeholder="Custom title">
       <input id="customMessage" autocomplete="off" spellcheck="false" maxlength="128" placeholder="Message">
+      <input id="customSubmessage" autocomplete="off" spellcheck="false" maxlength="128" placeholder="Submessage (optional)">
       <button id="customSet" type="button">Set</button>
     </section>
 
@@ -335,6 +336,7 @@
     const query = document.getElementById('query');
     const customTitle = document.getElementById('customTitle');
     const customMessage = document.getElementById('customMessage');
+    const customSubmessage = document.getElementById('customSubmessage');
     const customSet = document.getElementById('customSet');
     const autoMode = document.getElementById('autoMode');
     const list = document.getElementById('list');
@@ -436,11 +438,12 @@
 
         const title = document.createElement('div');
         title.className = 'title';
-        title.textContent = item.details || item.tabTitle || item.platform || 'Untitled';
+        title.textContent = item.activityName || item.details || item.tabTitle || item.platform || 'Untitled';
 
         const meta = document.createElement('div');
         meta.className = 'meta';
-        meta.textContent = [item.episodeLabel, item.state, item.platform].filter(Boolean).join(' · ') || 'Ready';
+        const customMeta = item.activityName ? [item.details, item.state] : [item.episodeLabel, item.state, item.platform];
+        meta.textContent = customMeta.filter(Boolean).join(' · ') || 'Ready';
 
         const badge = document.createElement('span');
         badge.className = `badge${item.isActiveTab ? ' current' : ''}`;
@@ -593,11 +596,12 @@
     async function setCustomStatus() {
       const title = customTitle.value.trim();
       const message = customMessage.value.trim();
+      const submessage = customSubmessage.value.trim();
       if (!title || isSelecting) return;
       isSelecting = true;
       customSet.disabled = true;
       try {
-        status = await api.setCustomActivity({ title, message });
+        status = await api.setCustomActivity({ title, message, submessage });
         query.value = '';
         refreshFilter();
       } catch (error) {
@@ -608,7 +612,7 @@
       }
     }
 
-    for (const input of [customTitle, customMessage]) {
+    for (const input of [customTitle, customMessage, customSubmessage]) {
       input.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
           event.preventDefault();
@@ -617,7 +621,7 @@
       });
     }
     document.addEventListener('keydown', event => {
-      if (event.target === customTitle || event.target === customMessage) return;
+      if (event.target === customTitle || event.target === customMessage || event.target === customSubmessage) return;
       if (event.key === 'Escape') {
         api.hide();
       } else if (event.key === 'ArrowDown') {
