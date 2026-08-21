@@ -35,10 +35,15 @@ Every release includes `SHA256SUMS.txt` for verification.
 
 ## Product
 
-<p align="center"><img src="docs/assets/showcase-extension.png" alt="Discord Status extension activity dashboard" width="900"></p>
+<p align="center"><img src="docs/assets/showcase-discord.png" alt="Discord profile showing Stranger Things on Netflix through Discord Status" width="900"></p>
 
 <p align="center">
+  <img src="docs/assets/showcase-extension.png" alt="Discord Status extension activity dashboard" width="48%">
   <img src="docs/assets/showcase-companion.png" alt="Discord Status Companion dashboard" width="48%">
+</p>
+
+<p align="center">
+  <img src="docs/assets/showcase-selector.png" alt="Discord Status activity selector" width="48%">
   <img src="docs/assets/showcase-settings.png" alt="Discord Status Companion settings" width="48%">
 </p>
 

@@ -170,18 +170,19 @@ jobs:
       - name: Collect release assets
         run: |
           mkdir -p release-assets/upload
-          find release-assets -type f \
-            ! -path 'release-assets/upload/*' \
-            ! -name '*.blockmap' \
-            -print0 | while IFS= read -r -d '' file; do
-              cp "$file" "release-assets/upload/$(basename "$file")"
-            done
+          cp release-assets/extension/discord-status-extension.zip release-assets/upload/Discord-Status-Extension-Full.zip
+          cp release-assets/webstore/discord-status-webstore.zip release-assets/upload/Discord-Status-Extension-Chrome-Web-Store.zip
+          cp "$(find release-assets/windows -type f -name '*.exe' -print -quit)" release-assets/upload/Discord-Status-Companion-Windows-x64-Setup.exe
+          cp "$(find release-assets/windows -type f -name '*.msi' -print -quit)" release-assets/upload/Discord-Status-Companion-Windows-x64-MSI.msi
+          cp "$(find release-assets/macos -type f -name '*aarch64.dmg' -print -quit)" release-assets/upload/Discord-Status-Companion-macOS-Apple-Silicon.dmg
+          cp "$(find release-assets/macos -type f -name '*x64.dmg' -print -quit)" release-assets/upload/Discord-Status-Companion-macOS-Intel-x64.dmg
+          cp "$(find release-assets/linux -type f -name '*.AppImage' -print -quit)" release-assets/upload/Discord-Status-Companion-Linux-x86_64.AppImage
+          cp "$(find release-assets/linux -type f -name '*.deb' -print -quit)" release-assets/upload/Discord-Status-Companion-Linux-Debian-Ubuntu-x86_64.deb
 
       - name: Generate checksums
         run: |
-          find release-assets/upload -type f \
-            -print0 | sort -z | xargs -0 shasum -a 256 > release-assets/SHA256SUMS.txt
-          mv release-assets/SHA256SUMS.txt release-assets/upload/SHA256SUMS.txt
+          cd release-assets/upload
+          shasum -a 256 * > SHA256SUMS.txt
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

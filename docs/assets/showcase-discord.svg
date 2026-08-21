@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" role="img" aria-labelledby="title desc">
+  <title id="title">Discord profile showing Stranger Things from Discord Status</title>
+  <desc id="desc">A Discord profile activity card showing Stranger Things with source artwork, episode information, playback state, and progress.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#050b16"/><stop offset="1" stop-color="#102a4b"/></linearGradient>
+    <linearGradient id="banner" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#244aa2"/><stop offset=".48" stop-color="#6844a8"/><stop offset="1" stop-color="#193b64"/></linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#272a31"/><stop offset="1" stop-color="#202329"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="28" stdDeviation="30" flood-opacity=".48"/></filter>
+    <clipPath id="art"><rect x="0" y="0" width="104" height="104" rx="12"/></clipPath>
+  </defs>
+  <rect width="1280" height="800" rx="38" fill="url(#bg)"/>
+  <path d="M0 635c225-115 408 81 646-14s411 61 634-56" fill="none" stroke="#3979ff" stroke-width="2" opacity=".28"/>
+  <circle cx="1060" cy="110" r="290" fill="#3979ff" opacity=".08"/>
+  <g transform="translate(76 156)">
+    <text x="0" y="0" fill="#6fe0d5" font-family="Arial,sans-serif" font-size="14" font-weight="700" letter-spacing="2">DISCORD OUTPUT</text>
+    <text x="0" y="55" fill="#f5f8ff" font-family="Arial,sans-serif" font-size="46" font-weight="700">What your friends see.</text>
+    <text x="0" y="96" fill="#9bacbf" font-family="Arial,sans-serif" font-size="19">Real title, episode, playback state, progress,</text>
+    <text x="0" y="126" fill="#9bacbf" font-family="Arial,sans-serif" font-size="19">service identity, and source artwork when available.</text>
+    <g transform="translate(0 186)"><rect width="370" height="52" rx="15" fill="#10233d" stroke="#31517c"/><circle cx="26" cy="26" r="6" fill="#66e3aa"/><text x="43" y="32" fill="#dce9ff" font-family="Arial,sans-serif" font-size="15" font-weight="700">Connected through Discord Status Companion</text></g>
+  </g>
+  <g transform="translate(605 54)" filter="url(#shadow)">
+    <rect width="585" height="692" rx="28" fill="#111318" stroke="#3a3e47"/>
+    <rect width="585" height="176" rx="28" fill="url(#banner)"/><rect y="146" width="585" height="42" fill="#111318"/>
+    <circle cx="92" cy="160" r="62" fill="#111318"/><circle cx="92" cy="160" r="54" fill="#1d68d9"/><text x="92" y="177" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="42" font-weight="700">GS</text><circle cx="132" cy="198" r="15" fill="#23a55a" stroke="#111318" stroke-width="7"/>
+    <text x="32" y="252" fill="#f2f3f5" font-family="Arial,sans-serif" font-size="27" font-weight="700">GSUS2K</text><text x="32" y="281" fill="#b5bac1" font-family="Arial,sans-serif" font-size="15">gsus2k · online</text>
+    <line x1="32" y1="309" x2="553" y2="309" stroke="#2f333a"/>
+    <text x="32" y="345" fill="#b5bac1" font-family="Arial,sans-serif" font-size="13" font-weight="700">ACTIVITY</text>
+    <g transform="translate(32 366)">
+      <rect width="521" height="234" rx="16" fill="url(#card)" stroke="#30343b"/>
+      <text x="20" y="31" fill="#dbdee1" font-family="Arial,sans-serif" font-size="14" font-weight="700">Watching Netflix</text><text x="485" y="31" fill="#949ba4" font-family="Arial,sans-serif" font-size="20">•••</text>
+      <g transform="translate(20 50)" clip-path="url(#art)"><image href="media/stranger-things-netflix.jpg" width="104" height="104" preserveAspectRatio="xMidYMid slice"/></g>
+      <rect x="92" y="124" width="38" height="38" rx="11" fill="#111318" stroke="#30343b"/><text x="111" y="151" text-anchor="middle" fill="#e50914" font-family="Arial,sans-serif" font-size="27" font-weight="900">N</text>
+      <text x="146" y="78" fill="#f2f3f5" font-family="Arial,sans-serif" font-size="21" font-weight="700">Stranger Things</text><text x="146" y="108" fill="#dbdee1" font-family="Arial,sans-serif" font-size="15">S1 E1 · The Vanishing of Will Byers</text><text x="146" y="136" fill="#b5bac1" font-family="Arial,sans-serif" font-size="14">Watching · 12:08 / 47:23</text>
+      <rect x="20" y="181" width="481" height="7" rx="4" fill="#383c44"/><rect x="20" y="181" width="123" height="7" rx="4" fill="#6d7cff"/><text x="20" y="211" fill="#949ba4" font-family="Arial,sans-serif" font-size="12">Playing on Netflix</text><text x="501" y="211" text-anchor="end" fill="#949ba4" font-family="Arial,sans-serif" font-size="12">35:15 remaining</text>
+    </g>
+    <g transform="translate(32 620)"><rect width="160" height="42" rx="12" fill="#24272d" stroke="#3a3e47"/><text x="80" y="27" text-anchor="middle" fill="#dbdee1" font-family="Arial,sans-serif" font-size="13" font-weight="700">About Me</text><rect x="180" width="160" height="42" rx="12" fill="#5865f2"/><text x="260" y="27" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="13" font-weight="700">Activity</text></g>
+  </g>
+</svg>
