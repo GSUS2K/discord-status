@@ -1,9 +1,9 @@
 const repo = 'GSUS2K/discord-status';
 const fallbackRelease = `https://github.com/${repo}/releases/latest`;
 const platformData = {
-  windows: { title: 'Windows companion', description: 'Setup is the normal choice. MSI is for managed or enterprise deployment.', icon: 'windows', files: [{ label: 'Windows Setup', detail: '.exe · Recommended', match: /x64-setup\.exe$/i }, { label: 'Windows MSI', detail: '.msi · Managed install', match: /x64_en-US\.msi$/i }] },
-  macos: { title: 'macOS companion', description: 'Choose Apple Silicon for M-series Macs or Intel for older Macs.', icon: 'macos', files: [{ label: 'Apple Silicon', detail: '.dmg · M1 and newer', match: /aarch64\.dmg$/i }, { label: 'Intel Mac', detail: '.dmg · x86_64', match: /x64\.dmg$/i }] },
-  linux: { title: 'Linux companion', description: 'AppImage runs portably. DEB integrates with Debian, Ubuntu, and compatible systems.', icon: 'linux', files: [{ label: 'Linux AppImage', detail: '.AppImage · Portable', match: /amd64\.AppImage$/i }, { label: 'Debian / Ubuntu', detail: '.deb · Package install', match: /amd64\.deb$/i }] }
+  windows: { title: 'Windows companion', description: 'Setup is the normal choice. MSI is for managed or enterprise deployment.', icon: 'windows', files: [{ label: 'Windows Setup', detail: '.exe · x64 · Recommended', match: /Windows-x64-Setup\.exe$|x64-setup\.exe$/i }, { label: 'Windows MSI', detail: '.msi · x64 · Managed install', match: /Windows-x64-MSI\.msi$|x64_en-US\.msi$/i }] },
+  macos: { title: 'macOS companion', description: 'Choose Apple Silicon for M-series Macs or Intel for older Macs.', icon: 'macos', files: [{ label: 'Apple Silicon', detail: '.dmg · ARM64 · M1 and newer', match: /macOS-Apple-Silicon\.dmg$|aarch64\.dmg$/i }, { label: 'Intel Mac', detail: '.dmg · x86_64', match: /macOS-Intel-x64\.dmg$|x64\.dmg$/i }] },
+  linux: { title: 'Linux companion', description: 'AppImage runs portably. DEB integrates with Debian, Ubuntu, and compatible systems.', icon: 'linux', files: [{ label: 'Linux AppImage', detail: '.AppImage · x86_64 · Portable', match: /Linux-x86_64\.AppImage$|amd64\.AppImage$/i }, { label: 'Debian / Ubuntu', detail: '.deb · x86_64 · Package install', match: /Linux-Debian-Ubuntu-x86_64\.deb$|amd64\.deb$/i }] }
 };
 let release = null;
 let selectedPlatform = 'windows';

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 560" role="img" aria-labelledby="title desc">
+  <title id="title">Discord Status Chrome Web Store marquee promo tile</title>
+  <desc id="desc">Discord Status connecting browser media, desktop apps, and games to a Discord profile.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#040914"/><stop offset=".55" stop-color="#071426"/><stop offset="1" stop-color="#102d48"/></linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#4a8cff"/><stop offset="1" stop-color="#215bd8"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="24" stdDeviation="28" flood-opacity=".5"/></filter>
+    <clipPath id="hero"><rect width="250" height="142" rx="16"/></clipPath>
+    <clipPath id="thumb"><rect width="78" height="58" rx="10"/></clipPath>
+  </defs>
+  <rect width="1400" height="560" fill="url(#bg)"/>
+  <circle cx="1280" cy="10" r="330" fill="#3979ff" opacity=".12"/><circle cx="555" cy="590" r="310" fill="#47d7cb" opacity=".07"/>
+  <path d="M0 478c238-116 384 86 632-28s404 76 768-54" fill="none" stroke="#4387ff" stroke-width="2" opacity=".32"/>
+  <g transform="translate(70 56)">
+    <image href="icon128.png" width="68" height="68"/>
+    <text x="88" y="30" fill="#f6f8ff" font-family="Arial,sans-serif" font-size="30" font-weight="700">Discord Status</text>
+    <text x="88" y="56" fill="#92a4bc" font-family="Arial,sans-serif" font-size="15">Browser Rich Presence</text>
+    <text x="0" y="161" fill="#f6f8ff" font-family="Arial,sans-serif" font-size="62" font-weight="700">Your activity.</text>
+    <text x="0" y="226" fill="#6395ff" font-family="Arial,sans-serif" font-size="62" font-weight="700">On Discord.</text>
+    <text x="0" y="274" fill="#a9b7ca" font-family="Arial,sans-serif" font-size="20">Share what you are watching, listening to, playing,</text>
+    <text x="0" y="305" fill="#a9b7ca" font-family="Arial,sans-serif" font-size="20">or building with real titles, artwork, and progress.</text>
+    <g transform="translate(0 348)"><rect width="174" height="52" rx="14" fill="url(#blue)"/><text x="87" y="32" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="16" font-weight="700">Automatic detection</text><rect x="190" width="174" height="52" rx="14" fill="#0d1b2f" stroke="#31517c"/><text x="277" y="32" text-anchor="middle" fill="#d8e4f4" font-family="Arial,sans-serif" font-size="16" font-weight="700">Custom activity</text></g>
+  </g>
+  <g transform="translate(650 39)" filter="url(#shadow)">
+    <rect width="680" height="482" rx="30" fill="#081525" stroke="#31517c"/>
+    <g transform="translate(26 22)"><image href="icon128.png" width="42" height="42"/><text x="57" y="20" fill="#fff" font-family="Arial,sans-serif" font-size="18" font-weight="700">Discord Status</text><text x="57" y="38" fill="#8fa2bb" font-family="Arial,sans-serif" font-size="10">Connected to Discord</text><circle cx="608" cy="21" r="5" fill="#66e3aa"/></g>
+    <g transform="translate(26 84)"><rect width="628" height="174" rx="20" fill="#122641" stroke="#3a5d8e"/><g transform="translate(17 16)" clip-path="url(#hero)"><image href="media/stranger-things-netflix.jpg" width="250" height="142" preserveAspectRatio="xMidYMid slice"/></g><image href="site-icons/netflix.png" x="235" y="128" width="37" height="37"/><text x="289" y="43" fill="#70a6ff" font-family="Arial,sans-serif" font-size="11" font-weight="700">WATCHING · NETFLIX</text><text x="289" y="75" fill="#fff" font-family="Arial,sans-serif" font-size="25" font-weight="700">Stranger Things</text><text x="289" y="101" fill="#b3c0d2" font-family="Arial,sans-serif" font-size="14">S1 E1 · The Vanishing of Will Byers</text><text x="289" y="127" fill="#66e3aa" font-family="Arial,sans-serif" font-size="12">Playing · 12:08 / 47:23</text><rect x="289" y="143" width="302" height="7" rx="4" fill="#2b3f5c"/><rect x="289" y="143" width="77" height="7" rx="4" fill="#4b8dff"/></g>
+    <g transform="translate(26 278)">
+      <g><rect width="302" height="82" rx="15" fill="#0d1b2f" stroke="#2b4262"/><g transform="translate(12 12)" clip-path="url(#thumb)"><image href="media/solo-leveling-crunchyroll.webp" width="78" height="58" preserveAspectRatio="xMidYMid slice"/></g><image href="site-icons/crunchyroll.png" x="75" y="52" width="25" height="25"/><text x="111" y="30" fill="#ff9b52" font-family="Arial,sans-serif" font-size="9" font-weight="700">CRUNCHYROLL</text><text x="111" y="53" fill="#fff" font-family="Arial,sans-serif" font-size="16" font-weight="700">Solo Leveling</text><text x="111" y="69" fill="#91a3ba" font-family="Arial,sans-serif" font-size="10">S1 E1 · Playing</text></g>
+      <g transform="translate(326)"><rect width="302" height="82" rx="15" fill="#0d1b2f" stroke="#2b4262"/><g transform="translate(12 12)" clip-path="url(#thumb)"><image href="media/loki-hotstar.jpg" width="78" height="58" preserveAspectRatio="xMidYMid slice"/></g><rect x="73" y="50" width="29" height="29" rx="8" fill="#fff"/><image href="site-icons/hotstar.png" x="75" y="60" width="25" height="8"/><text x="111" y="30" fill="#6fe0d5" font-family="Arial,sans-serif" font-size="9" font-weight="700">HOTSTAR</text><text x="111" y="53" fill="#fff" font-family="Arial,sans-serif" font-size="16" font-weight="700">Loki</text><text x="111" y="69" fill="#91a3ba" font-family="Arial,sans-serif" font-size="10">S2 E1 · Playing</text></g>
+      <g transform="translate(0 98)"><rect width="302" height="82" rx="15" fill="#0d1b2f" stroke="#2b4262"/><g transform="translate(12 12)" clip-path="url(#thumb)"><image href="media/starboy-spotify.jpg" width="78" height="58" preserveAspectRatio="xMidYMid slice"/></g><image href="site-icons/spotify.png" x="75" y="52" width="25" height="25"/><text x="111" y="30" fill="#66e3aa" font-family="Arial,sans-serif" font-size="9" font-weight="700">SPOTIFY</text><text x="111" y="53" fill="#fff" font-family="Arial,sans-serif" font-size="16" font-weight="700">Starboy</text><text x="111" y="69" fill="#91a3ba" font-family="Arial,sans-serif" font-size="10">The Weeknd · Daft Punk</text></g>
+      <g transform="translate(326 98)"><rect width="302" height="82" rx="15" fill="#0d1b2f" stroke="#2b4262"/><g transform="translate(12 12)" clip-path="url(#thumb)"><image href="media/blinding-lights-youtube.jpg" width="78" height="58" preserveAspectRatio="xMidYMid slice"/></g><image href="site-icons/youtubemusic.png" x="75" y="52" width="25" height="25"/><text x="111" y="30" fill="#ff7474" font-family="Arial,sans-serif" font-size="9" font-weight="700">YOUTUBE MUSIC</text><text x="111" y="53" fill="#fff" font-family="Arial,sans-serif" font-size="16" font-weight="700">Blinding Lights</text><text x="111" y="69" fill="#91a3ba" font-family="Arial,sans-serif" font-size="10">The Weeknd</text></g>
+    </g>
+  </g>
+</svg>

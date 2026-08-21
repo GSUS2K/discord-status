@@ -20,9 +20,18 @@ if (mismatches.length) {
 
 const requiredUiAssets = [
   'docs/assets/icon128.png',
+  'docs/assets/showcase-discord.png',
   'docs/assets/showcase-extension.png',
   'docs/assets/showcase-companion.png',
+  'docs/assets/showcase-selector.png',
   'docs/assets/showcase-settings.png',
+  'docs/assets/store-small-promo.png',
+  'docs/assets/store-marquee-promo.png',
+  'docs/assets/media/stranger-things-netflix.jpg',
+  'docs/assets/media/solo-leveling-crunchyroll.webp',
+  'docs/assets/media/loki-hotstar.jpg',
+  'docs/assets/media/starboy-spotify.jpg',
+  'docs/assets/media/blinding-lights-youtube.jpg',
   'docs/site.css',
   'docs/site-polish.css',
   'docs/site.js',
@@ -43,6 +52,25 @@ if (missingAssets.length) {
   process.exit(1);
 }
 
+const storeImageSizes = new Map([
+  ['docs/assets/store-small-promo.png', [440, 280]],
+  ['docs/assets/store-marquee-promo.png', [1400, 560]],
+  ['docs/assets/showcase-discord.png', [1280, 800]],
+  ['docs/assets/showcase-extension.png', [1280, 800]],
+  ['docs/assets/showcase-companion.png', [1280, 800]],
+  ['docs/assets/showcase-selector.png', [1280, 800]],
+  ['docs/assets/showcase-settings.png', [1280, 800]]
+]);
+for (const [file, [expectedWidth, expectedHeight]] of storeImageSizes) {
+  const png = readFileSync(file);
+  const width = png.readUInt32BE(16);
+  const height = png.readUInt32BE(20);
+  if (width !== expectedWidth || height !== expectedHeight) {
+    console.error(`${file} must be ${expectedWidth}x${expectedHeight}, found ${width}x${height}`);
+    process.exit(1);
+  }
+}
+
 const staleReadmeAssets = /store-(?:marquee|screenshot)|docs\/assets\/hero\.png/i;
 if (staleReadmeAssets.test(readFileSync('README.md', 'utf8'))) {
   console.error('README still references outdated interface screenshots');
@@ -58,8 +86,34 @@ const visibleUiFiles = [
 ];
 for (const file of visibleUiFiles) {
   const content = readFileSync(file, 'utf8');
-  if (/ARTWORK FROM SOURCE|Series, season and episode|Episode title when available|Doing something cool/i.test(content)) {
+  if (/ARTWORK FROM SOURCE|Series, season and episode|Episode title when available|Doing something cool|Neon Harbor|Signal Lost/i.test(content)) {
     console.error(`${file} contains unfinished product copy`);
+    process.exit(1);
+  }
+}
+
+for (const file of ['README.md', 'docs/index.html', 'docs/assets/showcase-discord.svg', 'docs/assets/showcase-selector.svg', 'docs/assets/store-small-promo.svg', 'docs/assets/store-marquee-promo.svg']) {
+  const content = readFileSync(file, 'utf8');
+  if (!/Stranger Things/i.test(content)) {
+    console.error(`${file} is missing the verified media example`);
+    process.exit(1);
+  }
+}
+
+const releaseWorkflow = readFileSync('.github/workflows/release.yml', 'utf8');
+const friendlyAssets = [
+  'Discord-Status-Companion-Windows-x64-Setup.exe',
+  'Discord-Status-Companion-Windows-x64-MSI.msi',
+  'Discord-Status-Companion-macOS-Apple-Silicon.dmg',
+  'Discord-Status-Companion-macOS-Intel-x64.dmg',
+  'Discord-Status-Companion-Linux-x86_64.AppImage',
+  'Discord-Status-Companion-Linux-Debian-Ubuntu-x86_64.deb',
+  'Discord-Status-Extension-Full.zip',
+  'Discord-Status-Extension-Chrome-Web-Store.zip'
+];
+for (const asset of friendlyAssets) {
+  if (!releaseWorkflow.includes(asset)) {
+    console.error(`Release workflow is missing readable asset name: ${asset}`);
     process.exit(1);
   }
 }
