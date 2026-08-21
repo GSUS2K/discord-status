@@ -213,7 +213,7 @@ app.post('/api/update-activity', async (req, res) => {
     }
 
     const details = truncatePresenceText(activity.details || '', 128);
-    const state = truncatePresenceText(activity.state || 'Doing something cool', 128);
+    const state = truncatePresenceText(activity.state || 'Active', 128);
 
     // Prepare Discord rich presence
     const presence = {
