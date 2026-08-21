@@ -275,6 +275,9 @@ async fn main() {
     };
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_window(app, "main");
+        }))
         .plugin(
             tauri_plugin_autostart::Builder::new()
                 .app_name("Discord Status Companion")

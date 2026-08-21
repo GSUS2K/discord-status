@@ -1,13 +1,43 @@
 .popover {
   position: relative;
   min-height: 0;
+  max-width: 100%;
 }
 
 .header {
   flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.brand-lockup,
+.brand-lockup > div,
+.activity-copy,
+.choice-row,
+.choice-copy {
+  min-width: 0;
+}
+
+.brand-lockup {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.header h1,
+.header .subtle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-action {
+  flex: 0 0 auto;
 }
 
 .content {
+  width: 100%;
+  max-width: 100%;
   min-height: 0;
   flex: 1 1 auto;
   display: flex;
@@ -20,7 +50,55 @@
 }
 
 .content > * {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   flex: 0 0 auto;
+}
+
+.activity-choice,
+.inbox-list,
+.connection-bar,
+.controls,
+.utility,
+.utility-grid {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.choice-title,
+.choice-meta,
+.activity-title,
+.activity-meta {
+  max-width: 100%;
+}
+
+.onboarding {
+  inset: 10px 10px auto;
+  max-height: calc(100% - 20px);
+  padding: 18px;
+}
+
+.onboarding-progress {
+  margin-top: 14px;
+}
+
+.onboarding h2 {
+  margin-top: 14px;
+  font-size: 26px;
+}
+
+.onboarding ol {
+  gap: 7px;
+  margin-block: 12px;
+}
+
+.onboarding li {
+  padding: 9px;
+}
+
+.onboarding-actions button {
+  min-height: 39px;
 }
 
 .content::-webkit-scrollbar {

@@ -18,6 +18,17 @@ if (mismatches.length) {
   process.exit(1);
 }
 
+const cargoManifest = readFileSync('src-tauri/Cargo.toml', 'utf8');
+const tauriMain = readFileSync('src-tauri/src/main.rs', 'utf8');
+if (!cargoManifest.includes('tauri-plugin-single-instance')) {
+  console.error('Companion is missing its single-instance dependency');
+  process.exit(1);
+}
+if (!/tauri::Builder::default\(\)\s*\.plugin\(tauri_plugin_single_instance::init/.test(tauriMain)) {
+  console.error('Single-instance protection must be the first Tauri plugin');
+  process.exit(1);
+}
+
 const requiredUiAssets = [
   'docs/assets/icon128.png',
   'docs/assets/showcase-discord.png',
@@ -57,7 +68,7 @@ if (missingAssets.length) {
 }
 
 const layoutGuards = new Map([
-  ['tauri-ui/app-fixes.css', ['flex: 1 1 auto', '.content > *', 'max-height: none', 'scrollbar-gutter: stable']],
+  ['tauri-ui/app-fixes.css', ['flex: 1 1 auto', '.content > *', 'max-height: none', 'scrollbar-gutter: stable', 'max-width: 100%']],
   ['tauri-ui/settings-fixes.css', ['overflow-y: auto', 'position: sticky', 'height: auto', 'min-height: 100vh']]
 ]);
 for (const [file, snippets] of layoutGuards) {
@@ -67,6 +78,11 @@ for (const [file, snippets] of layoutGuards) {
     console.error(`${file} is missing layout safeguards: ${missing.join(', ')}`);
     process.exit(1);
   }
+}
+
+if (!/system_activity_enabled:\s*false/.test(tauriMain)) {
+  console.error('Desktop app detection must remain disabled by default');
+  process.exit(1);
 }
 
 const communityFiles = [

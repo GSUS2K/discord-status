@@ -1,8 +1,9 @@
 .quick-start {
-  inset: 10px;
+  inset: 10px 10px auto;
   width: auto;
-  max-height: none;
+  max-height: calc(100% - 20px);
   transform: none;
+  overflow-y: auto;
 }
 
 .tab-card .activity-artwork {
