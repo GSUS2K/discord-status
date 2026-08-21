@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 800" role="img" aria-labelledby="title desc">
+  <title id="title">Discord Status extension activity dashboard</title>
+  <desc id="desc">A product preview of the extension showing media artwork, playback details, modes, and detected activity.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#06101f"/><stop offset="1" stop-color="#0b2440"/></linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#3979ff"/><stop offset="1" stop-color="#1756ce"/></linearGradient>
+    <linearGradient id="poster" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#173a73"/><stop offset=".55" stop-color="#ff627e"/><stop offset="1" stop-color="#07101d"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="28" stdDeviation="30" flood-opacity=".42"/></filter>
+  </defs>
+  <rect width="1280" height="800" rx="38" fill="url(#bg)"/>
+  <circle cx="1050" cy="120" r="260" fill="#2865ef" opacity=".12"/>
+  <path d="M0 690c250-90 390 80 650-10s430 70 630-45" fill="none" stroke="#3d83ff" stroke-width="2" opacity=".25"/>
+  <g transform="translate(260 62)" filter="url(#shadow)">
+    <rect width="760" height="676" rx="28" fill="#081426" stroke="#31517c"/>
+    <g transform="translate(32 28)">
+      <image href="icon128.png" width="50" height="50"/>
+      <text x="66" y="22" fill="#f5f8ff" font-family="Arial,sans-serif" font-size="22" font-weight="700">Discord Status</text>
+      <text x="66" y="44" fill="#8fa2bf" font-family="Arial,sans-serif" font-size="13">Browser Rich Presence</text>
+      <circle cx="622" cy="23" r="6" fill="#66e3aa"/><text x="638" y="29" fill="#66e3aa" font-family="Arial,sans-serif" font-size="16" font-weight="700">Connected</text>
+    </g>
+    <line x1="32" y1="101" x2="728" y2="101" stroke="#233652"/>
+    <text x="32" y="137" fill="#769cff" font-family="Arial,sans-serif" font-size="12" font-weight="700" letter-spacing="2">NOW SHOWING</text>
+    <g transform="translate(32 156)">
+      <rect width="696" height="190" rx="20" fill="#122540" stroke="#31517c"/>
+      <rect x="18" y="18" width="116" height="154" rx="13" fill="url(#poster)"/>
+      <circle cx="105" cy="55" r="25" fill="#ff9d72" opacity=".88"/><path d="M18 112 57 72l30 25 47-39v114H18Z" fill="#091426" opacity=".94"/>
+      <text x="158" y="48" fill="#70a6ff" font-family="Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="1">WATCHING</text>
+      <text x="158" y="82" fill="#f5f8ff" font-family="Arial,sans-serif" font-size="25" font-weight="700">Neon Harbor</text>
+      <text x="158" y="110" fill="#a5b4ca" font-family="Arial,sans-serif" font-size="15">S2 E4 · Signal Lost</text>
+      <rect x="158" y="137" width="490" height="7" rx="4" fill="#2a3c58"/><rect x="158" y="137" width="302" height="7" rx="4" fill="#4a8bff"/>
+      <text x="158" y="163" fill="#7f91aa" font-family="Arial,sans-serif" font-size="12">28:42</text><text x="610" y="163" fill="#7f91aa" font-family="Arial,sans-serif" font-size="12">48:12</text>
+    </g>
+    <g transform="translate(32 362)">
+      <rect width="232" height="74" rx="16" fill="url(#blue)"/><rect x="232" width="232" height="74" fill="#0b1729" stroke="#263c5c"/><rect x="464" width="232" height="74" rx="16" fill="#0b1729" stroke="#263c5c"/>
+      <text x="116" y="32" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="17" font-weight="700">Auto</text><text x="116" y="53" text-anchor="middle" fill="#dbe7ff" font-family="Arial,sans-serif" font-size="11">Detect and update</text>
+      <text x="348" y="32" text-anchor="middle" fill="#f5f8ff" font-family="Arial,sans-serif" font-size="17" font-weight="700">Active tab</text><text x="348" y="53" text-anchor="middle" fill="#8698b2" font-family="Arial,sans-serif" font-size="11">Only this tab</text>
+      <text x="580" y="32" text-anchor="middle" fill="#f5f8ff" font-family="Arial,sans-serif" font-size="17" font-weight="700">Manual</text><text x="580" y="53" text-anchor="middle" fill="#8698b2" font-family="Arial,sans-serif" font-size="11">Choose yourself</text>
+    </g>
+    <text x="32" y="476" fill="#7d91b1" font-family="Arial,sans-serif" font-size="12" font-weight="700" letter-spacing="2">DETECTED ACTIVITY</text>
+    <g transform="translate(32 494)">
+      <rect width="696" height="66" rx="14" fill="#0d1a2e" stroke="#263c5c"/><circle cx="35" cy="33" r="21" fill="#16c75c"/><path d="M22 27c12-5 26-3 34 3M24 34c11-4 22-2 29 2M27 41c8-2 16-1 21 2" fill="none" stroke="#07101e" stroke-width="4" stroke-linecap="round"/>
+      <text x="70" y="28" fill="#f5f8ff" font-family="Arial,sans-serif" font-size="16" font-weight="700">Spotify</text><text x="70" y="49" fill="#8fa2bf" font-family="Arial,sans-serif" font-size="13">The Moves · ODESZA</text><text x="640" y="39" fill="#66e3aa" font-family="Arial,sans-serif" font-size="13" font-weight="700">2:34</text>
+    </g>
+    <g transform="translate(32 572)">
+      <rect width="696" height="66" rx="14" fill="#0d1a2e" stroke="#263c5c"/><circle cx="35" cy="33" r="21" fill="#f5f8ff"/><path d="M35 20c-8 0-14 6-14 14 0 6 4 11 9 13v-5c-3-1-4-3-4-5 0-2 1-3 2-4-1-4 0-7 0-7 3 0 5 2 6 2h2c1 0 3-2 6-2 0 0 1 3 0 7 1 1 2 2 2 4 0 2-1 4-4 5v5c5-2 9-7 9-13 0-8-6-14-14-14Z" fill="#101827"/>
+      <text x="70" y="28" fill="#f5f8ff" font-family="Arial,sans-serif" font-size="16" font-weight="700">GitHub</text><text x="70" y="49" fill="#8fa2bf" font-family="Arial,sans-serif" font-size="13">GSUS2K/discord-status</text><text x="628" y="39" fill="#66e3aa" font-family="Arial,sans-serif" font-size="13" font-weight="700">Active</text>
+    </g>
+  </g>
+</svg>

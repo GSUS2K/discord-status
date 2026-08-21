@@ -502,8 +502,8 @@ fn show_existing_window<R: Runtime>(window: &WebviewWindow<R>) {
 
 fn place_popover<R: Runtime>(window: &WebviewWindow<R>, position: PhysicalPosition<f64>) {
     let size = window.outer_size().ok();
-    let width = size.map(|value| value.width as f64).unwrap_or(382.0);
-    let height = size.map(|value| value.height as f64).unwrap_or(560.0);
+    let width = size.map(|value| value.width as f64).unwrap_or(420.0);
+    let height = size.map(|value| value.height as f64).unwrap_or(620.0);
     let x = (position.x - width / 2.0).max(8.0);
     let y = if position.y < 120.0 {
         position.y + 12.0
@@ -2101,10 +2101,7 @@ fn apply_activity_payload(
         payload.details.as_deref().unwrap_or("Browser Activity"),
         128,
     );
-    let presence_state = truncate(
-        payload.state.as_deref().unwrap_or("Doing something cool"),
-        128,
-    );
+    let presence_state = truncate(payload.state.as_deref().unwrap_or("Active"), 128);
     let platform = truncate(payload.platform.as_deref().unwrap_or("Browser"), 64);
     let stable_large_image = payload
         .large_image_key

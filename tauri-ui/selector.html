@@ -282,6 +282,7 @@
     .artwork { width: 76px; height: 50px; border-radius: 9px; }
   </style>
   <link rel="stylesheet" href="selector-redesign.css">
+  <link rel="stylesheet" href="selector-polish.css">
 </head>
 <body>
   <main class="selector">
@@ -388,12 +389,30 @@
 
     function render() {
       list.textContent = '';
+      list.classList.toggle('is-empty', !filtered.length);
       if (!filtered.length) {
         const empty = document.createElement('div');
         empty.className = 'empty';
-        empty.textContent = status?.activities?.length
-          ? 'No matching activity. Try another search.'
-          : 'No activities yet. Open a supported Chrome tab, play media, or use manual mode in the extension.';
+        const icon = document.createElement('img');
+        icon.src = 'icon128.png';
+        icon.alt = '';
+        const title = document.createElement('b');
+        title.textContent = status?.activities?.length ? 'No matching activity' : 'Nothing detected yet';
+        const message = document.createElement('span');
+        message.textContent = status?.activities?.length
+          ? 'Try a different search or activity type.'
+          : 'Open supported media, an app, or a game. You can also create a custom activity now.';
+        const custom = document.createElement('button');
+        custom.type = 'button';
+        custom.textContent = 'Create custom activity';
+        custom.addEventListener('pointerdown', event => {
+          event.preventDefault();
+          activeFilter = 'custom';
+          document.querySelectorAll('.filter').forEach(item => item.classList.toggle('active', item.dataset.filter === 'custom'));
+          document.querySelector('.custom').classList.add('visible');
+          customTitle.focus();
+        });
+        empty.append(icon, title, message, custom);
         list.append(empty);
         return;
       }

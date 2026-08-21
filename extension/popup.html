@@ -691,6 +691,7 @@
     .quick-start ol { padding-left: 21px; }
   </style>
   <link rel="stylesheet" href="popup-redesign.css">
+  <link rel="stylesheet" href="popup-polish.css">
 </head>
 <body>
   <main class="shell">
@@ -796,16 +797,18 @@
   </main>
 
   <section id="quickStart" class="quick-start" hidden aria-labelledby="quickStartTitle">
+    <div class="quick-start-head"><img src="icons/icon48.png" alt=""><div><span>WELCOME TO</span><b>Discord Status</b></div><small>3 steps</small></div>
+    <div class="quick-start-progress"><span class="active">1 Install</span><span>2 Connect</span><span>3 Share</span></div>
     <h2 id="quickStartTitle">Get your first status running</h2>
-    <p>The extension reads browser activity. The companion connects it to Discord and also detects approved desktop apps such as VLC.</p>
-    <ol>
-      <li>Keep Discord desktop open and install one companion package for your operating system.</li>
-      <li>Install this extension, then enable the sites you want to share.</li>
-      <li>Use Auto Detect for normal use, Active Tab Only for privacy, or Manual for a status you write yourself.</li>
-    </ol>
+    <p>Browser activity needs the extension and companion. Complete this once, then Auto mode handles the rest.</p>
+    <div class="quick-start-steps">
+      <article><span>1</span><div><b>Install Discord Status Companion</b><small>Choose the normal package for Windows, macOS, or Linux.</small></div></article>
+      <article><span>2</span><div><b>Open Discord desktop</b><small>Keep Discord signed in, then start the companion from your tray.</small></div></article>
+      <article><span>3</span><div><b>Play something supported</b><small>Open media or choose Manual when you want to write your own activity.</small></div></article>
+    </div>
     <div class="quick-start-actions">
-      <button id="quickStartGuide" class="action-btn primary" type="button">Open setup website</button>
-      <button id="quickStartClose" class="action-btn" type="button">Continue</button>
+      <button id="quickStartGuide" class="action-btn primary" type="button">Install the companion</button>
+      <button id="quickStartClose" class="action-btn" type="button">I have both parts</button>
     </div>
   </section>
 

@@ -76,18 +76,31 @@ function getNetflixTitle() {
 }
 
 function getNetflixMetadata() {
+  const session = getNetflixMediaSession();
+  const sessionSeries = normalizeTitleText(session.album || session.artist);
+  const sessionTitle = normalizeTitleText(session.title);
+  if (isLikelyTitle(sessionSeries) && isLikelyTitle(sessionTitle) && sessionSeries.toLowerCase() !== sessionTitle.toLowerCase()) {
+    const parsedSession = parseEpisodeTitle(`${sessionSeries} ${sessionTitle}`);
+    return {
+      rawTitle: `${sessionSeries} ${sessionTitle}`,
+      seriesTitle: parsedSession.seriesTitle || sessionSeries,
+      episodeTitle: parsedSession.episodeTitle || sessionTitle,
+      seasonNumber: parsedSession.seasonNumber,
+      episodeNumber: parsedSession.episodeNumber,
+      episodeLabel: parsedSession.episodeLabel || sessionTitle
+    };
+  }
+
   const selectors = [
     '[data-uia="video-title"]',
+    '[data-uia="video-title"] [class*="title"]',
+    '[data-uia="video-title"] [class*="episode"]',
     '[data-uia*="video-title"]',
     '[data-uia*="episode-title"]',
     '[data-uia*="player-title"]',
     '[data-uia*="jawbone-title"]',
     '.watch-video--player-title',
-    '[role="heading"]',
-    'h1',
-    'h2',
-    'h3',
-    'h4'
+    '.watch-video--player-view .ellipsize-text'
   ];
 
   const candidates = [];
@@ -124,6 +137,16 @@ function getNetflixMetadata() {
   }
 
   return { rawTitle, ...parsed };
+}
+
+function getNetflixMediaSession() {
+  const metadata = navigator.mediaSession?.metadata;
+  return {
+    title: metadata?.title || '',
+    artist: metadata?.artist || '',
+    album: metadata?.album || '',
+    artwork: Array.from(metadata?.artwork || [])
+  };
 }
 
 function pickNetflixRawTitle(candidates) {
@@ -172,6 +195,9 @@ function parseEpisodeTitle(value) {
 }
 
 function getNetflixThumbnailUrl() {
+  const sessionArtwork = getNetflixMediaSession().artwork
+    .map(item => String(item?.src || '').trim())
+    .filter(value => /^https?:\/\//i.test(value));
   const playerImages = Array.from(document.querySelectorAll('img[src], [style*="background-image"]'))
     .map(element => {
       const background = String(element.style?.backgroundImage || '').match(/url\(["']?(.*?)["']?\)/i)?.[1];
@@ -186,6 +212,7 @@ function getNetflixThumbnailUrl() {
     .sort((a, b) => b.area - a.area)
     .map(item => item.url);
   const candidates = [
+    ...sessionArtwork,
     document.querySelector('video[poster]')?.poster,
     ...playerImages,
     document.querySelector('meta[property="og:image"]')?.content,
@@ -200,6 +227,7 @@ function isLikelyTitle(title) {
   if (/netflix/i.test(value) && value.length < 28) return false;
   if (/browse by languages?/i.test(value)) return false;
   if (/^browse\b/i.test(value)) return false;
+  if (/first party performance|performance and functional|performance measurement|privacy preference|cookie settings|consent framework|developer tools|diagnostic/i.test(value)) return false;
   if (/watch now|home|sign in|sign up|profile|account|my list|continue watching|settings|search|trending|top 10/i.test(value)) return false;
   return true;
 }

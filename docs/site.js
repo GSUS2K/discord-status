@@ -1,9 +1,9 @@
 const repo = 'GSUS2K/discord-status';
 const fallbackRelease = `https://github.com/${repo}/releases/latest`;
 const platformData = {
-  windows: { title: 'Windows companion', description: 'Setup is the normal choice. MSI is for managed or enterprise deployment.', icon: '⊞', files: [{ label: 'Windows Setup', detail: '.exe · Recommended', match: /x64-setup\.exe$/i }, { label: 'Windows MSI', detail: '.msi · Managed install', match: /x64_en-US\.msi$/i }] },
-  macos: { title: 'macOS companion', description: 'Choose Apple Silicon for M-series Macs or Intel for older Macs.', icon: '◆', files: [{ label: 'Apple Silicon', detail: '.dmg · M1 and newer', match: /aarch64\.dmg$/i }, { label: 'Intel Mac', detail: '.dmg · x86_64', match: /x64\.dmg$/i }] },
-  linux: { title: 'Linux companion', description: 'AppImage runs portably. DEB integrates with Debian, Ubuntu, and compatible systems.', icon: '⌁', files: [{ label: 'Linux AppImage', detail: '.AppImage · Portable', match: /amd64\.AppImage$/i }, { label: 'Debian / Ubuntu', detail: '.deb · Package install', match: /amd64\.deb$/i }] }
+  windows: { title: 'Windows companion', description: 'Setup is the normal choice. MSI is for managed or enterprise deployment.', icon: 'windows', files: [{ label: 'Windows Setup', detail: '.exe · Recommended', match: /x64-setup\.exe$/i }, { label: 'Windows MSI', detail: '.msi · Managed install', match: /x64_en-US\.msi$/i }] },
+  macos: { title: 'macOS companion', description: 'Choose Apple Silicon for M-series Macs or Intel for older Macs.', icon: 'macos', files: [{ label: 'Apple Silicon', detail: '.dmg · M1 and newer', match: /aarch64\.dmg$/i }, { label: 'Intel Mac', detail: '.dmg · x86_64', match: /x64\.dmg$/i }] },
+  linux: { title: 'Linux companion', description: 'AppImage runs portably. DEB integrates with Debian, Ubuntu, and compatible systems.', icon: 'linux', files: [{ label: 'Linux AppImage', detail: '.AppImage · Portable', match: /amd64\.AppImage$/i }, { label: 'Debian / Ubuntu', detail: '.deb · Package install', match: /amd64\.deb$/i }] }
 };
 let release = null;
 let selectedPlatform = 'windows';
@@ -23,9 +23,15 @@ function renderPlatform(platform) {
     const card = document.createElement('a');
     card.className = `package-card${asset ? '' : ' disabled'}`;
     card.href = asset?.browser_download_url || fallbackRelease;
-    card.innerHTML = `<span class="package-icon">${data.icon}</span><span><b>${file.label}</b><span>${file.detail}</span></span><strong>${asset ? 'Download ↓' : 'Release ↗'}</strong>`;
+    card.innerHTML = `<span class="package-icon">${packageIcon(data.icon)}</span><span><b>${file.label}</b><span>${file.detail}</span></span><strong>${asset ? 'Download ↓' : 'Release ↗'}</strong>`;
     packageGrid.append(card);
   }
+}
+
+function packageIcon(platform) {
+  if (platform === 'windows') return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4.5 10.5 3v8H3Zm9-1.8L21 1v10h-9ZM3 12.5h7.5v8L3 19Zm9 0h9v10l-9-1.8Z"/></svg>';
+  if (platform === 'macos') return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16.7 12.8c0-2.7 2.2-4 2.3-4.1a5 5 0 0 0-4-2.2c-1.7-.2-3.3 1-4.2 1-.9 0-2.2-1-3.7-.9a5.4 5.4 0 0 0-4.6 2.8c-2 3.4-.5 8.4 1.4 11.1 1 1.3 2 2.8 3.5 2.7 1.4-.1 2-1 3.7-1s2.2 1 3.7 1c1.5 0 2.5-1.4 3.4-2.7a12 12 0 0 0 1.6-3.2 4.8 4.8 0 0 1-3.1-4.5ZM14 4.8A4.8 4.8 0 0 0 15.2 1a4.9 4.9 0 0 0-3.3 1.8 4.5 4.5 0 0 0-1.2 3.5A4 4 0 0 0 14 4.8Z"/></svg>';
+  return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m7 9 3 3-3 3m5 0h5"/></svg>';
 }
 
 tabs.forEach(tab => tab.addEventListener('click', () => renderPlatform(tab.dataset.platform)));
