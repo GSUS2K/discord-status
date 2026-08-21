@@ -20,13 +20,22 @@ if (mismatches.length) {
 
 const requiredUiAssets = [
   'docs/assets/icon128.png',
+  'docs/assets/showcase-extension.png',
+  'docs/assets/showcase-companion.png',
+  'docs/assets/showcase-settings.png',
   'docs/site.css',
+  'docs/site-polish.css',
   'docs/site.js',
   'extension/popup-redesign.css',
+  'extension/popup-polish.css',
   'extension/options-redesign.css',
+  'extension/options-polish.css',
   'tauri-ui/app-redesign.css',
+  'tauri-ui/app-polish.css',
   'tauri-ui/settings-redesign.css',
-  'tauri-ui/selector-redesign.css'
+  'tauri-ui/settings-polish.css',
+  'tauri-ui/selector-redesign.css',
+  'tauri-ui/selector-polish.css'
 ];
 const missingAssets = requiredUiAssets.filter(path => !existsSync(path));
 if (missingAssets.length) {
@@ -38,6 +47,20 @@ const staleReadmeAssets = /store-(?:marquee|screenshot)|docs\/assets\/hero\.png/
 if (staleReadmeAssets.test(readFileSync('README.md', 'utf8'))) {
   console.error('README still references outdated interface screenshots');
   process.exit(1);
+}
+
+const visibleUiFiles = [
+  'docs/index.html',
+  'extension/popup.html',
+  'tauri-ui/index.html',
+  'tauri-ui/selector.html'
+];
+for (const file of visibleUiFiles) {
+  const content = readFileSync(file, 'utf8');
+  if (/ARTWORK FROM SOURCE|Series, season and episode|Episode title when available/i.test(content)) {
+    console.error(`${file} contains unfinished product copy`);
+    process.exit(1);
+  }
 }
 
 console.log(`release files agree on version ${packageVersion}`);

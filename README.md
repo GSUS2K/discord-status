@@ -33,6 +33,15 @@ The companion can also show custom activities, VLC, supported desktop apps, and 
 
 Every release includes `SHA256SUMS.txt` for verification.
 
+## Product
+
+<p align="center"><img src="docs/assets/showcase-extension.png" alt="Discord Status extension activity dashboard" width="900"></p>
+
+<p align="center">
+  <img src="docs/assets/showcase-companion.png" alt="Discord Status Companion dashboard" width="48%">
+  <img src="docs/assets/showcase-settings.png" alt="Discord Status Companion settings" width="48%">
+</p>
+
 ## What It Shows
 
 - Media titles, series, seasons, episodes, tracks, artists, playback state, timing, and source artwork when available.

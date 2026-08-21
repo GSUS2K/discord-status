@@ -161,7 +161,15 @@ function updateStatus() {
     const activity = result.currentActivity;
     if (!activity) {
       statusDiv.classList.add('empty');
-      statusDiv.textContent = 'No activity detected yet. Open a supported tab or set a manual activity.';
+      statusDiv.textContent = '';
+      const icon = document.createElement('img');
+      icon.className = 'empty-status-icon';
+      icon.src = chrome.runtime.getURL('icons/icon48.png');
+      icon.alt = '';
+      const copy = document.createElement('div');
+      copy.className = 'empty-status-copy';
+      copy.innerHTML = '<b>Ready for an activity</b><span>Open supported media or choose Manual.</span>';
+      statusDiv.append(icon, copy);
       return;
     }
 

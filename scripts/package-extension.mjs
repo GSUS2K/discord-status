@@ -12,31 +12,34 @@ await mkdir(distDir, { recursive: true });
 await rm(outFile, { force: true });
 
 await createZip(outFile, [
-  { type: 'dir', src: 'extension' },
-  { type: 'dir', src: 'discord-assets-real' },
-  { type: 'dir', src: 'backend' },
+  { type: 'dir', src: 'extension', ignore: ['**/.DS_Store', '**/._*'] },
+  { type: 'glob', src: '*.png', cwd: 'discord-assets-real', prefix: 'discord-assets-real' },
+  { type: 'file', src: 'discord-assets-real/UPLOAD_KEYS.txt' },
+  {
+    type: 'dir',
+    src: 'backend',
+    ignore: [
+      'node_modules/**',
+      '.env',
+      '.dockerignore',
+      '.gitignore',
+      '.DS_Store',
+      '._*',
+      'Dockerfile',
+      'Procfile',
+      'docker-compose.yml',
+      'fly.toml',
+      'runtime.txt',
+      'generate_icons.py'
+    ]
+  },
   { type: 'file', src: 'README.md' },
   { type: 'file', src: 'install.sh' }
-], [
-  'backend/node_modules/**',
-  'backend/.env',
-  'backend/.dockerignore',
-  'backend/.gitignore',
-  'backend/Dockerfile',
-  'backend/Procfile',
-  'backend/docker-compose.yml',
-  'backend/fly.toml',
-  'backend/runtime.txt',
-  'backend/generate_icons.py',
-  'discord-assets-real/**/*.zip',
-  'discord-assets-real/svg-sources/**',
-  '**/.DS_Store',
-  '**/._*'
 ]);
 
 console.log(`Packaged ${outFile}`);
 
-async function createZip(outputPath, entries, ignorePatterns) {
+async function createZip(outputPath, entries) {
   return new Promise((resolvePromise, reject) => {
     const output = createWriteStream(outputPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
@@ -54,9 +57,16 @@ async function createZip(outputPath, entries, ignorePatterns) {
     archive.pipe(output);
     for (const entry of entries) {
       if (entry.type === 'dir') {
-        archive.directory(resolve(root, entry.src), entry.src, {
-          ignore: ignorePatterns
-        });
+        archive.glob('**/*', {
+          cwd: resolve(root, entry.src),
+          dot: true,
+          ignore: entry.ignore || []
+        }, { prefix: entry.src });
+      } else if (entry.type === 'glob') {
+        archive.glob(entry.src, {
+          cwd: resolve(root, entry.cwd),
+          ignore: entry.ignore || []
+        }, { prefix: entry.prefix });
       } else {
         archive.file(resolve(root, entry.src), { name: entry.src });
       }

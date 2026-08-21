@@ -21,7 +21,8 @@ const PLATFORMS = {
   'twitch.tv': {
     name: 'Twitch',
     detect: () => {
-      const title = getText('[data-test-selector="stream-title"], h2[data-a-target="stream-title"]')
+      const title = getMediaSessionMetadata().title
+        || getText('[data-test-selector="stream-title"], h2[data-a-target="stream-title"]')
         || cleanTitle(document.title, ['Twitch']);
       const channel = getText('[data-test-selector="channel-header-desktop"] a, a[data-a-target="stream-game-link"], h1 a')
         || getPathParts()[0]
@@ -508,7 +509,9 @@ function createPageActivity({ platform, state, largeImageKey, largeImageText, ti
 }
 
 function createMediaActivity({ platform, selectors, fallbackSuffixes, mediaSelector, largeImageKey, largeImageText }) {
+  const session = getMediaSessionMetadata();
   const title = chooseTitle([
+    session.title,
     getFirstText(selectors),
     getMetaTitle(),
     cleanTitle(document.title, fallbackSuffixes)
@@ -516,17 +519,14 @@ function createMediaActivity({ platform, selectors, fallbackSuffixes, mediaSelec
   const media = getMediaInfo(mediaSelector);
 
   if (!title) return null;
-  const metadata = parseEpisodeMetadata(title);
+  const artist = isMeaningfulTitle(session.artist, fallbackSuffixes) ? session.artist : '';
 
   return {
     platform,
-    details: truncate(metadata.seriesTitle),
-    state: truncate(formatMediaState('Playing', media.isPlaying, media.currentTime, media.duration, metadata.episodeLabel)),
-    seriesTitle: metadata.seriesTitle,
-    seasonNumber: metadata.seasonNumber,
-    episodeNumber: metadata.episodeNumber,
-    episodeTitle: metadata.episodeTitle,
-    episodeLabel: metadata.episodeLabel,
+    details: truncate(title),
+    state: truncate(formatMediaState('Listening', media.isPlaying, media.currentTime, media.duration, artist)),
+    artist,
+    album: session.album,
     largeImageKey,
     largeImageText,
     thumbnailUrl: getThumbnailUrl(),
@@ -539,6 +539,7 @@ function createMediaActivity({ platform, selectors, fallbackSuffixes, mediaSelec
 
 function createVideoActivity({ platform, titleSelectors, titleFallbacks, largeImageKey, largeImageText }) {
   const title = chooseTitle([
+    getMediaSessionTitle(),
     getFirstText(titleSelectors),
     getMetaTitle(),
     cleanTitle(document.title, titleFallbacks)
@@ -692,7 +693,8 @@ function isMeaningfulTitle(value, fallbacks = []) {
     /\bcontinue watching\b/i,
     /\brecommend(?:ed|ations?)\b/i,
     /\btrending\b/i,
-    /\btop 10\b/i
+    /\btop 10\b/i,
+    /first party performance|performance and functional|performance measurement|privacy preference|cookie settings|consent framework|developer tools|diagnostic/i
   ];
 
   return !noisePatterns.some(pattern => pattern.test(text));
@@ -712,6 +714,7 @@ function getMetaTitle() {
 
 function getThumbnailUrl() {
   const candidates = [
+    ...getMediaSessionArtwork(),
     document.querySelector('video[poster]')?.poster,
     getStructuredImage(),
     getVisibleMediaImage(),
@@ -731,6 +734,29 @@ function getThumbnailUrl() {
       }
     })
     .find(value => /^https?:\/\//i.test(value)) || '';
+}
+
+function getMediaSessionTitle() {
+  const metadata = getMediaSessionMetadata();
+  const title = metadata.title;
+  const parent = metadata.album || metadata.artist;
+  if (parent && title && parent.toLowerCase() !== title.toLowerCase()) return `${parent} ${title}`;
+  return title || parent;
+}
+
+function getMediaSessionMetadata() {
+  const metadata = navigator.mediaSession?.metadata;
+  return {
+    title: normalizeTitleText(metadata?.title || ''),
+    artist: normalizeTitleText(metadata?.artist || ''),
+    album: normalizeTitleText(metadata?.album || '')
+  };
+}
+
+function getMediaSessionArtwork() {
+  return Array.from(navigator.mediaSession?.metadata?.artwork || [])
+    .map(item => String(item?.src || '').trim())
+    .filter(value => /^https?:\/\//i.test(value));
 }
 
 function getVisibleMediaImage() {

@@ -440,13 +440,14 @@
     .choice-icon { width: 38px; height: 38px; border-radius: 10px; padding: 5px; background: #26334a; }
   </style>
   <link rel="stylesheet" href="app-redesign.css">
+  <link rel="stylesheet" href="app-polish.css">
 </head>
 <body>
   <main class="popover">
     <section class="header"><div class="brand-lockup"><img class="logo" src="icon128.png" alt=""><div><h1>Discord Status Companion</h1><div class="subtle">Current activity</div></div></div><button id="settings" class="header-action" type="button">Settings</button></section>
     <section class="content">
       <section class="connection-bar"><div id="backend" class="value"><span class="dot warn"></span>Checking</div><div id="discord" class="value"><span class="dot warn"></span>Checking</div></section>
-      <section class="card activity"><div id="currentArtwork" class="activity-art-placeholder">ARTWORK<br>FROM SOURCE</div><div class="activity-copy"><div class="label">SHOWING IN DISCORD</div><div id="activity" class="activity-title">Nothing selected</div><div id="activityMeta" class="activity-meta">Waiting for a source</div><div id="rpcError" class="subtle error"></div></div></section>
+      <section class="card activity"><div id="currentArtwork" class="activity-art-placeholder fallback"><img src="icon128.png" alt=""></div><div class="activity-copy"><div class="label">SHOWING IN DISCORD</div><div id="activity" class="activity-title">Choose an activity</div><div id="activityMeta" class="activity-meta">Open a supported source or use the selector</div><div id="rpcError" class="subtle error"></div></div></section>
       <button id="selector" class="select-action" type="button"><strong>Select activity</strong><span id="selectorShortcutPill" class="pill">Cmd/Ctrl + Shift + Y</span></button>
       <section class="card inbox"><div class="inbox-heading"><div class="label">RECENT ACTIVITY</div><span>Choose a source</span></div><div id="activityInbox" class="inbox-list"><div class="subtle">Open a supported tab or desktop app.</div></div></section>
       <section class="controls"><button id="start" class="btn primary">Start updates</button><button id="stop" class="btn danger">Pause updates</button><button id="reconnect" class="btn">Reconnect</button></section>
@@ -454,11 +455,12 @@
     </section>
   </main>
   <section id="onboarding" class="onboarding" hidden>
-    <div class="onboarding-head"><img src="icon128.png" alt=""><span>Discord Status Companion</span><b>QUICK START</b></div>
-    <h2>Get your first activity online.</h2>
-    <p>The companion connects your browser and desktop apps to Discord. Set it up once, then leave it running in the tray.</p>
+    <div class="onboarding-head"><img src="icon128.png" alt=""><span>Discord Status Companion</span><b>WELCOME</b></div>
+    <div class="onboarding-progress"><span class="active">1 Connect</span><span>2 Detect</span><span>3 Choose</span></div>
+    <h2>Put your first activity on Discord.</h2>
+    <p>Complete these once. The companion can then stay in your tray and update automatically.</p>
     <ol><li><span>1</span><div><b>Open Discord desktop</b><small>Sign in before starting Rich Presence.</small></div></li><li><span>2</span><div><b>Install the Chrome extension</b><small>It detects supported browser activity.</small></div></li><li><span>3</span><div><b>Choose an activity</b><small>Use the selector now or let Auto mode decide.</small></div></li></ol>
-    <div class="onboarding-actions"><button id="onboardingGuide" type="button">Setup website</button><button id="onboardingSelector" class="primary" type="button">Open selector</button><button id="onboardingDone" type="button">I’m ready</button></div>
+    <div class="onboarding-actions"><button id="onboardingSelector" class="primary" type="button">Choose my first activity</button><button id="onboardingGuide" type="button">Open complete setup guide</button><button id="onboardingDone" type="button">Finish later</button></div>
   </section>
   <section id="toasts" class="toasts" aria-live="polite"></section>
 
@@ -549,8 +551,8 @@
       const activities = status.activities || [];
       const selectedId = status.selectedActivityId || status.currentActivityId || null;
       const current = activities.find(item => item.id === selectedId) || activities[0] || null;
-      activity.textContent = current?.details || status.lastActivity || 'Nothing selected';
-      activityMeta.textContent = [current?.episodeLabel, current?.state, current?.platform].filter(Boolean).join(' · ') || 'Waiting for a source';
+      activity.textContent = current?.details || status.lastActivity || 'Choose an activity';
+      activityMeta.textContent = [current?.episodeLabel, current?.state, current?.platform].filter(Boolean).join(' · ') || 'Open a supported source or use the selector';
       renderCurrentArtwork(current);
       rpcError.textContent = status.lastRpcError ? `RPC: ${status.lastRpcError}` : '';
       log.textContent = status.log || '';
@@ -567,17 +569,22 @@
 
     function renderCurrentArtwork(item) {
       currentArtwork.textContent = '';
-      currentArtwork.classList.remove('has-artwork');
+      currentArtwork.classList.remove('has-artwork', 'fallback');
       const source = String(item?.thumbnailUrl || '').trim();
       if (!/^https?:\/\//i.test(source)) {
-        currentArtwork.innerHTML = 'ARTWORK<br>FROM SOURCE';
+        const fallback = item ? createSiteIcon(item.platform) : document.createElement('img');
+        fallback.className = 'current-fallback-icon';
+        fallback.alt = '';
+        if (!item) fallback.src = 'icon128.png';
+        currentArtwork.classList.add('fallback');
+        currentArtwork.append(fallback);
         return;
       }
       const image = document.createElement('img');
       image.alt = '';
       image.src = source;
       image.addEventListener('load', () => currentArtwork.classList.add('has-artwork'), { once: true });
-      image.addEventListener('error', () => { currentArtwork.innerHTML = 'ARTWORK<br>FROM SOURCE'; }, { once: true });
+      image.addEventListener('error', () => renderCurrentArtwork({ ...item, thumbnailUrl: '' }), { once: true });
       currentArtwork.append(image);
     }
 
@@ -585,8 +592,17 @@
       activityInbox.textContent = '';
       if (!activities.length) {
         const empty = document.createElement('div');
-        empty.className = 'subtle';
-        empty.textContent = 'Waiting for browser activity.';
+        empty.className = 'inbox-empty';
+        const icon = document.createElement('img');
+        icon.src = 'icon128.png';
+        icon.alt = '';
+        const copy = document.createElement('div');
+        copy.innerHTML = '<b>No recent activity</b><span>Open supported media, an app, or a game.</span>';
+        const choose = document.createElement('button');
+        choose.type = 'button';
+        choose.textContent = 'Choose';
+        choose.addEventListener('click', () => activityStatus.openSelector());
+        empty.append(icon, copy, choose);
         activityInbox.append(empty);
         return;
       }

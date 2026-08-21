@@ -14,7 +14,8 @@ function loadDetector(path, document) {
   const context = {
     console,
     URL,
-    window: { location: { href: 'https://example.test/watch' } },
+    navigator: { mediaSession: { metadata: null } },
+    window: { location: { href: 'https://example.test/watch', hostname: 'example.test', pathname: '/watch' } },
     document,
     setInterval: () => 0,
     setTimeout: () => 0,
@@ -53,6 +54,28 @@ if (netflixActivity?.details !== 'Chainsmoker Cat' || netflixActivity?.episodeLa
 }
 if (netflixActivity.thumbnailUrl !== 'https://image.example/show.jpg') {
   throw new Error(`Netflix artwork regression: ${netflixActivity.thumbnailUrl || 'no artwork'}`);
+}
+
+const netflixMediaSessionDocument = {
+  title: 'First Party Performance and Functional Cookies - Netflix',
+  querySelectorAll: selector => selector === 'h1' ? [element('First Party Performance and Functional Cookies')] : [],
+  querySelector: selector => selector === 'video'
+    ? { paused: false, currentTime: 305, duration: 1432 }
+    : null
+};
+const netflixMediaSession = loadDetector('extension/scripts/netflix.js', netflixMediaSessionDocument);
+netflixMediaSession.navigator.mediaSession.metadata = {
+  title: 'E21 The Headless Star',
+  artist: 'Bleach',
+  album: 'Bleach',
+  artwork: [{ src: 'https://image.example/bleach.jpg' }]
+};
+const netflixMediaSessionActivity = netflixMediaSession.detectNetflixActivity();
+if (netflixMediaSessionActivity?.details !== 'Bleach' || !/Headless Star/.test(netflixMediaSessionActivity?.episodeLabel || '')) {
+  throw new Error(`Netflix Media Session regression: ${netflixMediaSessionActivity?.details || 'no activity'} ${netflixMediaSessionActivity?.episodeLabel || ''}`);
+}
+if (netflixMediaSessionActivity.thumbnailUrl !== 'https://image.example/bleach.jpg') {
+  throw new Error(`Netflix Media Session artwork regression: ${netflixMediaSessionActivity.thumbnailUrl || 'no artwork'}`);
 }
 
 const spotifyDocument = {
@@ -96,6 +119,83 @@ if (genericActivity?.details === 'Browse by Languages' || genericActivity?.detai
 }
 if (genericActivity.thumbnailUrl !== 'https://image.example/show.jpg') {
   throw new Error(`Generic artwork regression: ${genericActivity.thumbnailUrl || 'no artwork'}`);
+}
+
+const genericMediaSessionDocument = {
+  title: 'First Party Performance and Functional Cookies',
+  querySelectorAll: selector => selector === 'h1' ? [element('First Party Performance and Functional Cookies')] : [],
+  querySelector: selector => selector === 'video'
+    ? { paused: false, currentTime: 305, duration: 1432 }
+    : null
+};
+const genericMediaSession = loadDetector('extension/scripts/generic.js', genericMediaSessionDocument);
+genericMediaSession.window.location.hostname = 'hotstar.com';
+genericMediaSession.navigator.mediaSession.metadata = {
+  title: 'E21 The Headless Star',
+  artist: 'Bleach',
+  album: 'Bleach',
+  artwork: [{ src: 'https://image.example/bleach.jpg' }]
+};
+const genericMediaSessionActivity = genericMediaSession.detectActivity();
+if (genericMediaSessionActivity?.details !== 'Bleach' || !/Headless Star/.test(genericMediaSessionActivity?.episodeLabel || '')) {
+  throw new Error(`Generic Media Session regression: ${genericMediaSessionActivity?.details || 'no activity'} ${genericMediaSessionActivity?.episodeLabel || ''}`);
+}
+if (genericMediaSessionActivity.thumbnailUrl !== 'https://image.example/bleach.jpg') {
+  throw new Error(`Generic Media Session artwork regression: ${genericMediaSessionActivity.thumbnailUrl || 'no artwork'}`);
+}
+
+const videoDomains = [
+  ['primevideo.com', '/detail/watch', 'Prime Video'],
+  ['amazon.com', '/gp/video/detail/watch', 'Prime Video'],
+  ['hulu.com', '/watch/example', 'Hulu'],
+  ['disneyplus.com', '/video/example', 'Disney+'],
+  ['tv.apple.com', '/show/example', 'Apple TV'],
+  ['hotstar.com', '/in/shows/example', 'Hotstar'],
+  ['crunchyroll.com', '/watch/example', 'Crunchyroll']
+];
+for (const [hostname, pathname, platform] of videoDomains) {
+  const detector = loadDetector('extension/scripts/generic.js', genericMediaSessionDocument);
+  detector.window.location.hostname = hostname;
+  detector.window.location.pathname = pathname;
+  detector.navigator.mediaSession.metadata = genericMediaSession.navigator.mediaSession.metadata;
+  const activity = detector.detectActivity();
+  if (activity?.platform !== platform || activity?.details !== 'Bleach' || !/Headless Star/.test(activity?.episodeLabel || '')) {
+    throw new Error(`${platform} metadata regression: ${activity?.details || 'no activity'} ${activity?.episodeLabel || ''}`);
+  }
+  if (activity.thumbnailUrl !== 'https://image.example/bleach.jpg') {
+    throw new Error(`${platform} artwork regression: ${activity.thumbnailUrl || 'no artwork'}`);
+  }
+}
+
+const musicDocument = {
+  title: 'Cookie Settings',
+  querySelectorAll: selector => selector === 'script[type="application/ld+json"]' ? [] : [],
+  querySelector: selector => /audio|video/.test(selector)
+    ? { paused: false, currentTime: 82, duration: 244 }
+    : null
+};
+const musicDomains = [
+  ['music.youtube.com', 'YouTube Music'],
+  ['soundcloud.com', 'SoundCloud'],
+  ['music.apple.com', 'Apple Music'],
+  ['bandcamp.com', 'Bandcamp']
+];
+for (const [hostname, platform] of musicDomains) {
+  const detector = loadDetector('extension/scripts/generic.js', musicDocument);
+  detector.window.location.hostname = hostname;
+  detector.navigator.mediaSession.metadata = {
+    title: 'Headlights',
+    artist: 'The Midnight',
+    album: 'Endless Summer',
+    artwork: [{ src: 'https://image.example/headlights.jpg' }]
+  };
+  const activity = detector.detectActivity();
+  if (activity?.platform !== platform || activity?.details !== 'Headlights' || !/The Midnight.*Listening/.test(activity?.state || '')) {
+    throw new Error(`${platform} music metadata regression: ${activity?.details || 'no activity'} ${activity?.state || ''}`);
+  }
+  if (activity.thumbnailUrl !== 'https://image.example/headlights.jpg') {
+    throw new Error(`${platform} artwork regression: ${activity.thumbnailUrl || 'no artwork'}`);
+  }
 }
 
 console.log('detector runtime checks passed');
