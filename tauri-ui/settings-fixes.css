@@ -1,6 +1,61 @@
+html {
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+body {
+  min-height: 100vh;
+  overflow: visible;
+}
+
+.shell {
+  min-height: 100vh;
+  height: auto;
+  overflow: visible;
+}
+
+.shell::after {
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  height: 420px;
+  box-shadow:
+    inset 0 0 0 90px rgba(83, 135, 255, 0.025),
+    inset 0 0 0 180px rgba(83, 135, 255, 0.018);
+  pointer-events: none;
+}
+
 aside {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+main {
+  min-width: 0;
+  min-height: 100vh;
+  height: auto;
+  overflow: visible;
+}
+
+html::-webkit-scrollbar {
+  width: 12px;
+}
+
+html::-webkit-scrollbar-track {
+  background: #050b15;
+}
+
+html::-webkit-scrollbar-thumb {
+  min-height: 52px;
+  border: 3px solid #050b15;
+  border-radius: 999px;
+  background: rgba(112, 166, 255, 0.55);
 }
 
 .nav-button {
@@ -120,5 +175,16 @@ aside {
 
   main {
     padding-inline: 28px;
+  }
+}
+
+@media (max-width: 780px) {
+  .community-button {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .community-button span {
+    display: none;
   }
 }

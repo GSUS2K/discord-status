@@ -1,5 +1,50 @@
 .popover {
   position: relative;
+  min-height: 0;
+}
+
+.header {
+  flex: 0 0 auto;
+}
+
+.content {
+  min-height: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-content: normal;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.content > * {
+  flex: 0 0 auto;
+}
+
+.content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.content::-webkit-scrollbar-track {
+  background: rgba(4, 9, 18, 0.5);
+}
+
+.content::-webkit-scrollbar-thumb {
+  min-height: 44px;
+  border: 2px solid rgba(4, 9, 18, 0.5);
+  border-radius: 999px;
+  background: rgba(114, 167, 255, 0.52);
+}
+
+.activity {
+  min-height: 120px;
+}
+
+.inbox-list {
+  max-height: none;
+  overflow: visible;
 }
 
 .utility[open] {
@@ -14,6 +59,8 @@
     linear-gradient(150deg, #101f35, #07101e);
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.7);
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .utility[open] summary {

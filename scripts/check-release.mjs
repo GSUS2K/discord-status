@@ -56,6 +56,19 @@ if (missingAssets.length) {
   process.exit(1);
 }
 
+const layoutGuards = new Map([
+  ['tauri-ui/app-fixes.css', ['flex: 1 1 auto', '.content > *', 'max-height: none', 'scrollbar-gutter: stable']],
+  ['tauri-ui/settings-fixes.css', ['overflow-y: auto', 'position: sticky', 'height: auto', 'min-height: 100vh']]
+]);
+for (const [file, snippets] of layoutGuards) {
+  const content = readFileSync(file, 'utf8');
+  const missing = snippets.filter(snippet => !content.includes(snippet));
+  if (missing.length) {
+    console.error(`${file} is missing layout safeguards: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+}
+
 const communityFiles = [
   'README.md',
   'docs/index.html',
