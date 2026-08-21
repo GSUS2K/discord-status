@@ -50,6 +50,7 @@ if (staleReadmeAssets.test(readFileSync('README.md', 'utf8'))) {
 }
 
 const visibleUiFiles = [
+  'backend/server.js',
   'docs/index.html',
   'extension/popup.html',
   'tauri-ui/index.html',
@@ -57,7 +58,7 @@ const visibleUiFiles = [
 ];
 for (const file of visibleUiFiles) {
   const content = readFileSync(file, 'utf8');
-  if (/ARTWORK FROM SOURCE|Series, season and episode|Episode title when available/i.test(content)) {
+  if (/ARTWORK FROM SOURCE|Series, season and episode|Episode title when available|Doing something cool/i.test(content)) {
     console.error(`${file} contains unfinished product copy`);
     process.exit(1);
   }

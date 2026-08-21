@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Discord Status",
   "short_name": "Discord Status",
-  "version": "1.0.45",
+  "version": "1.0.46",
   "description": "Show supported browser activity as Discord Rich Presence using Discord Status Companion.",
   "permissions": [
     "tabs",
