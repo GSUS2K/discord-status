@@ -1,0 +1,124 @@
+aside {
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-button {
+  justify-content: flex-start;
+}
+
+.nav-button::before {
+  display: none !important;
+}
+
+.nav-icon,
+.community-button svg {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav-button span {
+  min-width: 0;
+}
+
+.community-button {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: auto;
+  padding: 0 13px;
+  border: 1px solid rgba(88, 101, 242, 0.4);
+  border-radius: 11px;
+  background: rgba(88, 101, 242, 0.12);
+  color: #cbd0ff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.community-button:hover {
+  border-color: rgba(113, 125, 255, 0.72);
+  background: rgba(88, 101, 242, 0.2);
+}
+
+.desktop-summary {
+  min-height: 116px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 16px;
+  padding: 22px 24px;
+  border: 1px solid rgba(102, 227, 170, 0.3);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 92% 15%, rgba(102, 227, 170, 0.14), transparent 42%),
+    linear-gradient(145deg, rgba(15, 30, 51, 0.95), rgba(8, 17, 31, 0.95));
+}
+
+.desktop-summary span,
+.desktop-summary strong,
+.desktop-summary small {
+  display: block;
+}
+
+.desktop-summary span {
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.desktop-summary strong {
+  margin-top: 7px;
+  font: 700 25px Outfit, sans-serif;
+}
+
+.desktop-summary small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.desktop-empty {
+  grid-column: 1 / -1;
+  padding: 22px;
+  border: 1px dashed var(--line);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.02);
+  text-align: center;
+}
+
+.desktop-empty strong,
+.desktop-empty span {
+  display: block;
+}
+
+.desktop-empty strong {
+  font: 700 15px Outfit, sans-serif;
+}
+
+.desktop-empty span {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 850px) {
+  .shell {
+    grid-template-columns: 200px 1fr;
+  }
+
+  main {
+    padding-inline: 28px;
+  }
+}

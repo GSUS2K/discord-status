@@ -441,6 +441,7 @@
   </style>
   <link rel="stylesheet" href="app-redesign.css">
   <link rel="stylesheet" href="app-polish.css">
+  <link rel="stylesheet" href="app-fixes.css">
 </head>
 <body>
   <main class="popover">
@@ -451,7 +452,7 @@
       <button id="selector" class="select-action" type="button"><strong>Select activity</strong><span id="selectorShortcutPill" class="pill">Cmd/Ctrl + Shift + Y</span></button>
       <section class="card inbox"><div class="inbox-heading"><div class="label">RECENT ACTIVITY</div><span>Choose a source</span></div><div id="activityInbox" class="inbox-list"><div class="subtle">Open a supported tab or desktop app.</div></div></section>
       <section class="controls"><button id="start" class="btn primary">Start updates</button><button id="stop" class="btn danger">Pause updates</button><button id="reconnect" class="btn">Reconnect</button></section>
-      <details class="utility"><summary>More tools</summary><div class="utility-grid"><button id="restart" class="btn">Restart backend</button><button id="fix" class="btn">Repair connection</button><button id="extensions" class="btn">Chrome extensions</button><button id="setupGuide" class="btn">Setup guide</button><button id="copyUrl" class="btn">Copy <span id="urlPill">localhost</span></button><button id="updates" class="btn">Release <span id="updatePill"></span></button><button id="installUpdate" class="btn">Copy diagnostics</button><button id="quit" class="btn danger">Quit companion</button></div><div id="settingsShortcutPill" class="shortcut-note">Settings shortcut: Cmd/Ctrl + Alt + Shift + S</div><div id="log" class="log">Companion ready.</div></details>
+      <details class="utility"><summary>More tools</summary><div class="utility-grid"><button id="restart" class="btn">Restart backend</button><button id="fix" class="btn">Repair connection</button><button id="extensions" class="btn">Chrome extensions</button><button id="setupGuide" class="btn">Setup guide</button><button id="community" class="btn">Discord community</button><button id="copyUrl" class="btn">Copy <span id="urlPill">localhost</span></button><button id="updates" class="btn">Release <span id="updatePill"></span></button><button id="installUpdate" class="btn">Copy diagnostics</button><button id="quit" class="btn danger">Quit companion</button></div><div id="settingsShortcutPill" class="shortcut-note">Settings shortcut: Cmd/Ctrl + Alt + Shift + S</div><div id="log" class="log">Companion ready.</div></details>
     </section>
   </main>
   <section id="onboarding" class="onboarding" hidden>
@@ -479,6 +480,7 @@
       installUpdate: () => invoke('install_update'),
       openExtensions: () => invoke('open_chrome_extensions'),
       openSetupGuide: () => invoke('open_setup_guide'),
+      openDiscordServer: () => invoke('open_discord_server'),
       openSettings: () => invoke('show_settings'),
       openSelector: () => invoke('show_selector'),
       getSettings: () => invoke('get_settings'),
@@ -765,6 +767,14 @@
       try {
         await activityStatus.openSetupGuide();
         toast('Setup guide opened.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
+    });
+    document.getElementById('community').addEventListener('click', async () => {
+      try {
+        await activityStatus.openDiscordServer();
+        toast('Discord community opened.');
       } catch (error) {
         toast(errorMessage(error), 'bad');
       }

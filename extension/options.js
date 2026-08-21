@@ -77,6 +77,9 @@ const saveBtn = document.getElementById('saveBtn');
 const testBtn = document.getElementById('testBtn');
 const resetBtn = document.getElementById('resetBtn');
 const statusMessage = document.getElementById('statusMessage');
+const SETUP_WEBSITE_URL = 'https://gsus2k.github.io/discord-status/';
+const DISCORD_SERVER_URL = 'https://discord.gg/86mbTq2yZX';
+const GITHUB_REPO_URL = 'https://github.com/GSUS2K/discord-status';
 
 chrome.storage.local.get(Object.keys(DEFAULTS), (result) => {
   renderSupportedSiteOptions();
@@ -133,6 +136,10 @@ resetBtn.addEventListener('click', () => {
   setFormValues(DEFAULTS);
   showMessage('Defaults restored in the form. Click Save Settings to apply them.', 'success');
 });
+
+document.getElementById('setupWebsiteBtn').addEventListener('click', () => chrome.tabs.create({ url: SETUP_WEBSITE_URL }));
+document.getElementById('discordCommunityBtn').addEventListener('click', () => chrome.tabs.create({ url: DISCORD_SERVER_URL }));
+document.getElementById('githubRepoBtn').addEventListener('click', () => chrome.tabs.create({ url: GITHUB_REPO_URL }));
 
 function setFormValues(values) {
   serverUrlInput.value = values.serverUrl || DEFAULTS.serverUrl;

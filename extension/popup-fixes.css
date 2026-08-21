@@ -1,0 +1,18 @@
+.quick-start {
+  inset: 10px;
+  width: auto;
+  max-height: none;
+  transform: none;
+}
+
+.tab-card .activity-artwork {
+  display: none !important;
+}
+
+.footer-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.footer-actions .action-btn {
+  min-height: 41px;
+}

@@ -1,0 +1,43 @@
+.community-copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+}
+
+.community-copy strong,
+.community-copy span {
+  display: block;
+}
+
+.community-copy strong {
+  font: 700 17px Outfit, sans-serif;
+}
+
+.community-copy span {
+  max-width: 650px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.community-actions {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 8px;
+}
+
+.community-actions button {
+  min-height: 44px;
+}
+
+@media (max-width: 900px) {
+  .community-copy {
+    grid-template-columns: 1fr;
+  }
+
+  .community-actions {
+    grid-template-columns: 1fr;
+  }
+}

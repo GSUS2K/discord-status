@@ -1,0 +1,55 @@
+.popover {
+  position: relative;
+}
+
+.utility[open] {
+  position: absolute;
+  z-index: 15;
+  inset: 74px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  border-color: rgba(100, 148, 255, 0.5);
+  background:
+    radial-gradient(ellipse at 100% 0, rgba(57, 121, 255, 0.2), transparent 44%),
+    linear-gradient(150deg, #101f35, #07101e);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.7);
+  overflow: auto;
+}
+
+.utility[open] summary {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  color: var(--text);
+  background: rgba(9, 20, 36, 0.96);
+  border-bottom: 1px solid var(--line);
+}
+
+.utility[open] summary::after {
+  content: "Close";
+  color: var(--blue2);
+  font-size: 10px;
+}
+
+.utility[open] .utility-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 12px;
+}
+
+.utility[open] .btn {
+  min-height: 44px;
+}
+
+.utility[open] .shortcut-note {
+  padding: 2px 14px 10px;
+}
+
+.utility[open] .log {
+  max-height: 72px;
+  margin: 0 12px 12px;
+  font-size: 9px;
+}

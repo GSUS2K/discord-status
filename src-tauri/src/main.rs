@@ -28,6 +28,7 @@ use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, PhysicalPosition, Runtime, State as TauriState, WebviewWindow,
+    WindowEvent,
 };
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
@@ -40,6 +41,7 @@ const LEGACY_PORT: u16 = 3000;
 const RPC_CONNECT_TIMEOUT: Duration = Duration::from_secs(4);
 const RELEASES_URL: &str = "https://github.com/GSUS2K/discord-status/releases/latest";
 const SETUP_GUIDE_URL: &str = "https://gsus2k.github.io/discord-status/";
+const DISCORD_SERVER_URL: &str = "https://discord.gg/86mbTq2yZX";
 const DEFAULT_SELECTOR_SHORTCUT: &str = "CommandOrControl+Shift+Y";
 const DEFAULT_SETTINGS_SHORTCUT: &str = "CommandOrControl+Alt+Shift+S";
 const OLD_SETTINGS_SHORTCUT: &str = "CommandOrControl+Shift+Comma";
@@ -296,6 +298,7 @@ async fn main() {
             hide_selector,
             open_chrome_extensions,
             open_setup_guide,
+            open_discord_server,
             copy_text,
             check_for_updates,
             install_update,
@@ -329,6 +332,14 @@ async fn main() {
             spawn_system_activity_monitor(app.handle().clone(), state.clone());
             Ok(())
         })
+        .on_window_event(|window, event| {
+            if window.label() == "settings" {
+                if let WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         .run(tauri::generate_context!())
         .expect("failed to run Discord Status Companion");
 }
@@ -352,6 +363,7 @@ fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let selector = MenuItem::with_id(app, "selector", "Select Discord Status", true, None::<&str>)?;
     let settings = MenuItem::with_id(app, "settings", "Settings", true, None::<&str>)?;
     let chrome = MenuItem::with_id(app, "chrome", "Open Chrome Extensions", true, None::<&str>)?;
+    let community = MenuItem::with_id(app, "community", "Discord Community", true, None::<&str>)?;
     let start = MenuItem::with_id(app, "start", "Start Backend", true, None::<&str>)?;
     let stop = MenuItem::with_id(app, "stop", "Stop Backend", true, None::<&str>)?;
     let reconnect = MenuItem::with_id(
@@ -371,6 +383,7 @@ fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
             &selector,
             &settings,
             &chrome,
+            &community,
             &separator_one,
             &start,
             &stop,
@@ -391,6 +404,9 @@ fn setup_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
             "settings" => show_settings_window(app),
             "chrome" => {
                 let _ = open_chrome_url("chrome://extensions/");
+            }
+            "community" => {
+                let _ = open::that(DISCORD_SERVER_URL);
             }
             "start" => {
                 let app = app.clone();
@@ -504,12 +520,26 @@ fn place_popover<R: Runtime>(window: &WebviewWindow<R>, position: PhysicalPositi
     let size = window.outer_size().ok();
     let width = size.map(|value| value.width as f64).unwrap_or(420.0);
     let height = size.map(|value| value.height as f64).unwrap_or(620.0);
-    let x = (position.x - width / 2.0).max(8.0);
-    let y = if position.y < 120.0 {
+    let mut x = position.x - width / 2.0;
+    let mut y = if position.y < 120.0 {
         position.y + 12.0
     } else {
-        (position.y - height - 12.0).max(8.0)
+        position.y - height - 12.0
     };
+
+    if let Ok(Some(monitor)) = window.current_monitor() {
+        let origin = monitor.position();
+        let monitor_size = monitor.size();
+        let min_x = origin.x as f64 + 8.0;
+        let min_y = origin.y as f64 + 8.0;
+        let max_x = (origin.x as f64 + monitor_size.width as f64 - width - 8.0).max(min_x);
+        let max_y = (origin.y as f64 + monitor_size.height as f64 - height - 8.0).max(min_y);
+        x = x.clamp(min_x, max_x);
+        y = y.clamp(min_y, max_y);
+    } else {
+        x = x.max(8.0);
+        y = y.max(8.0);
+    }
     let _ = window.set_position(PhysicalPosition::new(x as i32, y as i32));
 }
 
@@ -537,11 +567,51 @@ async fn set_settings(
     let settings = normalize_settings(settings);
     register_global_shortcuts(&app, &settings)?;
     apply_launch_at_login(&app, settings.launch_at_login)?;
+    let mut browser_fallback = None;
+    let mut should_clear_system_status = false;
     {
         let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
+        if inner.settings.system_activity_enabled && !settings.system_activity_enabled {
+            let showing_system_activity = inner
+                .last_activity
+                .as_ref()
+                .and_then(|activity| activity.id.as_deref())
+                .is_some_and(|id| id.starts_with("system:"));
+            if inner
+                .selected_activity_id
+                .as_deref()
+                .is_some_and(|id| id.starts_with("system:"))
+            {
+                inner.selected_activity_id = None;
+            }
+            inner.system_activity = None;
+            inner.system_apps.clear();
+            if showing_system_activity {
+                browser_fallback = inner
+                    .activity_inbox
+                    .iter()
+                    .filter(|activity| !activity.id.starts_with("system:"))
+                    .find(|activity| activity.is_active_tab)
+                    .cloned()
+                    .or_else(|| {
+                        inner
+                            .activity_inbox
+                            .iter()
+                            .find(|activity| !activity.id.starts_with("system:"))
+                            .cloned()
+                    });
+                should_clear_system_status = browser_fallback.is_none();
+            }
+        }
         inner.settings = settings.clone();
     }
     write_settings(&settings)?;
+    if let Some(activity) = browser_fallback {
+        let _ = apply_activity_payload(&state, payload_from_activity_entry(&activity));
+    } else if should_clear_system_status {
+        let _ = clear_activity_response(&state);
+    }
+    emit_status(&app, &state);
     Ok(settings)
 }
 
@@ -749,6 +819,11 @@ async fn open_setup_guide() -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn open_discord_server() -> Result<(), String> {
+    open::that(DISCORD_SERVER_URL).map_err(|error| error.to_string())
+}
+
+#[tauri::command]
 async fn copy_text(text: String) -> Result<(), String> {
     let mut clipboard = arboard::Clipboard::new().map_err(|error| error.to_string())?;
     clipboard.set_text(text).map_err(|error| error.to_string())
@@ -809,6 +884,28 @@ async fn refresh_system_apps(
     app: AppHandle,
     state: TauriState<'_, AppState>,
 ) -> Result<Vec<SystemActivity>, String> {
+    let enabled = state
+        .inner
+        .lock()
+        .map_err(|error| error.to_string())?
+        .settings
+        .system_activity_enabled;
+    if !enabled {
+        {
+            let mut inner = state.inner.lock().map_err(|error| error.to_string())?;
+            inner.system_activity = None;
+            inner.system_apps.clear();
+            if inner
+                .selected_activity_id
+                .as_deref()
+                .is_some_and(|id| id.starts_with("system:"))
+            {
+                inner.selected_activity_id = None;
+            }
+        }
+        emit_status(&app, &state);
+        return Ok(Vec::new());
+    }
     let snapshots = detect_running_apps();
     {
         let mut inner = state.inner.lock().map_err(|error| error.to_string())?;

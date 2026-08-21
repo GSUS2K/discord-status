@@ -37,12 +37,16 @@ const requiredUiAssets = [
   'docs/site.js',
   'extension/popup-redesign.css',
   'extension/popup-polish.css',
+  'extension/popup-fixes.css',
   'extension/options-redesign.css',
   'extension/options-polish.css',
+  'extension/options-fixes.css',
   'tauri-ui/app-redesign.css',
   'tauri-ui/app-polish.css',
+  'tauri-ui/app-fixes.css',
   'tauri-ui/settings-redesign.css',
   'tauri-ui/settings-polish.css',
+  'tauri-ui/settings-fixes.css',
   'tauri-ui/selector-redesign.css',
   'tauri-ui/selector-polish.css'
 ];
@@ -50,6 +54,22 @@ const missingAssets = requiredUiAssets.filter(path => !existsSync(path));
 if (missingAssets.length) {
   console.error(`Missing interface assets: ${missingAssets.join(', ')}`);
   process.exit(1);
+}
+
+const communityFiles = [
+  'README.md',
+  'docs/index.html',
+  'extension/popup.js',
+  'extension/options.js',
+  'tauri-ui/index.html',
+  'tauri-ui/settings.html',
+  'src-tauri/src/main.rs'
+];
+for (const file of communityFiles) {
+  if (!/discord\.gg\/86mbTq2yZX|open_discord_server/.test(readFileSync(file, 'utf8'))) {
+    console.error(`${file} is missing the Discord community link`);
+    process.exit(1);
+  }
 }
 
 const storeImageSizes = new Map([

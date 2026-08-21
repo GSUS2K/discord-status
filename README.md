@@ -11,6 +11,7 @@
   <a href="https://chromewebstore.google.com/detail/discord-status/ekobpekegflobmheipgceigkldggkakd"><img alt="Chrome Web Store" src="https://img.shields.io/badge/Chrome-Web_Store-4285F4?style=flat-square&logo=googlechrome&logoColor=white"></a>
   <a href="https://github.com/GSUS2K/discord-status/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/GSUS2K/discord-status?style=flat-square&label=Companion"></a>
   <a href="https://github.com/GSUS2K/discord-status/releases"><img alt="Total downloads" src="https://img.shields.io/github/downloads/GSUS2K/discord-status/total?style=flat-square&label=Downloads"></a>
+  <a href="https://discord.gg/86mbTq2yZX"><img alt="Discord community" src="https://img.shields.io/badge/Discord-Community-5865F2?style=flat-square&logo=discord&logoColor=white"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-68E5AA?style=flat-square"></a>
 </p>
 
@@ -103,5 +104,6 @@ The Web Store package is written to `dist/discord-status-webstore.zip`.
 - [Setup and downloads](https://gsus2k.github.io/discord-status/)
 - [Chrome Web Store](https://chromewebstore.google.com/detail/discord-status/ekobpekegflobmheipgceigkldggkakd)
 - [Latest companion release](https://github.com/GSUS2K/discord-status/releases/latest)
+- [Discord community](https://discord.gg/86mbTq2yZX)
 - [Privacy policy](PRIVACY.md)
 - [Issues and feature requests](https://github.com/GSUS2K/discord-status/issues)

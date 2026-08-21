@@ -512,6 +512,7 @@
   </style>
   <link rel="stylesheet" href="settings-redesign.css">
   <link rel="stylesheet" href="settings-polish.css">
+  <link rel="stylesheet" href="settings-fixes.css">
 </head>
 <body>
   <div class="shell">
@@ -521,11 +522,13 @@
         <div class="brand-title">Discord Status<br>Companion</div>
       </div>
       <nav>
-        <button class="nav-button active" data-view="general">General</button>
-        <button class="nav-button" data-view="backend">Backend</button>
-        <button class="nav-button" data-view="updates">Updates</button>
-        <button class="nav-button" data-view="diagnostics">Diagnostics</button>
+        <button class="nav-button active" data-view="general"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20h-5v-6H9v6H4Z"/></svg><span>General</span></button>
+        <button class="nav-button" data-view="desktopApps"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Desktop apps</span></button>
+        <button class="nav-button" data-view="backend"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 5 14h6l-1 8 8-12h-6Z"/></svg><span>Backend</span></button>
+        <button class="nav-button" data-view="updates"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 8A7 7 0 0 1 18 6l2 6M3.9 12l2 6a7 7 0 0 0 11.9-2"/></svg><span>Updates</span></button>
+        <button class="nav-button" data-view="diagnostics"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg><span>Diagnostics</span></button>
       </nav>
+      <button id="sidebarDiscord" class="community-button" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 8.2a9 9 0 0 1 7 0M9 15.5c2 .9 4 .9 6 0M8.7 13h.1m6.4 0h.1"/><path d="M7 5.8c-1.8.6-3.1 1.5-4 2.5.2 5.2 2.1 8.7 5 10.5l1.3-1.8c1.8.4 3.6.4 5.4 0l1.3 1.8c2.9-1.8 4.8-5.3 5-10.5-1-1-2.2-1.9-4-2.5l-1 1.5a13 13 0 0 0-8 0Z"/></svg><span>Discord community</span></button>
     </aside>
 
     <main>
@@ -558,6 +561,7 @@
             <button id="guideSelector" class="command primary" type="button">Open selector</button>
             <button id="guideExtensions" class="command" type="button">Open Chrome extensions</button>
             <button id="guideWebsite" class="command" type="button">Open setup guide</button>
+            <button id="guideDiscord" class="command" type="button">Join Discord community</button>
             <button id="guideCopyUrl" class="command" type="button">Copy backend URL</button>
           </div>
         </section>
@@ -620,24 +624,36 @@
               </div>
             </div>
           </div>
+        </section>
+      </section>
+
+      <section id="desktop-apps" class="view">
+        <h1>Desktop apps</h1>
+        <div class="lede">Choose whether desktop programs can appear in Discord, and allow only the apps you trust.</div>
+
+        <section class="desktop-summary">
+          <div><span>DESKTOP STATUS</span><strong id="desktopModeState">Disabled</strong><small>Browser activity continues to work when this is off.</small></div>
+          <label class="toggle">
+            <input id="systemActivityEnabled" type="checkbox">
+            <span class="slider"></span>
+          </label>
+        </section>
+
+        <section class="panel">
           <div class="row">
             <div>
-              <div class="title">System app detection</div>
-              <div class="desc">Optional. Pick detected apps below; browser activity still wins when present. Media apps can show window titles such as the movie currently open in VLC.</div>
+              <div class="title">Show approved desktop apps</div>
+              <div class="desc">When enabled, approved apps such as VLC, Spotify, Steam, or a game can become your status. Browser media still has priority.</div>
             </div>
-            <label class="toggle">
-              <input id="systemActivityEnabled" type="checkbox">
-              <span class="slider"></span>
-            </label>
           </div>
           <div class="row">
             <div style="width: 100%;">
-              <div class="title">Detected apps</div>
-              <div class="desc">Click an app to allow or remove it from Discord status. Empty means apps are detected for diagnostics only.</div>
+              <div class="title">Approved apps</div>
+              <div class="desc">Refresh while an app is open, then click it to allow or remove it. Apps not approved here cannot automatically update Discord.</div>
               <div class="app-picker">
                 <div class="actions">
-                  <button id="refreshApps" class="command" type="button">Refresh Apps</button>
-                  <button id="enableMediaApps" class="command primary" type="button">Enable media apps</button>
+                  <button id="refreshApps" class="command" type="button">Refresh running apps</button>
+                  <button id="enableMediaApps" class="command primary" type="button">Allow VLC, Spotify, and Steam</button>
                 </div>
                 <div id="systemAppsList" class="app-list"></div>
               </div>
@@ -761,6 +777,7 @@
       openSelector: () => invoke('show_selector'),
       openExtensions: () => invoke('open_chrome_extensions'),
       openSetupGuide: () => invoke('open_setup_guide'),
+      openDiscordServer: () => invoke('open_discord_server'),
       refreshSystemApps: () => invoke('refresh_system_apps'),
       setSystemAppAllowed: (appName, allowed) => invoke('set_system_app_allowed', { appName, allowed }),
       copyText: text => invoke('copy_text', { text }),
@@ -770,6 +787,7 @@
     const navButtons = [...document.querySelectorAll('.nav-button')];
     const views = {
       general: document.getElementById('general'),
+      desktopApps: document.getElementById('desktop-apps'),
       backend: document.getElementById('backend-view'),
       updates: document.getElementById('updates-view'),
       diagnostics: document.getElementById('diagnostics')
@@ -955,6 +973,18 @@
 
     function renderSystemApps() {
       if (!systemAppsList || !currentSettings) return;
+      const desktopEnabled = Boolean(currentSettings.systemActivityEnabled);
+      document.getElementById('desktopModeState').textContent = desktopEnabled ? 'Enabled' : 'Disabled';
+      document.getElementById('refreshApps').disabled = !desktopEnabled;
+      document.getElementById('enableMediaApps').disabled = !desktopEnabled;
+      if (!desktopEnabled) {
+        systemAppsList.textContent = '';
+        const empty = document.createElement('div');
+        empty.className = 'desktop-empty';
+        empty.innerHTML = '<strong>Desktop status is off</strong><span>Turn it on above to scan for apps. Browser activity is unaffected.</span>';
+        systemAppsList.append(empty);
+        return;
+      }
       const allowedApps = new Set((currentSettings.systemActivityAllowedApps || []).map(value => value.toLowerCase()));
       const detected = currentStatus?.systemApps || [];
       const missingAllowed = [...allowedApps]
@@ -1080,6 +1110,16 @@
         toast(errorMessage(error), 'bad');
       }
     });
+    const openDiscordCommunity = async () => {
+      try {
+        await activityStatus.openDiscordServer();
+        toast('Discord community opened.');
+      } catch (error) {
+        toast(errorMessage(error), 'bad');
+      }
+    };
+    document.getElementById('guideDiscord').addEventListener('click', openDiscordCommunity);
+    document.getElementById('sidebarDiscord').addEventListener('click', openDiscordCommunity);
     document.getElementById('guideCopyUrl').addEventListener('click', async () => {
       try {
         const status = await activityStatus.getStatus();

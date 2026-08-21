@@ -19,6 +19,7 @@ const allSitesBtn = document.getElementById('allSitesBtn');
 const supportBtn = document.getElementById('supportBtn');
 const repoBtn = document.getElementById('repoBtn');
 const setupGuideBtn = document.getElementById('setupGuideBtn');
+const discordBtn = document.getElementById('discordBtn');
 const tabList = document.getElementById('tabList');
 const logList = document.getElementById('logList');
 const siteList = document.getElementById('siteList');
@@ -46,6 +47,7 @@ const CHROME_STORE_URL = 'https://chromewebstore.google.com/detail/discord-statu
 const SUPPORT_URL = 'https://github.com/GSUS2K';
 const COMPANION_URL = `${REPO_URL}/releases/latest`;
 const SETUP_GUIDE_URL = 'https://gsus2k.github.io/discord-status/';
+const DISCORD_SERVER_URL = 'https://discord.gg/86mbTq2yZX';
 const DEFAULT_ENABLED_SITES = [
   'youtube',
   'youtubemusic',
@@ -614,6 +616,7 @@ allSitesBtn.addEventListener('click', () => {
 supportBtn.addEventListener('click', () => chrome.tabs.create({ url: ISSUES_URL }));
 repoBtn.addEventListener('click', () => chrome.tabs.create({ url: REPO_URL }));
 setupGuideBtn.addEventListener('click', () => chrome.tabs.create({ url: SETUP_GUIDE_URL }));
+discordBtn.addEventListener('click', () => chrome.tabs.create({ url: DISCORD_SERVER_URL }));
 quickStartBtn.addEventListener('click', () => quickStart.removeAttribute('hidden'));
 quickStartClose.addEventListener('click', () => {
   quickStart.setAttribute('hidden', '');

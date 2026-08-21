@@ -16,7 +16,7 @@
     <text x="0" y="55" fill="#f5f8ff" font-family="Arial,sans-serif" font-size="46" font-weight="700">What your friends see.</text>
     <text x="0" y="96" fill="#9bacbf" font-family="Arial,sans-serif" font-size="19">Real title, episode, playback state, progress,</text>
     <text x="0" y="126" fill="#9bacbf" font-family="Arial,sans-serif" font-size="19">service identity, and source artwork when available.</text>
-    <g transform="translate(0 186)"><rect width="370" height="52" rx="15" fill="#10233d" stroke="#31517c"/><circle cx="26" cy="26" r="6" fill="#66e3aa"/><text x="43" y="32" fill="#dce9ff" font-family="Arial,sans-serif" font-size="15" font-weight="700">Connected through Discord Status Companion</text></g>
+    <g transform="translate(0 186)"><rect width="310" height="52" rx="15" fill="#10233d" stroke="#31517c"/><circle cx="26" cy="26" r="6" fill="#66e3aa"/><text x="43" y="32" fill="#dce9ff" font-family="Arial,sans-serif" font-size="15" font-weight="700">Connected through companion</text></g>
   </g>
   <g transform="translate(605 54)" filter="url(#shadow)">
     <rect width="585" height="692" rx="28" fill="#111318" stroke="#3a3e47"/>

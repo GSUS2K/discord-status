@@ -23,6 +23,8 @@ function renderPlatform(platform) {
     const card = document.createElement('a');
     card.className = `package-card${asset ? '' : ' disabled'}`;
     card.href = asset?.browser_download_url || fallbackRelease;
+    card.target = '_blank';
+    card.rel = 'noopener noreferrer';
     card.innerHTML = `<span class="package-icon">${packageIcon(data.icon)}</span><span><b>${file.label}</b><span>${file.detail}</span></span><strong>${asset ? 'Download ↓' : 'Release ↗'}</strong>`;
     packageGrid.append(card);
   }
